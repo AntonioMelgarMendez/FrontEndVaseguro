@@ -48,9 +48,7 @@ fun GeneralScaffold() {
     }
 
     Scaffold(
-        topBar = {
-            TopBar(title = title)
-        },
+        topBar = { TopBar(title = title) },
         bottomBar = {
             BottomBar(
                 selectedItem = selectedItem,
@@ -63,10 +61,9 @@ fun GeneralScaffold() {
         Column(
             modifier = Modifier
                 .padding(innerPadding)
-                .fillMaxSize(),
+                .fillMaxSize()
         ) {
             MainNavigation(navController = navController)
         }
     }
 }
-
