@@ -33,7 +33,7 @@ fun GeneralScaffold() {
     var title by remember { mutableStateOf("Map") }
     var selectedItem by remember { mutableStateOf("Map") }
 
-    val navItems = listOf("Map", "History", "Bus", "Children", "Settings")
+    val navItems = listOf("Map", "History", "Bus", "Children")
 
     fun onItemSelected(currentItem: String) {
         selectedItem = currentItem
