@@ -1,0 +1,22 @@
+package com.VaSeguro.ui.navigations
+
+import kotlinx.serialization.Serializable
+
+@Serializable
+object MapScreenNavigation
+@Serializable
+object HistoryScreenNavigation
+@Serializable
+object BusScreenNavigation
+@Serializable
+object ChildrenScreenNavigation
+@Serializable
+object ConfigurationScreenNavigation
+@Serializable
+object RouteScreenNavigation
+@Serializable
+object ChatScreenNavigation
+@Serializable
+object HomeAdminScreenNavigation
+@Serializable
+object StopsScreenNavigation
