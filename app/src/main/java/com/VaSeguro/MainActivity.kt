@@ -15,6 +15,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.VaSeguro.ui.components.Container.GeneralScaffold
+import com.VaSeguro.ui.screens.Start.Login.LoginScreen
+import com.VaSeguro.ui.screens.Start.SignUp.SignUpScreen
 import com.VaSeguro.ui.screens.Start.Starting.StartingScreen
 import com.VaSeguro.ui.screens.Utils.SplashScreen
 import com.VaSeguro.ui.theme.VaSeguroTheme
@@ -34,7 +36,19 @@ class MainActivity : ComponentActivity() {
                     GeneralScaffold()
                 }
                 composable("starting"){
-                    StartingScreen()
+                    StartingScreen(navController)
+                }
+                composable("login"){
+                    LoginScreen(navController)
+                }
+                composable("signup"){
+                    SignUpScreen(navController)
+                }
+                composable("code"){
+
+                }
+                composable("message"){
+
                 }
             }
         }
