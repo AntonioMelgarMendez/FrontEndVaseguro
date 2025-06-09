@@ -3,6 +3,7 @@ package com.VaSeguro.ui.screens.Start.SignUp
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowRight
 import androidx.compose.material.icons.outlined.Email
@@ -18,7 +19,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -26,6 +30,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.VaSeguro.data.AppProvider
+import java.util.regex.Pattern
 
 @Composable
 fun SignUpScreen(navController: NavController) {
@@ -48,6 +53,10 @@ fun SignUpScreen(navController: NavController) {
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     var rememberMe by remember { mutableStateOf(false) }
+    var passwordVisible by remember { mutableStateOf(false) }
+    var emailValid by remember { mutableStateOf(true) }
+    var phoneValid by remember { mutableStateOf(true) }
+
 
     Box(
         modifier = Modifier
@@ -94,11 +103,19 @@ fun SignUpScreen(navController: NavController) {
 
                 TextField(
                     value = email,
-                    onValueChange = viewModel::onEmailChange,
+                    onValueChange = {
+                        viewModel.onEmailChange(it)
+                        emailValid = Pattern.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$", it)
+                    },
                     label = { Text("Email") },
                     trailingIcon = {
                         Icon(Icons.Outlined.Email, contentDescription = "Email", tint = Color.Gray)
                     },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Email,
+                        imeAction = ImeAction.Next
+                    ),
+                    isError = !emailValid,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     colors = TextFieldDefaults.colors(
@@ -109,13 +126,26 @@ fun SignUpScreen(navController: NavController) {
                     )
                 )
 
+
                 TextField(
                     value = phoneNumber,
-                    onValueChange = viewModel::onPhoneChange,
+                    onValueChange = {
+                        if (it.all { char -> char.isDigit() }) {
+                            viewModel.onPhoneChange(it)
+                            phoneValid = true
+                        } else {
+                            phoneValid = false
+                        }
+                    },
                     label = { Text("Número de teléfono") },
                     trailingIcon = {
                         Icon(Icons.Outlined.PhoneIphone, contentDescription = "Teléfono", tint = Color.Gray)
                     },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Next
+                    ),
+                    isError = !phoneValid,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     colors = TextFieldDefaults.colors(
@@ -125,15 +155,26 @@ fun SignUpScreen(navController: NavController) {
                         unfocusedIndicatorColor = Color.Transparent
                     )
                 )
+
 
                 TextField(
                     value = password,
                     onValueChange = viewModel::onPasswordChange,
                     label = { Text("Contraseña") },
-                    visualTransformation = PasswordVisualTransformation(),
+                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     trailingIcon = {
-                        Icon(Icons.Outlined.Lock, contentDescription = "Contraseña", tint = Color.Gray)
+                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            Icon(
+                                imageVector = if (passwordVisible) Icons.Outlined.Lock else Icons.Outlined.Lock,
+                                contentDescription = if (passwordVisible) "Ocultar contraseña" else "Mostrar contraseña",
+                                tint = Color.Gray
+                            )
+                        }
                     },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done
+                    ),
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     colors = TextFieldDefaults.colors(
@@ -143,6 +184,7 @@ fun SignUpScreen(navController: NavController) {
                         unfocusedIndicatorColor = Color.Transparent
                     )
                 )
+
 
                 error?.let {
                     Text(text = it, color = MaterialTheme.colorScheme.error)
@@ -203,7 +245,22 @@ fun SignUpScreen(navController: NavController) {
                     )
                 }
 
-                TextButton(onClick = { navController.navigate("login") }) {
+                TextButton(
+                    onClick = {
+                        val isPhoneValid = phoneNumber.all { it.isDigit() }
+                        val isEmailValid = Pattern.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$", email)
+                        phoneValid = isPhoneValid
+                        emailValid = isEmailValid
+
+                        if (isPhoneValid && isEmailValid) {
+                            viewModel.register(
+                                onSuccess = { navController.navigate("home") },
+                                onError = {}
+                            )
+                        }
+                    }
+
+                ) {
                     Text(
                         buildAnnotatedString {
                             withStyle(style = SpanStyle(color = Color.Black)) {

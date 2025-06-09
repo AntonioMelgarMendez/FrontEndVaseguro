@@ -49,12 +49,9 @@ class RegisterViewModel(
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
-
             try {
-                val nameParts = _name.value.split(" ")
-                val forenames = nameParts.take(nameParts.size - 1).joinToString(" ")
-                val surnames = nameParts.lastOrNull() ?: ""
-
+                val forenames = _name.value.trim()
+                val surnames = ""
                 val response = authRepository.register(
                     forenames = forenames,
                     surnames = surnames,
@@ -62,10 +59,8 @@ class RegisterViewModel(
                     password = _password.value,
                     phone_number = _phone.value,
                     gender = "M",
-                    role_id = 2,
-
+                    role_id = 2
                 )
-
                 if (response.token.isNotBlank()) {
                     onSuccess()
                 } else {
