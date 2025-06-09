@@ -216,7 +216,7 @@ fun SignUpScreen(navController: NavController) {
                             }
                         },
                         modifier = Modifier
-                            .clickable { /* Navegar a términos y condiciones */ }
+                            .clickable {}
                             .padding(start = 4.dp)
                     )
                 }
@@ -225,7 +225,7 @@ fun SignUpScreen(navController: NavController) {
                     onClick = {
                         viewModel.register(
                             onSuccess = { navController.navigate("home") },
-                            onError = { /* El error ya se maneja en el ViewModel */ }
+                            onError = {  }
                         )
                     },
                     modifier = Modifier

@@ -1,4 +1,4 @@
-package com.VaSeguro.data.remote.Login
+package com.VaSeguro.data.remote.Login.Register
 
 data class RegisterRequest(
     val forenames: String,

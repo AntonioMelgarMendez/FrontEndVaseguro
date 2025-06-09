@@ -1,7 +1,7 @@
 
 package com.VaSeguro.data.repository.AuthRepository
 
-import com.VaSeguro.data.remote.Login.LoginResponse
+import com.VaSeguro.data.remote.Login.Login.LoginResponse
 
 interface AuthRepository {
     suspend fun login(email: String, password: String): LoginResponse
@@ -15,4 +15,7 @@ interface AuthRepository {
         gender: String,
         role_id: Int
     ): LoginResponse
+    suspend fun  logout(): Boolean
+
+
 }

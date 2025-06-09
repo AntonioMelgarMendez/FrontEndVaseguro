@@ -1,9 +1,9 @@
 package com.VaSeguro.data.repository.AuthRepository
 
 import com.VaSeguro.data.remote.Login.AuthService
-import com.VaSeguro.data.remote.Login.LoginRequest
-import com.VaSeguro.data.remote.Login.LoginResponse
-import com.VaSeguro.data.remote.Login.RegisterRequest
+import com.VaSeguro.data.remote.Login.Login.LoginRequest
+import com.VaSeguro.data.remote.Login.Login.LoginResponse
+import com.VaSeguro.data.remote.Login.Register.RegisterRequest
 
 class AuthRepositoryImpl(
     private val authService: AuthService
@@ -33,5 +33,13 @@ class AuthRepositoryImpl(
                 role_id = role_id
             )
         )
+    }
+    override suspend fun logout(): Boolean {
+        return try {
+            authService.logout()
+            true
+        } catch (e: Exception) {
+            false
+        }
     }
 }
