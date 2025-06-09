@@ -1,10 +1,16 @@
+
 package com.VaSeguro.ui.screens.Start.SignUp
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.VaSeguro.data.repository.AuthRepository.AuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 
-class RegisterViewModel : ViewModel() {
+class RegisterViewModel(
+    private val authRepository: AuthRepository
+) : ViewModel() {
     private val _name = MutableStateFlow("")
     val name: StateFlow<String> = _name
 
@@ -16,6 +22,12 @@ class RegisterViewModel : ViewModel() {
 
     private val _password = MutableStateFlow("")
     val password: StateFlow<String> = _password
+
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading
+
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error
 
     fun onNameChange(newName: String) {
         _name.value = newName
@@ -34,15 +46,38 @@ class RegisterViewModel : ViewModel() {
     }
 
     fun register(onSuccess: () -> Unit, onError: (String) -> Unit) {
-        if (
-            _name.value.isNotBlank() &&
-            _email.value.isNotBlank() &&
-            _phone.value.isNotBlank() &&
-            _password.value.length >= 6
-        ) {
-            onSuccess()
-        } else {
-            onError("Todos los campos son obligatorios y la contraseña debe tener al menos 6 caracteres.")
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+
+            try {
+                val nameParts = _name.value.split(" ")
+                val forenames = nameParts.take(nameParts.size - 1).joinToString(" ")
+                val surnames = nameParts.lastOrNull() ?: ""
+
+                val response = authRepository.register(
+                    forenames = forenames,
+                    surnames = surnames,
+                    email = _email.value,
+                    password = _password.value,
+                    phone_number = _phone.value,
+                    gender = "M",
+                    role_id = 2,
+
+                )
+
+                if (response.token.isNotBlank()) {
+                    onSuccess()
+                } else {
+                    _error.value = "Registro fallido"
+                    onError("Registro fallido")
+                }
+            } catch (e: Exception) {
+                _error.value = "Error: ${e.message ?: "Error desconocido"}"
+                onError(e.message ?: "Error desconocido")
+            } finally {
+                _isLoading.value = false
+            }
         }
     }
 }
