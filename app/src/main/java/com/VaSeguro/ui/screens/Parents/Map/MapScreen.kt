@@ -1,12 +1,15 @@
 package com.VaSeguro.ui.screens.Parents.Map
 
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 
 @Composable
 fun MapScreen() {
-    androidx.compose.material3.Text(
+    Text(
         text = "History Screen",
-        modifier = androidx.compose.ui.Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize()
     )
+
 }
