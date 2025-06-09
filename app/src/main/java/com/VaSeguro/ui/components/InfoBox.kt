@@ -35,7 +35,6 @@ fun InfoBox(
       containerColor = MaterialTheme.colorScheme.surfaceVariant
     ),
     shape = RoundedCornerShape(8.dp),
-    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
   ) {
     Row(
       verticalAlignment = Alignment.CenterVertically,

@@ -37,44 +37,52 @@ import coil3.compose.AsyncImage
 import coil3.compose.AsyncImagePainter
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import com.VaSeguro.data.model.Route.Route
+import com.VaSeguro.data.model.Route.RouteStatus
+import com.VaSeguro.data.model.Route.RouteType
+import com.VaSeguro.data.model.User.UserData
+import com.VaSeguro.data.model.User.UserRole
 import com.VaSeguro.ui.components.InfoBox
 import com.VaSeguro.ui.components.ScheduleChip
+import com.VaSeguro.data.model.Vehicle
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-data class microBus(
-    val id: String,
-    val name: String,
-    val model: String,
-    val busImage: String,
-    val driver: String,
-    val plaque: String,
-    val schedule: String,
-    val rate: String,
-    val phoneNumber: String,
-    val maxCapacity: Int,
-    val currentPassengers: Int,
-    val tripPriceDay: Double,
-    val tripPriceMonth: Double
-)
-
-val microBusList = listOf(
-    microBus(
+val routeList = listOf(
+    Route(
         id = "1",
-        name = "Toyota Hiace",
-        model = "Model 2025",
-        busImage = "https://www.toyota.com.sv/wp-content/uploads/2019/04/hiace_beige_v1.1.png",
-        driver = "Juan Melgar",
-        plaque = "599477",
-        schedule = "06:00, 12:00, 17:30",
-        rate = "Impressive",
-        phoneNumber = "7269-8210",
-        maxCapacity = 20,
-        currentPassengers = 15,
-        tripPriceDay = 2.0,
-        tripPriceMonth = 29.0
-    ),
+        name = "Route 1",
+        start_date = "2023-10-01",
+        vehicle_id = Vehicle(
+            id = "1",
+            plate = "577955",
+            model = "Microbus 1",
+            driver_id = UserData(
+                id = "1",
+                forename = "John",
+                surname = "Doe",
+                email = "user@example.com",
+                phoneNumber = "123-456-7890",
+                profilePic = null,
+                role_id = UserRole(
+                    id = 1,
+                    role_name = "Driver",
+                ),
+                gender = "binary",
+            ),
+            created_at = "2023-10-01",
+        ),
+        route_status = RouteStatus(
+            id = 1,
+            status = "Active",
+        ),
+        route_type = RouteType(
+            id = 1,
+            type = "Regular",
+        ),
+        end_date = "2023-10-31",
+    )
 )
 
 fun String.toAmPmFormat(): String {
@@ -96,8 +104,8 @@ fun BusScreen() {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        items(microBusList) { microBus ->
-            val schedules = microBus.schedule.split(",").map { it.trim().toAmPmFormat() }
+        items(routeList) { microBus ->
+            // val schedules = microBus.schedule.split(",").map { it.trim().toAmPmFormat() }
             Text(
                 text = microBus.name,
                 fontWeight = FontWeight.Bold,
@@ -105,7 +113,7 @@ fun BusScreen() {
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = microBus.model,
+                text = microBus.vehicle_id.model,
                 fontWeight = FontWeight.Light,
                 fontSize = 20.sp,
             )
@@ -118,7 +126,7 @@ fun BusScreen() {
             ) {
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
-                        .data(microBus.busImage)
+                        .data("")
                         .crossfade(true)
                         .build(),
                     contentDescription = microBus.name,
@@ -141,31 +149,34 @@ fun BusScreen() {
             InfoBox(
                 icon = Icons.Default.Person,
                 title = "Driver:",
-                data = microBus.driver,
+                data = microBus.vehicle_id.driver_id.forename + " " + microBus.vehicle_id.driver_id.surname,
             )
             Spacer(modifier = Modifier.height(10.dp))
             InfoBox(
                 icon = Icons.Default.DirectionsCar,
                 title = "Plaque:",
-                data = microBus.plaque,
+                data = microBus.vehicle_id.plate,
             )
+            /*
             Spacer(modifier = Modifier.height(10.dp))
             InfoBox(
                 icon = Icons.Default.Groups3,
                 title = "Max Capacity:",
                 data = microBus.maxCapacity.toString(),
             )
+            */
             Spacer(modifier = Modifier.height(10.dp))
             InfoBox(
                 icon = Icons.Default.Phone,
                 title = "Phone number:",
-                data = microBus.phoneNumber,
+                data = microBus.vehicle_id.driver_id.phoneNumber,
             )
             Spacer(modifier = Modifier.height(10.dp))
             InfoBox(
                 icon = Icons.Default.AccessTime,
                 title = "Schedule",
             )
+            /*
             Spacer(modifier = Modifier.height(10.dp))
             LazyRow(
                 modifier = Modifier.fillMaxWidth(),
@@ -176,6 +187,8 @@ fun BusScreen() {
                     ScheduleChip(time)
                 }
             }
+            */
+            /*
             Spacer(modifier = Modifier.height(10.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -194,6 +207,7 @@ fun BusScreen() {
                     modifier = Modifier.weight(1f)
                 )
             }
+            */
 
         }
     }
