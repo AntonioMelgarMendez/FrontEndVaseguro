@@ -26,6 +26,54 @@ class VehicleViewModel : ViewModel() {
           gender = "Male"
         ),
         created_at = "17/04/2025 14:01"
+      ),
+      Vehicle(
+        id = "12452",
+        plate = "XDEF456",
+        model = "Honda Civic",
+        driver_id = UserData(
+          id = "u2",
+          forename = "Maria",
+          surname = "Lopez",
+          email = "maria@example.com",
+          phoneNumber = "0987654321",
+          profilePic = null,
+          role_id = UserRole(1, "Driver"),
+          gender = "Female"
+        ),
+        created_at = "17/04/2025 15:00"
+      ),
+      Vehicle(
+        id = "12453",
+        plate = "JKL789",
+        model = "Ford Focus",
+        driver_id = UserData(
+          id = "u3",
+          forename = "Carlos",
+          surname = "Martinez",
+          email = "carlos@example.com",
+          phoneNumber = "1112223333",
+          profilePic = null,
+          role_id = UserRole(1, "Driver"),
+          gender = "Male"
+        ),
+        created_at = "18/04/2025 09:30"
+      ),
+      Vehicle(
+        id = "12454",
+        plate = "XYZ321",
+        model = "Chevrolet Spark",
+        driver_id = UserData(
+          id = "u4",
+          forename = "Ana",
+          surname = "Gonzalez",
+          email = "ana@example.com",
+          phoneNumber = "4445556666",
+          profilePic = null,
+          role_id = UserRole(1, "Driver"),
+          gender = "Female"
+        ),
+        created_at = "18/04/2025 10:15"
       )
     )
   )
