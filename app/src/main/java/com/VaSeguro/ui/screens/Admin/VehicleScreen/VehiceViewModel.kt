@@ -77,6 +77,43 @@ class VehicleViewModel : ViewModel() {
       )
     )
   )
+
+  private val _drivers = MutableStateFlow(
+    listOf(
+      UserData(
+        id = "1",
+        forename = "Ana",
+        surname = "García",
+        email = "ana.garcia@example.com",
+        phoneNumber = "1234567890",
+        profilePic = null,
+        role_id = UserRole(1, "Conductor"),
+        gender = "F"
+      ),
+      UserData(
+        id = "2",
+        forename = "Carlos",
+        surname = "Mendoza",
+        email = "carlos.mendoza@example.com",
+        phoneNumber = "9876543210",
+        profilePic = null,
+        role_id = UserRole(1, "Conductor"),
+        gender = "M"
+      ),
+      UserData(
+        id = "3",
+        forename = "Lucía",
+        surname = "Pérez",
+        email = "lucia.perez@example.com",
+        phoneNumber = "5551234567",
+        profilePic = null,
+        role_id = UserRole(1, "Conductor"),
+        gender = "F"
+      )
+    )
+  )
+
+  val drivers: StateFlow<List<UserData>> = _drivers
   val vehicles: StateFlow<List<Vehicle>> = _vehicles
 
   private val _expandedMap = MutableStateFlow<Map<String, Boolean>>(emptyMap())
@@ -109,27 +146,15 @@ class VehicleViewModel : ViewModel() {
     _checkedMap.update { it - vehicleId }
   }
 
-  fun addVehicle(plate: String, model: String, driverName: String) {
+  fun addVehicle(plate: String, model: String, driver: UserData) {
     val randomId = (10000..99999).random().toString()
     val now = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))
-    val (forename, surname) = driverName.split(" ").let {
-      if (it.size >= 2) it[0] to it[1] else it[0] to "Lastname"
-    }
 
     val vehicle = Vehicle(
       id = randomId,
       plate = plate,
       model = model,
-      driver_id = UserData(
-        id = "u${randomId}",
-        forename = forename,
-        surname = surname,
-        email = "$forename@example.com",
-        phoneNumber = "1234567890",
-        profilePic = null,
-        role_id = UserRole(1, "Driver"),
-        gender = "Male"
-      ),
+      driver_id = driver,
       created_at = now
     )
 
