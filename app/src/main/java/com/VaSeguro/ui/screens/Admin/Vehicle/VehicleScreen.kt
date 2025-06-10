@@ -1,4 +1,4 @@
-package com.VaSeguro.ui.screens.Admin.VehicleScreen
+package com.VaSeguro.ui.screens.Admin.Vehicle
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background

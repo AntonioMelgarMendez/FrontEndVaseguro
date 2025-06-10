@@ -1,4 +1,4 @@
-package com.VaSeguro.ui.screens.Admin.VehicleScreen
+package com.VaSeguro.ui.screens.Admin.Vehicle
 
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
