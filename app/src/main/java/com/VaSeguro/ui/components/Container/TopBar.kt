@@ -20,12 +20,12 @@ import androidx.compose.runtime.Composable
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopBar(
-    title: String = "VaSeguro",
+    title: String,
     showBackButton: Boolean = false,
     onBackClick: () -> Unit = {}
 ) {
     TopAppBar(
-        title = {},
+        title = {Text(title)},
         navigationIcon = {
             if (showBackButton) {
                 IconButton(onClick = onBackClick) {

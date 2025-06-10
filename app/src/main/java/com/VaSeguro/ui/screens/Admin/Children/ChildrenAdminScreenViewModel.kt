@@ -14,10 +14,6 @@ class ChildrenAdminScreenViewModel : ViewModel() {
     )
     val children: StateFlow<List<Child>> = _children
 
-    fun deleteChild(id: String) {
-        _children.value = _children.value.filterNot { it.id == id }
-    }
-
     fun addChild(
         forenames: String,
         surnames: String,
@@ -40,5 +36,9 @@ class ChildrenAdminScreenViewModel : ViewModel() {
             createdAt = "08/06/2025 20:30"
         )
         _children.value = _children.value + newChild
+    }
+
+    fun deleteChild(id: String) {
+        _children.value = _children.value.filterNot { it.id == id }
     }
 }
