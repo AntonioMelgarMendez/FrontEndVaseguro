@@ -10,5 +10,6 @@ data class Child (
     val driver: String,
     val parent: String,
     val medicalInfo: String,
-    val createdAt: String
+    val createdAt: String,
+    val profilePic: String? = null
 )

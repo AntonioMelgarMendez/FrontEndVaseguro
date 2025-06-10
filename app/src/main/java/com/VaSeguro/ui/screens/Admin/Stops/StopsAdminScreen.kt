@@ -1,5 +1,6 @@
 package com.VaSeguro.ui.screens.Admin.Stops
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -25,15 +26,18 @@ import com.VaSeguro.ui.components.Container.TopBar
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import com.VaSeguro.data.model.Stop.StopData
+import com.VaSeguro.data.model.Stop.StopType
 import com.VaSeguro.ui.components.Container.ConfirmationDialog
 import com.VaSeguro.ui.components.Container.DropDownSelector
 import com.VaSeguro.ui.screens.Admin.Users.UsersAdminScreen
+import com.VaSeguro.ui.theme.PrimaryColor
 
 @Composable
 fun StopsAdminScreen(
@@ -65,7 +69,7 @@ fun StopsAdminScreen(
                     info = listOf(
                         "Latitude" to stop.latitude,
                         "Longitude" to stop.longitude,
-                        "Stop Type" to stop.stopType,
+                        "Stop Type" to stop.stopType.type,
                         "Driver" to stop.driver
                     ),
                     onEdit = { /* future */ },
@@ -103,10 +107,10 @@ fun AddStopDialog(
     var name by remember { mutableStateOf(TextFieldValue("")) }
     var latitude by remember { mutableStateOf(TextFieldValue("")) }
     var longitude by remember { mutableStateOf(TextFieldValue("")) }
-    var stopType by remember { mutableStateOf<String?>(null) }
+    var stopType by remember { mutableStateOf<StopType?>(null) }
     var driver by remember { mutableStateOf<String?>(null) }
 
-    val stopTypes = listOf("School", "House", "Another")
+    val stopTypes = listOf(StopType("1", "School"), StopType("2", "House"), StopType("3", "Another"))
     val drivers = listOf("Juan Mendoza", "Pedro Torres")
 
     AlertDialog(
@@ -118,7 +122,9 @@ fun AddStopDialog(
                 OutlinedTextField(value = latitude, onValueChange = { latitude = it }, label = { Text("Latitude") })
                 OutlinedTextField(value = longitude, onValueChange = { longitude = it }, label = { Text("Longitude") })
 
-                DropDownSelector("Stop Type", stopTypes, stopType) { stopType = it }
+                DropDownSelector("Stop Type", stopTypes.map { it.type }, stopType?.type) { selectedType ->
+                    stopType = stopTypes.find { it.type == selectedType }
+                }
                 DropDownSelector("Driver", drivers, driver) { driver = it }
             }
         },
@@ -128,14 +134,25 @@ fun AddStopDialog(
                     name.text,
                     latitude.text,
                     longitude.text,
-                    stopType ?: "Unknown",
+                    stopType!!,
                     driver ?: "Unknown"
                 )
                 onSave()
-            }) { Text("Save") }
+            },
+                colors = ButtonDefaults.buttonColors(
+                    contentColor = Color.White,
+                    containerColor = PrimaryColor
+                )
+            ) { Text("Save") }
         },
         dismissButton = {
-            OutlinedButton(onClick = onDismiss) { Text("Cancel") }
+            OutlinedButton(
+                onClick = onDismiss,
+                border = BorderStroke(2.dp, PrimaryColor),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = PrimaryColor
+                )
+            ) { Text("Cancel") }
         }
     )
 }

@@ -1,5 +1,6 @@
 package com.VaSeguro.ui.screens.Admin.Children
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -24,6 +25,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenuItem
@@ -36,11 +38,13 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import com.VaSeguro.ui.components.Container.ConfirmationDialog
 import com.VaSeguro.ui.components.Container.DropDownSelector
 import com.VaSeguro.ui.components.Container.ExpandableInfoCard
+import com.VaSeguro.ui.theme.PrimaryColor
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -62,7 +66,9 @@ fun ChildrenAdminScreen(
             ExtendedFloatingActionButton(
                 icon = { Icon(Icons.Default.Add, contentDescription = "Add") },
                 text = { Text("Add") },
-                onClick = { showDialog = true }
+                onClick = { showDialog = true },
+                containerColor = Color(0xFF6C63FF),
+                contentColor = Color.White
             )
         }
     ) { padding ->
@@ -170,10 +176,22 @@ fun AddChildDialog(
                     selectedDriver ?: ""
                 )
                 onSave()
-            }) { Text("Save") }
+            },
+                colors = ButtonDefaults.buttonColors(
+                    contentColor = Color.White,
+                    containerColor = PrimaryColor
+                )
+            )
+            { Text("Save") }
         },
         dismissButton = {
-            OutlinedButton(onClick = onDismiss) { Text("Cancel") }
+            OutlinedButton(
+                onClick = onDismiss,
+                border = BorderStroke(2.dp, PrimaryColor),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = PrimaryColor
+                )
+            ) { Text("Cancel") }
         }
     )
 

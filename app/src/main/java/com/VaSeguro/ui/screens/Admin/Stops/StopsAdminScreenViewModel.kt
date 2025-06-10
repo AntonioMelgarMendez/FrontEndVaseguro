@@ -2,6 +2,7 @@ package com.VaSeguro.ui.screens.Admin.Stops
 
 import androidx.lifecycle.ViewModel
 import com.VaSeguro.data.model.Stop.StopData
+import com.VaSeguro.data.model.Stop.StopType
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -9,8 +10,8 @@ class StopsAdminScreenViewModel : ViewModel() {
 
     private val _stops = MutableStateFlow(
         listOf(
-            StopData("S01", "Stop A", "13.700", "-89.210", "School", "Juan Mendoza"),
-            StopData("S02", "Stop B", "13.701", "-89.211", "House", "Pedro Torres"),
+            StopData("S01", "Stop A", "13.700", "-89.210", StopType("1", "School"), "Juan Mendoza"),
+            StopData("S02", "Stop B", "13.701", "-89.211",StopType("2", "House"), "Pedro Torres"),
         )
     )
     val stops: StateFlow<List<StopData>> = _stops
@@ -19,7 +20,7 @@ class StopsAdminScreenViewModel : ViewModel() {
         name: String,
         latitude: String,
         longitude: String,
-        stopType: String,
+        stopType: StopType,
         driver: String
     ) {
         val newStop = StopData(

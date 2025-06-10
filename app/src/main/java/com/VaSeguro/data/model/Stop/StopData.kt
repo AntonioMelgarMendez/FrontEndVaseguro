@@ -5,6 +5,6 @@ data class StopData (
     val name: String,
     val latitude: String,
     val longitude: String,
-    val stopType: String,
+    val stopType: StopType,
     val driver: String
 )

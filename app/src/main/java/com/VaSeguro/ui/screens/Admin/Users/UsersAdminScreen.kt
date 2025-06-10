@@ -1,5 +1,6 @@
 package com.VaSeguro.ui.screens.Admin.Users
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -27,10 +28,13 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.VaSeguro.ui.components.Container.ExpandableInfoCard
 import com.VaSeguro.ui.components.Container.TopBar
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import com.VaSeguro.ui.components.Container.ConfirmationDialog
 import com.VaSeguro.ui.components.Container.DropDownSelector
+import com.VaSeguro.ui.theme.PrimaryColor
 
 
 @Composable
@@ -49,7 +53,9 @@ fun UsersAdminScreen(
             ExtendedFloatingActionButton(
                 icon = { Icon(Icons.Default.Add, contentDescription = "Add User") },
                 text = { Text("Add") },
-                onClick = { showDialog = true }
+                onClick = { showDialog = true },
+                containerColor = Color(0xFF6C63FF),
+                contentColor = Color.White
             )
         }
     ) { padding ->
@@ -138,10 +144,21 @@ fun AddUserDialog(
                     gender ?: "Not specified"
                 )
                 onSave()
-            }) { Text("Save") }
+            },
+                colors = ButtonDefaults.buttonColors(
+                    contentColor = Color.White,
+                    containerColor = PrimaryColor
+                )
+            ) { Text("Save") }
         },
         dismissButton = {
-            OutlinedButton(onClick = onDismiss) { Text("Cancel") }
+            OutlinedButton(
+                onClick = onDismiss,
+                border = BorderStroke(2.dp, PrimaryColor),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = PrimaryColor
+                )
+            ) { Text("Cancel") }
         }
     )
 }
