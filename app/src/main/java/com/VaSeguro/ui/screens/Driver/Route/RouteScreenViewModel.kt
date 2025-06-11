@@ -487,7 +487,7 @@ class RouteScreenViewModel(
      * Utiliza una combinación del algoritmo del vecino más cercano y optimización 2-opt
      */
     private fun optimizeRouteOrder(startLocation: LatLng, points: List<RoutePoint>): List<RoutePoint> {
-        if (points.size <= 2) return points
+        if (points.size < 2) return points
 
         // Paso 1: Obtener un orden inicial basado en el vecino más cercano
         val initialOrder = nearestNeighborOrder(startLocation, points)
