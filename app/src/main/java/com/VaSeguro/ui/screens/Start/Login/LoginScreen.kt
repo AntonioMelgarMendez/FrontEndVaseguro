@@ -100,8 +100,8 @@ fun LoginScreen(navController: NavController) {
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color(0xFFF3F3F3),
-                        unfocusedContainerColor = Color(0xFFF3F3F3),
+                        focusedContainerColor = Color(0xFFD3D3D3),
+                        unfocusedContainerColor = Color(0xFFD3D3D3),
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
                     )
@@ -119,8 +119,8 @@ fun LoginScreen(navController: NavController) {
                     visualTransformation = PasswordVisualTransformation(),
                     shape = RoundedCornerShape(16.dp),
                     colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color(0xFFF3F3F3),
-                        unfocusedContainerColor = Color(0xFFF3F3F3),
+                        focusedContainerColor = Color(0xFFD3D3D3),
+                        unfocusedContainerColor = Color(0xFFD3D3D3),
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
                     )

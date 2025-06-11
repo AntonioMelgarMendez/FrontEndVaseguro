@@ -1,4 +1,4 @@
-package com.VaSeguro.data.remote.Login
+package com.VaSeguro.data.remote.Login.Login
 
 data class LoginRequest(
     val email: String,
