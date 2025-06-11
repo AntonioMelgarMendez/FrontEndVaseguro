@@ -19,7 +19,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.VaSeguro.ui.components.Container.TopBar
 import androidx.compose.runtime.getValue
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.filled.CalendarToday
@@ -44,6 +43,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.VaSeguro.ui.components.Container.ConfirmationDialog
 import com.VaSeguro.ui.components.Container.DropDownSelector
 import com.VaSeguro.ui.components.Container.ExpandableInfoCard
+import com.VaSeguro.ui.components.Container.TopBarContainer.TopBar
 import com.VaSeguro.ui.theme.PrimaryColor
 import java.text.SimpleDateFormat
 import java.util.Date

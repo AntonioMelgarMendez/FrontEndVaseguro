@@ -22,7 +22,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.VaSeguro.ui.components.Container.ExpandableInfoCard
-import com.VaSeguro.ui.components.Container.TopBar
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -36,6 +35,7 @@ import com.VaSeguro.data.model.Stop.StopData
 import com.VaSeguro.data.model.Stop.StopType
 import com.VaSeguro.ui.components.Container.ConfirmationDialog
 import com.VaSeguro.ui.components.Container.DropDownSelector
+import com.VaSeguro.ui.components.Container.TopBarContainer.TopBar
 import com.VaSeguro.ui.screens.Admin.Users.UsersAdminScreen
 import com.VaSeguro.ui.theme.PrimaryColor
 
