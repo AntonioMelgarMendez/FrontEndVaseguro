@@ -81,7 +81,8 @@ fun StartingScreen(navController: NavHostController,viewModel: StartingViewModel
             .fillMaxSize()
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
+
     ) {
         AnimatedContent(
             targetState = currentIndex,
