@@ -5,20 +5,9 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Looper
 import android.provider.Settings
-import android.util.Log
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
@@ -29,37 +18,23 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.VaSeguro.map.data.PlaceResult
+import com.VaSeguro.map.data.RoutePoint
 import com.VaSeguro.map.decodePolyline
 import com.VaSeguro.ui.components.Map.FloatingMenu
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -73,7 +48,6 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.LatLngBounds
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapType
@@ -88,25 +62,44 @@ import kotlinx.coroutines.launch
 fun RouteScreen(
     viewModel: RouteScreenViewModel = viewModel(factory = RouteScreenViewModel.Factory)
 ) {
+    // Estados principales
     val routePoints by remember { derivedStateOf { viewModel.routePoints } }
     val selectedRoute by remember { derivedStateOf { viewModel.selectedRoute } }
     val isLoading by remember { derivedStateOf { viewModel.isLoading } }
+    val errorMessage by remember { derivedStateOf { viewModel.errorMessage } }
+    val currentLocation by viewModel.currentLocation.collectAsStateWithLifecycle()
+    val routeProgress by viewModel.routeProgress.collectAsStateWithLifecycle()
+    val isProximityAlertVisible by viewModel.isProximityAlertVisible.collectAsStateWithLifecycle()
+    val currentPointName by viewModel.currentPointName.collectAsStateWithLifecycle()
 
+    // Nuevos estados para la información dinámica
+    val nextPointName by viewModel.nextPointName.collectAsStateWithLifecycle()
+    val timeToNextPoint by viewModel.timeToNextPoint.collectAsStateWithLifecycle()
+    val adjustedTimeToNextPoint by viewModel.adjustedTimeToNextPoint.collectAsStateWithLifecycle()
+    val currentSpeed by viewModel.currentSpeed.collectAsStateWithLifecycle()
+
+    // Estados de UI
     val cameraPositionState = rememberCameraPositionState()
     val modalBottomSheetState = rememberModalBottomSheetState()
     var showBottomSheet by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
 
+    // Contexto y servicios de ubicación
     val context = LocalContext.current
     val fusedLocationClient = remember {
         LocationServices.getFusedLocationProviderClient(context)
     }
 
+    // Configuración de solicitud de ubicación
     val locationRequest = remember {
-        LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 10000)
-            .setMinUpdateIntervalMillis(5000)
+        LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 5000) // Actualización cada 5 segundos
+            .setMinUpdateIntervalMillis(2000) // Mínimo 2 segundos entre actualizaciones
+            .setMaxUpdateDelayMillis(10000) // Máximo 10 segundos de retraso
             .build()
     }
 
+    // Estado de permisos
     val locationPermissions = rememberMultiplePermissionsState(
         permissions = listOf(
             Manifest.permission.ACCESS_FINE_LOCATION,
@@ -114,14 +107,61 @@ fun RouteScreen(
         )
     )
 
+    // Estado de diálogos
     var showPermissionDialog by remember { mutableStateOf(false) }
     var permissionRequested by remember { mutableStateOf(false) }
     var systemPermissionDialogShown by remember { mutableStateOf(false) }
 
-    // Efecto para manejar el flujo completo de permisos
+    // Obtener última ubicación conocida inmediatamente después de obtener permisos
+    LaunchedEffect(locationPermissions.allPermissionsGranted) {
+        if (locationPermissions.allPermissionsGranted) {
+            try {
+                val lastLocationTask = fusedLocationClient.lastLocation
+                lastLocationTask.addOnSuccessListener { location ->
+                    location?.let {
+                        val initialLatLng = LatLng(location.latitude, location.longitude)
+                        viewModel.updateCurrentLocation(initialLatLng)
+
+                        // Mover cámara a la ubicación inicial
+                        cameraPositionState.move(
+                            CameraUpdateFactory.newLatLngZoom(initialLatLng, 15f)
+                        )
+                    }
+                }
+            } catch (e: SecurityException) {
+                // Manejo de excepción si los permisos no están disponibles
+                viewModel.showError("Error al obtener ubicación: permisos insuficientes")
+            }
+        }
+    }
+
+    // Callback para recibir actualizaciones de ubicación
+    val locationCallback = remember {
+        object : LocationCallback() {
+            override fun onLocationResult(locationResult: LocationResult) {
+                super.onLocationResult(locationResult)
+                locationResult.lastLocation?.let { location ->
+                    val currentLatLng = LatLng(location.latitude, location.longitude)
+                    viewModel.updateCurrentLocation(currentLatLng)
+
+                    // Solo mover la cámara automáticamente si:
+                    // 1. No hay ruta activa, o
+                    // 2. Es la primera ubicación que recibimos
+                    if (selectedRoute == null || currentLocation == null) {
+                        cameraPositionState.move(
+                            CameraUpdateFactory.newLatLngZoom(currentLatLng, 15f)
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    // Efecto para manejar el flujo de permisos
     LaunchedEffect(locationPermissions.permissions) {
         if (!permissionRequested) {
             permissionRequested = true
+
             // Primero verificamos si ya tenemos permisos
             if (locationPermissions.allPermissionsGranted) {
                 return@LaunchedEffect
@@ -142,139 +182,283 @@ fun RouteScreen(
         }
     }
 
-
-// Efecto para manejar la respuesta de los permisos
-    LaunchedEffect(locationPermissions.allPermissionsGranted, systemPermissionDialogShown) {
-        if (systemPermissionDialogShown && !locationPermissions.allPermissionsGranted) {
-            // Verificamos si algún permiso fue denegado permanentemente
-            val permanentlyDenied = locationPermissions.permissions.any { permission ->
-                !permission.status.isGranted && !permission.status.shouldShowRationale
-            }
-
-            if (permanentlyDenied) {
-                showPermissionDialog = true
-            }
-        }
-    }
-
-    // Efecto para obtener la ubicación cuando los permisos son concedidos
+    // Efecto para iniciar las actualizaciones de ubicación
     LaunchedEffect(locationPermissions.allPermissionsGranted) {
         if (locationPermissions.allPermissionsGranted) {
-            val locationCallback = object : LocationCallback() {
-                override fun onLocationResult(locationResult: LocationResult) {
-                    val location = locationResult.lastLocation
-                    location?.let {
-                        val currentLatLng = LatLng(it.latitude, it.longitude)
-                        cameraPositionState.move(
-                            CameraUpdateFactory.newLatLngZoom(currentLatLng, 15f)
+            try {
+                fusedLocationClient.requestLocationUpdates(
+                    locationRequest,
+                    locationCallback,
+                    Looper.getMainLooper()
+                )
+            } catch (e: SecurityException) {
+                viewModel.showError("Error al iniciar seguimiento de ubicación")
+            }
+        }
+    }
+
+    // Efecto para mostrar alerta cuando estamos cerca de un punto de ruta
+    LaunchedEffect(isProximityAlertVisible, currentPointName) {
+        if (isProximityAlertVisible && currentPointName.isNotEmpty()) {
+            snackbarHostState.showSnackbar(
+                message = "Estás cerca de: $currentPointName",
+                duration = SnackbarDuration.Short
+            )
+        }
+    }
+
+    // Mostrar mensaje de error si existe
+    LaunchedEffect(errorMessage) {
+        errorMessage?.let { error ->
+            snackbarHostState.showSnackbar(
+                message = error,
+                duration = SnackbarDuration.Short
+            )
+        }
+    }
+
+    // Scaffold para organizar la UI con Snackbar
+    Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            // Mapa principal
+            if (locationPermissions.allPermissionsGranted) {
+                GoogleMap(
+                    modifier = Modifier.fillMaxSize(),
+                    cameraPositionState = cameraPositionState,
+                    properties = MapProperties(
+                        isMyLocationEnabled = true,
+                        mapType = MapType.NORMAL,
+                        isTrafficEnabled = true
+                    ),
+                    onMapLoaded = {
+                        // Cuando se carga el mapa, centramos en la ubicación actual si existe
+                        currentLocation?.let { location ->
+                            coroutineScope.launch {
+                                cameraPositionState.animate(
+                                    CameraUpdateFactory.newLatLngZoom(location, 15f)
+                                )
+                            }
+                        }
+                    }
+                ) {
+                    // Mostrar marcadores para los puntos de ruta
+                    routePoints.forEach { point ->
+                        Marker(
+                            state = MarkerState(position = point.location),
+                            title = point.name.ifEmpty { "Punto de ruta" }
                         )
                     }
-                    fusedLocationClient.removeLocationUpdates(this)
-                }
-            }
 
-            fusedLocationClient.requestLocationUpdates(
-                locationRequest,
-                locationCallback,
-                Looper.getMainLooper()
-            )
-        }
-    }
-
-    if (showPermissionDialog) {
-        AlertDialog(
-            onDismissRequest = { showPermissionDialog = false },
-            title = { Text("Permisos requeridos") },
-            text = {
-                Text("La ubicación es necesaria, habilita los permisos de ubicación en la configuración de la app.")
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    showPermissionDialog = false
-                    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                        data = Uri.fromParts("package", context.packageName, null)
+                    // Mostrar polyline de la ruta si existe
+                    selectedRoute?.polyline?.encodedPolyline?.let { polyline ->
+                        val routePath = decodePolyline(polyline)
+                        if (routePath.isNotEmpty()) {
+                            Polyline(
+                                points = routePath,
+                                color = Color.Blue,
+                                width = 8f
+                            )
+                        }
                     }
-                    context.startActivity(intent)
-                }) {
-                    Text("Abrir configuración")
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = { showPermissionDialog = false }) {
-                    Text("Cancelar")
+            } else {
+                // Mostrar mensaje si no hay permisos
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("Para usar esta función, necesitas conceder permisos de ubicación")
                 }
             }
-        )
-    }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        if (locationPermissions.allPermissionsGranted) {
-            GoogleMap(
-                modifier = Modifier.fillMaxSize(),
-                cameraPositionState = cameraPositionState,
-                properties = MapProperties(
-                    isMyLocationEnabled = true,
-                    mapType = MapType.NORMAL
+            // Indicador de carga
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .size(56.dp),
+                    strokeWidth = 4.dp
                 )
-            ) {
-                routePoints.forEach { point ->
-                    Marker(
-                        state = MarkerState(position = point),
-                        title = "Punto de ruta"
-                    )
-                }
+            }
 
-                selectedRoute?.overview_polyline?.points?.let { polyline ->
-                    val routePath = decodePolyline(polyline)
-                    Polyline(
-                        points = routePath,
-                        color = Color.Blue,
-                        width = 8f
-                    )
+            // Panel de información de ruta activa
+            if (selectedRoute != null) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f))
+                        .padding(16.dp)
+                        .align(Alignment.TopCenter)
+                ) {
+                    // Indicador de progreso
+                    if (routeProgress > 0) {
+                        LinearProgressIndicator(
+                            progress = { routeProgress },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(6.dp)
+                                .clip(MaterialTheme.shapes.small)
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+
+                    // Información del próximo punto
+                    if (nextPointName.isNotEmpty()) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Próximo punto:",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                )
+                                Text(
+                                    text = nextPointName,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+
+                            Column(
+                                horizontalAlignment = Alignment.End,
+                                modifier = Modifier.padding(start = 8.dp)
+                            ) {
+                                Text(
+                                    text = "Tiempo estimado:",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                    textAlign = TextAlign.End
+                                )
+
+                                // Mostrar tiempo estimado ajustado si está disponible, de lo contrario el tiempo original
+                                val timeToShow = if (adjustedTimeToNextPoint.isNotEmpty())
+                                    adjustedTimeToNextPoint else timeToNextPoint
+
+                                Text(
+                                    text = timeToShow,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+
+                        // Mostrar velocidad actual
+                        if (currentSpeed > 0) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.End,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Speed,
+                                    contentDescription = "Velocidad",
+                                    tint = MaterialTheme.colorScheme.secondary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "%.1f km/h".format(currentSpeed),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.secondary
+                                )
+                            }
+                        }
+                    } else if (routeProgress > 0.95f) {
+                        // Si estamos casi al final de la ruta
+                        Text(
+                            text = "¡Has llegado a tu destino!",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                        )
+                    }
                 }
             }
-        }
-        else {
-            Box(
+
+            // Menú flotante
+            FloatingMenu(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .align(Alignment.BottomEnd)
                     .padding(16.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("Permisos de ubicación no concedidos")
-            }
-        }
-        if (isLoading) {
-            CircularProgressIndicator(
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .size(56.dp),
-                strokeWidth = 4.dp
+                onOptionSelected = { option ->
+                    when (option) {
+                        1 -> {
+                            // Centrar en ubicación actual
+                            currentLocation?.let { location ->
+                                coroutineScope.launch {
+                                    cameraPositionState.animate(
+                                        CameraUpdateFactory.newLatLngZoom(location, 15f)
+                                    )
+                                }
+                            } ?: run {
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar("No hay ubicación disponible")
+                                }
+                            }
+                        }
+                        2 -> showBottomSheet = true
+                        3 -> viewModel.clearRoute()
+                        4 -> {
+                            // Ver todas las rutas (para implementación futura)
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Función en desarrollo")
+                            }
+                        }
+                    }
+                }
             )
-        }
 
-        FloatingMenu(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(16.dp),
-            onOptionSelected = { option ->
-                when (option) {
-                    1 -> {} // Otra acción
-                    2 -> showBottomSheet = true
-                    3 -> viewModel.clearRoute()
-                    4 -> {} // Otra acción
+            // Bottom sheet para planificación de ruta
+            if (showBottomSheet) {
+                ModalBottomSheet(
+                    onDismissRequest = { showBottomSheet = false },
+                    sheetState = modalBottomSheetState,
+                ) {
+                    RouteMenuBottomSheetContent(
+                        viewModel = viewModel,
+                        onDismiss = { showBottomSheet = false }
+                    )
                 }
             }
-        )
 
-        if (showBottomSheet) {
-            ModalBottomSheet(
-                onDismissRequest = { showBottomSheet = false },
-                sheetState = modalBottomSheetState,
-            ) {
-                RouteMenuBottomSheetContent(
-                    viewModel = viewModel,
-                    onDismiss = { showBottomSheet = false }
+            // Diálogo de permisos
+            if (showPermissionDialog) {
+                AlertDialog(
+                    onDismissRequest = { showPermissionDialog = false },
+                    title = { Text("Permisos requeridos") },
+                    text = {
+                        Text("La ubicación es necesaria para mostrar tu posición en el mapa y calcular rutas. Por favor, habilita los permisos de ubicación.")
+                    },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            showPermissionDialog = false
+                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                data = Uri.fromParts("package", context.packageName, null)
+                            }
+                            context.startActivity(intent)
+                        }) {
+                            Text("Abrir configuración")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showPermissionDialog = false }) {
+                            Text("Cancelar")
+                        }
+                    }
                 )
             }
         }
@@ -353,6 +537,30 @@ fun RouteMenuBottomSheetContent(
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
+            // Mostrar información de la ruta si está seleccionada
+            viewModel.selectedRoute?.let { route ->
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            text = "Ruta calculada",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Text(
+                            text = "Distancia: ${(route.distanceMeters / 1000.0).format(1)} km",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                            text = "Duración estimada: ${route.duration}",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+            }
+
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -361,10 +569,9 @@ fun RouteMenuBottomSheetContent(
                 itemsIndexed(viewModel.routePoints) { index, point ->
                     RoutePointItem(
                         point = point,
-                        onRemove = { viewModel.removeRoutePoint(point) }
+                        onRemove = { viewModel.removeRoutePoint(point.location) }
                     )
                 }
-
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -404,7 +611,8 @@ fun RouteMenuBottomSheetContent(
                                 LatLng(
                                     place.geometry.location.lat,
                                     place.geometry.location.lng
-                                )
+                                ),
+                                place.name
                             )
                             searchQuery.value = ""
                             searchResults.clear()
@@ -412,7 +620,7 @@ fun RouteMenuBottomSheetContent(
                     )
                 }
             }
-        } else if (searchQuery.value.isNotEmpty()) {
+        } else if (searchQuery.value.isNotEmpty() && searchResults.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -429,7 +637,7 @@ fun RouteMenuBottomSheetContent(
 
 @Composable
 fun RoutePointItem(
-    point: LatLng,
+    point: RoutePoint,
     onRemove: () -> Unit
 ) {
     Card(
@@ -450,12 +658,21 @@ fun RoutePointItem(
             Spacer(modifier = Modifier.width(12.dp))
 
             Column(modifier = Modifier.weight(1f)) {
+                if (point.name.isNotEmpty()) {
+                    Text(
+                        text = point.name,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
+
                 Text(
-                    text = "Lat: ${"%.6f".format(point.latitude)}",
+                    text = "Lat: ${"%.6f".format(point.location.latitude)}",
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Text(
-                    text = "Lng: ${"%.6f".format(point.longitude)}",
+                    text = "Lng: ${"%.6f".format(point.location.longitude)}",
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
@@ -493,3 +710,7 @@ fun SearchResultItem(
         }
     }
 }
+
+// Extensión para formatear números double
+fun Double.format(digits: Int): String = "%.${digits}f".format(this)
+

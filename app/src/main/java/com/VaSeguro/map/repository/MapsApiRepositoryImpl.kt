@@ -1,11 +1,18 @@
 package com.VaSeguro.map.repository
 
 import com.VaSeguro.map.data.ApiPlaceResult
+import com.VaSeguro.map.data.Destination
 import com.VaSeguro.map.data.Geometry
 import com.VaSeguro.map.data.Location
+import com.VaSeguro.map.data.LocationAddress
+import com.VaSeguro.map.data.Origin
 import com.VaSeguro.map.data.PlaceResult
 import com.VaSeguro.map.data.Route
+import com.VaSeguro.map.data.Waypoint
+import com.VaSeguro.map.request.RouteRequest
 import com.VaSeguro.map.services.MapsApiService
+import com.VaSeguro.map.services.RoutesApiService
+import com.google.android.gms.maps.model.LatLng
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
@@ -13,23 +20,7 @@ class MapsApiRepositoryImpl(
     private val mapsApiService: MapsApiService
 ) : MapsApiRepository {
 
-    override suspend fun getDirections(
-        origin: String,
-        destination: String,
-        waypoints: String?
-    ): List<Route> {
-        return try {
-            val response = mapsApiService.getDirections(origin, destination, waypoints)
-            if (response.isSuccessful) {
-                response.body()?.routes ?: emptyList()
-            } else {
-                emptyList() // O lanzar una excepción si prefieres
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            emptyList()
-        }
-    }
+
 
     override suspend fun searchPlaces(
         query: String
