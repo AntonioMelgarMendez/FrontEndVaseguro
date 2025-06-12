@@ -19,7 +19,25 @@ object RouteScreenNavigation
 object RouteMenuScreenNavigation
 @Serializable
 object ChatScreenNavigation
+@Serializable
+object BusDriverScreenNavigation
+@Serializable
+object ChildrenDriverScreenNavigation
+
 // Admin
+
+@Serializable
+object AccountScreenNavigation
+@Serializable
+object ChildrenAdminScreenNavigation
+@Serializable
+object RoutesAdminScreenNavigation
+@Serializable
+object StopsAdminScreenNavigation
+@Serializable
+object UsersAdminScreenNavigation
+@Serializable
+object  VehiclesAdminScreenNavigation
 @Serializable
 object HomeAdminScreenNavigation
 @Serializable

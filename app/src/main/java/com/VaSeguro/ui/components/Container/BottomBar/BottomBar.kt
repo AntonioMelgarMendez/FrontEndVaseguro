@@ -1,4 +1,4 @@
-package com.VaSeguro.ui.components.Container
+package com.VaSeguro.ui.components.Container.BottomBar
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Face
