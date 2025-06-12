@@ -1,5 +1,6 @@
 package com.VaSeguro
 
+import android.graphics.Color
 import android.os.Bundle
 import android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
 import androidx.activity.ComponentActivity
@@ -28,7 +29,8 @@ class MainActivity : ComponentActivity() {
         WindowCompat.getInsetsController(window, window.decorView)?.apply {
             systemBarsBehavior = BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
-
+        window.statusBarColor = android.graphics.Color.parseColor("#FEF7FF")
+        WindowCompat.getInsetsController(window, window.decorView)?.isAppearanceLightStatusBars = true
         setContent {
             VaSeguroTheme(darkTheme = false){
                 Surface(
@@ -42,7 +44,7 @@ class MainActivity : ComponentActivity() {
                             SplashScreen(navController)
                         }
                         composable("home") {
-                            GeneralScaffold()
+                            GeneralScaffold(navController)
                         }
                         composable("starting"){
                             StartingScreen(navController)

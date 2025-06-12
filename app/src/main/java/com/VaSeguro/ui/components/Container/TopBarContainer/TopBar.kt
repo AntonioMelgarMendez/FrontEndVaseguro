@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.VaSeguro.data.AppProvider
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -24,7 +25,7 @@ fun TopBar(
     title: String = "VaSeguro",
     showBackButton: Boolean = false,
     onBackClick: () -> Unit = {},
-    onLogout: () -> Unit = {}
+    navController: NavController
 ) {
     val context = LocalContext.current
     val viewModel: TopBarViewModel = viewModel(
@@ -37,7 +38,7 @@ fun TopBar(
     )
 
     TopAppBar(
-        title = { Text(title) },
+        title = {},
         navigationIcon = {
             if (showBackButton) {
                 IconButton(onClick = onBackClick) {
@@ -71,6 +72,9 @@ fun TopBar(
                 }
             }
         },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = Color.Transparent
+        )
     )
 
     if (viewModel.isConfigDialogOpen) {
@@ -119,7 +123,12 @@ fun TopBar(
                         Spacer(modifier = Modifier.height(8.dp))
                         ConfigOption("Cerrar Sesion", Icons.Filled.ExitToApp) {
                             viewModel.closeConfigDialog()
-                            viewModel.logout(context, onLogout)
+                            viewModel.logout(context) {
+                                // Navigate to login screen
+                                navController.navigate("login") {
+                                    popUpTo(0) { inclusive = true }
+                                }
+                            }
                         }
                     }
                 }

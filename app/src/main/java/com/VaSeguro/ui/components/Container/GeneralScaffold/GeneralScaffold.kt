@@ -1,26 +1,26 @@
 package com.VaSeguro.ui.components.Container.GeneralScaffold
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.VaSeguro.data.AppProvider
-
 import com.VaSeguro.ui.components.Container.BottomBar.BottomBar
 import com.VaSeguro.ui.components.Container.TopBarContainer.TopBar
 import com.VaSeguro.ui.navigations.*
 
 @Composable
-fun GeneralScaffold() {
+fun GeneralScaffold(navControllerx: NavController) {
     val context = LocalContext.current
     val viewModel: GeneralScaffoldViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
@@ -41,7 +41,7 @@ fun GeneralScaffold() {
     if (user == null) return
 
     val navItems = when (user?.role_id) {
-        2 -> listOf("Inicio", "Hijos", "Rutas", "Paradas", "Usuarios", "Vehiculos")
+        2 -> listOf("Inicio", "Hijos", "Rutas", "Paradas", "Usuarios", "Buses")
         3 -> listOf("Mapa", "Historial", "Bus", "Hijos")
         4 -> listOf("Mapa", "Mis Rutas", "Mi Bus", "Clientes")
         else -> listOf("Map")
@@ -60,29 +60,32 @@ fun GeneralScaffold() {
             "Inicio" -> navController.navigate(HomeAdminScreenNavigation)
             "Rutas" -> navController.navigate(RoutesAdminScreenNavigation)
             "Mis Rutas" -> navController.navigate(RouteScreenNavigation)
-            "Paradas" -> navController.navigate(StopsScreenNavigation)
+            "Paradas" -> navController.navigate(StopsAdminScreenNavigation)
             "Usuarios" -> navController.navigate(UsersAdminScreenNavigation)
-            "Vehiculos" -> navController.navigate(VehiclesAdminScreenNavigation)
+            "Buses" -> navController.navigate(VehiclesAdminScreenNavigation)
         }
     }
 
-    Scaffold(
-        topBar = { TopBar(title = title) },
-        bottomBar = {
+    Box(Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Box(modifier = Modifier.weight(1f)) {
+                MainNavigation(navController = navController)
+            }
             BottomBar(
                 selectedItem = selectedItem,
                 onItemSelected = { onItemSelected(it) },
                 navItems = navItems
             )
-        },
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize()
-        ) {
-            MainNavigation(navController = navController)
         }
+        TopBar(
+            title = title,
+            navController = navControllerx
+        )
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
     }
 }

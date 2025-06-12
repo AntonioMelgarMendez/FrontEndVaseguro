@@ -1,14 +1,12 @@
 package com.VaSeguro.ui.components.Container.BottomBar
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Face
-import androidx.compose.material.icons.filled.Place
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.runtime.Composable
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 
 @Composable
 fun BottomBar(
@@ -24,11 +22,16 @@ fun BottomBar(
                 icon = {
                     Icon(
                         imageVector = when (item) {
-                            "Map" -> Icons.Default.Place
-                            "History" -> Icons.Filled.Place
-                            "Bus" -> Icons.Default.Star
-                            "Children" -> Icons.Default.Face
-                            else -> Icons.Default.Star
+                            "Mapa", "Map" -> Icons.Filled.Map
+                            "Historial", "History" -> Icons.Filled.History
+                            "Bus", "Mi Bus" -> Icons.Filled.DirectionsBus
+                            "Hijos", "Clientes" -> Icons.Filled.Face
+                            "Inicio" -> Icons.Filled.Home
+                            "Rutas", "Mis Rutas" -> Icons.Filled.Route
+                            "Paradas" -> Icons.Filled.Place
+                            "Usuarios" -> Icons.Filled.People
+                            "Vehiculos" -> Icons.Filled.DirectionsCar
+                            else -> Icons.Filled.Star
                         },
                         contentDescription = item
                     )

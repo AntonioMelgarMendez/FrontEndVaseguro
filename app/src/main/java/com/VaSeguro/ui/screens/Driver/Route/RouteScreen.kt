@@ -217,14 +217,10 @@ fun RouteScreen(
         }
     }
 
-    // Scaffold para organizar la UI con Snackbar
-    Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
-    ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+
         ) {
             // Mapa principal
             if (locationPermissions.allPermissionsGranted) {
@@ -462,7 +458,7 @@ fun RouteScreen(
                 )
             }
         }
-    }
+
 }
 
 @Composable
