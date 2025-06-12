@@ -27,7 +27,7 @@ class VehicleViewModel(
   private val _drivers = MutableStateFlow(
     listOf(
       UserData(
-        id = "1",
+        id = "19",
         forename = "Ana",
         surname = "García",
         email = "ana.garcia@example.com",
@@ -37,7 +37,7 @@ class VehicleViewModel(
         gender = "F"
       ),
       UserData(
-        id = "2",
+        id = "20",
         forename = "Carlos",
         surname = "Mendoza",
         email = "carlos.mendoza@example.com",
@@ -47,7 +47,7 @@ class VehicleViewModel(
         gender = "M"
       ),
       UserData(
-        id = "3",
+        id = "21",
         forename = "Lucía",
         surname = "Pérez",
         email = "lucia.perez@example.com",
@@ -72,6 +72,7 @@ class VehicleViewModel(
   private fun loadVehicles() {
     viewModelScope.launch {
       vehicleRepository.getVehicles().collect { resource ->
+        Log.d("API_TEST", "Respuesta: $resource")
         when (resource) {
           is Resource.Success -> {
             _vehicles.value = resource.data
