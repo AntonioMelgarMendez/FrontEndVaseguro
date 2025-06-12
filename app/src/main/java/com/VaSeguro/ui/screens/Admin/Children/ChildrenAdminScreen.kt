@@ -40,6 +40,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.compose.rememberNavController
 import com.VaSeguro.ui.components.Container.ConfirmationDialog
 import com.VaSeguro.ui.components.Container.DropDownSelector
 import com.VaSeguro.ui.components.Container.ExpandableInfoCard
@@ -57,24 +58,10 @@ fun ChildrenAdminScreen(
     var showDialog by remember { mutableStateOf(false) }
     val children by viewModel.children.collectAsState()
     var showConfirmDialog by remember { mutableStateOf<String?>(null) }
+    val navController = rememberNavController()
 
-    Scaffold(
-        topBar = {
-            TopBar("Children")
-        },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                icon = { Icon(Icons.Default.Add, contentDescription = "Add") },
-                text = { Text("Add") },
-                onClick = { showDialog = true },
-                containerColor = Color(0xFF6C63FF),
-                contentColor = Color.White
-            )
-        }
-    ) { padding ->
         LazyColumn(
             modifier = Modifier
-                .padding(padding)
                 .padding(horizontal = 16.dp)
         ) {
             items(children) { child ->
@@ -117,7 +104,7 @@ fun ChildrenAdminScreen(
             )
         }
     }
-}
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

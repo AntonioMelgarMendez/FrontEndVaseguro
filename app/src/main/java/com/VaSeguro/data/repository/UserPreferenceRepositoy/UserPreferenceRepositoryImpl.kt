@@ -141,4 +141,25 @@ class UserPreferencesRepositoryImpl(
             preferences.remove(USER_CREATED_AT)
         }
     }
+    override suspend fun saveRegisteredUserData(
+        id: Int,
+        forenames: String,
+        email: String,
+        phone: String,
+        roleId: Int,
+        token: String
+    ) {
+        dataStore.edit { preferences ->
+            preferences[USER_ID] = id
+            preferences[USER_FORENAMES] = forenames
+            preferences[USER_EMAIL] = email
+            preferences[USER_PHONE] = phone
+            preferences[USER_ROLE] = roleId
+            preferences[AUTH_TOKEN] = token
+            preferences[USER_SURNAMES] = ""
+            preferences[USER_GENDER] = ""
+            preferences[USER_PROFILE_PIC] = ""
+            preferences[USER_CREATED_AT] = ""
+        }
+    }
 }

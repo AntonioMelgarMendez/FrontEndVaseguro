@@ -40,6 +40,7 @@ import com.VaSeguro.ui.components.Container.ExpandableInfoCard
 import com.VaSeguro.ui.screens.Admin.Stops.StopsAdminScreen
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextField
+import androidx.navigation.compose.rememberNavController
 import com.VaSeguro.ui.components.Container.TopBarContainer.TopBar
 import com.VaSeguro.ui.theme.PrimaryColor
 
@@ -51,21 +52,7 @@ fun RoutesAdminScreen(
     var showAddDialog by remember { mutableStateOf(false) }
     var routeToDelete by remember { mutableStateOf<String?>(null) }
 
-    Scaffold(
-        topBar = {
-            TopBar("Routes")
-        },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                icon = { Icon(Icons.Default.Add, contentDescription = "Add") },
-                text = { Text("Add") },
-                onClick = { showAddDialog = true },
-                containerColor = Color(0xFF6C63FF),
-                contentColor = Color.White
-            )
-        }
-    ) { padding ->
-        LazyColumn(modifier = Modifier.padding(padding).padding(horizontal = 16.dp)) {
+        LazyColumn() {
             items(routes) { route ->
                 ExpandableInfoCard(
                     id = route.id,
@@ -100,7 +87,7 @@ fun RoutesAdminScreen(
                 onDismiss = { routeToDelete = null }
             )
         }
-    }
+
 }
 
 @Composable

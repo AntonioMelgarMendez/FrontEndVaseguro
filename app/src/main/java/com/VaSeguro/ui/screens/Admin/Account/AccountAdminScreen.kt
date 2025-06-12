@@ -42,6 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.compose.rememberNavController
 import com.VaSeguro.data.model.User.UserData
 import com.VaSeguro.data.model.User.UserRole
 import com.VaSeguro.ui.components.Container.TopBarContainer.TopBar
@@ -50,9 +51,9 @@ import com.VaSeguro.ui.theme.PrimaryColor
 
 
 @Composable
-fun AccountAdminScreen(viewModel: AccountAdminScreenViewModel = viewModel()) {
+fun AccountAdminScreen(viewModel: AccountAdminScreenViewModel = viewModel(), ) {
     val account by viewModel.account.collectAsState()
-
+    val navController = rememberNavController()
     // Estado para mostrar el dialog de edición
     var showDialog by remember { mutableStateOf(false) }
 
@@ -67,16 +68,9 @@ fun AccountAdminScreen(viewModel: AccountAdminScreenViewModel = viewModel()) {
             }
         )
     }
-
-    Scaffold(
-        topBar = {
-            TopBar("Account")
-        }
-    ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
@@ -118,7 +112,7 @@ fun AccountAdminScreen(viewModel: AccountAdminScreenViewModel = viewModel()) {
                 Text("Editar Información")
             }
         }
-    }
+
 }
 
 @Composable

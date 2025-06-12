@@ -40,7 +40,8 @@ fun SignUpScreen(navController: NavController) {
             override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
                 val appProvider = AppProvider(context.applicationContext)
                 return RegisterViewModel(
-                    appProvider.provideAuthRepository()
+                    appProvider.provideAuthRepository(),
+                    appProvider.provideUserPreferences()
                 ) as T
             }
         }

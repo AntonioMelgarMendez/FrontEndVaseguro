@@ -24,10 +24,10 @@ class TopBarViewModel(
         isConfigDialogOpen = false
     }
 
-    fun logout(context: Context, onLogout: () -> Unit) {
+    fun logout(context: Context, onLogoutComplete: () -> Unit) {
         viewModelScope.launch {
             userPreferencesRepository.clearUserData()
-            onLogout()
+            onLogoutComplete()
         }
     }
 }

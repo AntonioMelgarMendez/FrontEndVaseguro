@@ -22,8 +22,16 @@ object ChatScreenNavigation
 object HomeAdminScreenNavigation
 @Serializable
 object StopsScreenNavigation
-//Auxiliary
 @Serializable
-object SplashScreenNavigation
+object AccountAdmminScreenNavigation
 @Serializable
-object HomeScreenNavigation
+object ChildrenAdminScreenNavigation
+@Serializable
+object RoutesAdminScreenNavigation
+@Serializable
+object StopsAdminScreenNavigation
+@Serializable
+object UsersAdminScreenNavigation
+@Serializable
+object VehicleAdminScreenNavigation
+

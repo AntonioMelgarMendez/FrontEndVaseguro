@@ -37,6 +37,7 @@ import com.VaSeguro.ui.components.Container.ConfirmationDialog
 import com.VaSeguro.ui.components.Container.DropDownSelector
 import com.VaSeguro.ui.components.Container.TopBarContainer.TopBar
 import com.VaSeguro.ui.screens.Admin.Users.UsersAdminScreen
+import androidx.navigation.compose.rememberNavController
 import com.VaSeguro.ui.theme.PrimaryColor
 
 @Composable
@@ -46,22 +47,9 @@ fun StopsAdminScreen(
     val stops by viewModel.stops.collectAsState()
     var showAddDialog by remember { mutableStateOf(false) }
     var stopToDelete by remember { mutableStateOf<String?>(null) }
+    val navController = rememberNavController()
 
-    Scaffold(
-        topBar = {
-            TopBar("Stops")
-        },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                icon = { Icon(Icons.Default.Add, contentDescription = "Add") },
-                text = { Text("Add") },
-                onClick = { showAddDialog = true },
-                containerColor = Color(0xFF6C63FF),
-                contentColor = Color.White
-            )
-        }
-    ) { padding ->
-        LazyColumn(modifier = Modifier.padding(padding).padding(horizontal = 16.dp)) {
+        LazyColumn() {
             items(stops) { stop: StopData ->
                 ExpandableInfoCard(
                     id = stop.id,
@@ -95,7 +83,7 @@ fun StopsAdminScreen(
                 onDismiss = { stopToDelete = null }
             )
         }
-    }
+
 }
 
 @Composable

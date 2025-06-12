@@ -17,4 +17,12 @@ interface UserPreferencesRepository {
     suspend fun saveUserData(user: UserResponse)
     suspend fun getUserData(): UserResponse?
     suspend fun clearUserData()
+    suspend fun saveRegisteredUserData(
+        id: Int,
+        forenames: String,
+        email: String,
+        phone: String,
+        roleId: Int,
+        token: String
+    )
 }

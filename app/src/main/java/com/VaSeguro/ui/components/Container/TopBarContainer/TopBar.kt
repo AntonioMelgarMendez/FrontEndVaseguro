@@ -16,11 +16,14 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.VaSeguro.data.AppProvider
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopBar(
+    navController: NavController,
+    NavControllerEX: NavController,
     title: String = "VaSeguro",
     showBackButton: Boolean = false,
     onBackClick: () -> Unit = {},
@@ -37,7 +40,7 @@ fun TopBar(
     )
 
     TopAppBar(
-        title = { Text(title) },
+        title = {"" },
         navigationIcon = {
             if (showBackButton) {
                 IconButton(onClick = onBackClick) {
@@ -118,8 +121,12 @@ fun TopBar(
                         ConfigOption("Lenguaje", Icons.Filled.Language)
                         Spacer(modifier = Modifier.height(8.dp))
                         ConfigOption("Cerrar Sesion", Icons.Filled.ExitToApp) {
-                            viewModel.closeConfigDialog()
-                            viewModel.logout(context, onLogout)
+                            viewModel.logout(context) {
+                                viewModel.closeConfigDialog()
+                                NavControllerEX.navigate("login") {
+                                    popUpTo(0)
+                                }
+                            }
                         }
                     }
                 }

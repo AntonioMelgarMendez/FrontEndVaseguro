@@ -4,12 +4,14 @@ package com.VaSeguro.ui.screens.Start.SignUp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.VaSeguro.data.repository.AuthRepository.AuthRepository
+import com.VaSeguro.data.repository.UserPreferenceRepository.UserPreferencesRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class RegisterViewModel(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val userPreferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
     private val _name = MutableStateFlow("")
     val name: StateFlow<String> = _name
@@ -49,24 +51,46 @@ class RegisterViewModel(
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
+
             try {
-                val forenames = _name.value.trim()
-                val surnames = ""
                 val response = authRepository.register(
-                    forenames = forenames,
-                    surnames = surnames,
+                    forenames = _name.value.trim(),
+                    surnames = "", 
                     email = _email.value,
                     password = _password.value,
                     phone_number = _phone.value,
                     gender = "M",
-                    role_id = 2
+                    role_id = 4
                 )
+
                 if (response.token.isNotBlank()) {
-                    onSuccess()
+                    userPreferencesRepository.saveRegisteredUserData(
+                        id = response.user.id,
+                        forenames = response.user.forenames,
+                        email = response.user.email,
+                        phone = response.user.phone_number ?: _phone.value,
+                        roleId = response.user.role_id,
+                        token = response.token
+                    )
+                    val savedUser = userPreferencesRepository.getUserData()
+                    if (savedUser != null) {
+                        onSuccess()
+                    } else {
+                        _error.value = "Error al guardar los datos del usuario"
+                        onError("Error al guardar los datos del usuario")
+                    }
                 } else {
-                    _error.value = "Registro fallido"
+                    _error.value = "Registro fallido: token vacío"
                     onError("Registro fallido")
                 }
+            } catch (e: retrofit2.HttpException) {
+                _error.value = when (e.code()) {
+                    400 -> "Datos inválidos"
+                    409 -> "El usuario ya existe"
+                    500 -> "Error del servidor"
+                    else -> "Error de conexión (${e.code()})"
+                }
+                onError(_error.value ?: "Error desconocido")
             } catch (e: Exception) {
                 _error.value = "Error: ${e.message ?: "Error desconocido"}"
                 onError(e.message ?: "Error desconocido")
