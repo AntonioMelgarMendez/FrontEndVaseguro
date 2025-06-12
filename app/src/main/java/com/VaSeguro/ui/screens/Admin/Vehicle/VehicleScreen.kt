@@ -1,5 +1,6 @@
 package com.VaSeguro.ui.screens.Admin.Vehicle
 
+import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -41,7 +42,9 @@ import com.VaSeguro.ui.components.AddVehicleDialog
 import com.VaSeguro.ui.components.VehicleCard
 
 @Composable
-fun VehicleScreen(viewModel: VehicleViewModel = viewModel()) {
+fun VehicleScreen(
+  viewModel: VehicleViewModel = viewModel(factory = VehicleViewModel.Factory)
+) {
   val vehicles = viewModel.vehicles.collectAsState().value
   val drivers = viewModel.drivers.collectAsState().value
   val expandedMap = viewModel.expandedMap.collectAsState().value
@@ -108,27 +111,34 @@ fun VehicleScreen(viewModel: VehicleViewModel = viewModel()) {
       Spacer(modifier = Modifier.height(8.dp))
 
       LazyColumn {
-        itemsIndexed(vehicles) { index, vehicle ->
-          val isFirst = index == 0
-          val isLast = index == vehicles.lastIndex
+        if (vehicles.isNotEmpty()) {
+          itemsIndexed(vehicles) { index, vehicle ->
+            val isFirst = index == 0
+            val isLast = index == vehicles.lastIndex
 
-          val cardShape = when {
-            isFirst && isLast -> RoundedCornerShape(16.dp)
-            isFirst -> RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
-            isLast -> RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp)
-            else -> RectangleShape
+            val cardShape = when {
+              isFirst && isLast -> RoundedCornerShape(16.dp)
+              isFirst -> RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+              isLast -> RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp)
+              else -> RectangleShape
+            }
+
+            VehicleCard(
+              vehicle = vehicle,
+              isExpanded = expandedMap[vehicle.id] ?: false,
+              isChecked = checkedMap[vehicle.id] ?: false,
+              onToggleExpand = { viewModel.toggleExpand(vehicle.id) },
+              onCheckedChange = { viewModel.setChecked(vehicle.id, it) },
+              onDeleteClick = { viewModel.deleteVehicle(vehicle.id) },
+              onEditClick = { println("Editar ${vehicle.plate}") },
+              shape = cardShape,
+              viewModel = viewModel
+            )
           }
-
-          VehicleCard(
-            vehicle = vehicle,
-            isExpanded = expandedMap[vehicle.id] ?: false,
-            isChecked = checkedMap[vehicle.id] ?: false,
-            onToggleExpand = { viewModel.toggleExpand(vehicle.id) },
-            onCheckedChange = { viewModel.setChecked(vehicle.id, it) },
-            onDeleteClick = { viewModel.deleteVehicle(vehicle.id) },
-            onEditClick = { println("Editar ${vehicle.plate}") },
-            shape = cardShape
-          )
+        } else {
+          item {
+            Text("No vehicles found")
+          }
         }
       }
     }
@@ -138,7 +148,7 @@ fun VehicleScreen(viewModel: VehicleViewModel = viewModel()) {
     AddVehicleDialog(
       onDismiss = { showDialog = false },
       onConfirm = { plate, model, driver ->
-        viewModel.addVehicle(plate, model, driver)
+        viewModel.addVehicle(plate, model, driver.id)
         showDialog = false
       },
       drivers = drivers,

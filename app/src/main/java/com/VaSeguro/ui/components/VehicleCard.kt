@@ -27,7 +27,12 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.VaSeguro.data.model.Vehicle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.VaSeguro.data.model.User.UserData
+import com.VaSeguro.data.model.User.UserRole
+import com.VaSeguro.data.model.Vehicle.Vehicle
+import com.VaSeguro.ui.screens.Admin.Vehicle.VehicleViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 
 @Composable
 fun VehicleCard(
@@ -38,7 +43,8 @@ fun VehicleCard(
   shape: Shape = RectangleShape,
   onEditClick: () -> Unit,
   onDeleteClick: () -> Unit,
-  onToggleExpand: () -> Unit
+  onToggleExpand: () -> Unit,
+  viewModel: VehicleViewModel
 ) {
   Card(
     modifier = Modifier
@@ -73,7 +79,9 @@ fun VehicleCard(
         if (isExpanded) {
           Spacer(modifier = Modifier.height(8.dp))
           TextRow("Model", vehicle.model)
-          TextRow("Driver", "${vehicle.driver_id.forename} ${vehicle.driver_id.surname}")
+
+          val driver = viewModel.getDriverForVehicle(vehicle.driver_id)
+          TextRow("Driver", "${driver?.forename ?: "Desconocido"} ${driver?.surname ?: ""}")
           TextRow("Created at", vehicle.created_at)
           Spacer(modifier = Modifier.height(4.dp))
           Row {

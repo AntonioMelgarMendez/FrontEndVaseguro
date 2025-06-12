@@ -37,48 +37,30 @@ import coil3.compose.AsyncImage
 import coil3.compose.AsyncImagePainter
 import coil3.request.ImageRequest
 import coil3.request.crossfade
-import com.VaSeguro.data.model.Route.Route
-import com.VaSeguro.data.model.Route.RouteStatus
-import com.VaSeguro.data.model.Route.RouteType
+import com.VaSeguro.data.model.Routes.RoutesData
+import com.VaSeguro.data.model.Routes.RouteStatus
+import com.VaSeguro.data.model.Routes.RouteType
 import com.VaSeguro.data.model.User.UserData
 import com.VaSeguro.data.model.User.UserRole
 import com.VaSeguro.ui.components.InfoBox
 import com.VaSeguro.ui.components.ScheduleChip
-import com.VaSeguro.data.model.Vehicle
+import com.VaSeguro.data.model.Vehicle.Vehicle
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 val routeList = listOf(
-    Route(
+    RoutesData(
         id = "1",
         name = "Route 1",
         start_date = "2023-10-01",
-        vehicle_id = Vehicle(
+        vehicule_id = "1",
+        status_id = RouteStatus(
             id = "1",
-            plate = "577955",
-            model = "Microbus 1",
-            driver_id = UserData(
-                id = "1",
-                forename = "John",
-                surname = "Doe",
-                email = "user@example.com",
-                phoneNumber = "123-456-7890",
-                profilePic = null,
-                role_id = UserRole(
-                    id = 1,
-                    role_name = "Driver",
-                ),
-                gender = "binary",
-            ),
-            created_at = "2023-10-01",
-        ),
-        route_status = RouteStatus(
-            id = 1,
             status = "Active",
         ),
-        route_type = RouteType(
-            id = 1,
+        type_id = RouteType(
+            id = "1",
             type = "Regular",
         ),
         end_date = "2023-10-31",
@@ -113,7 +95,7 @@ fun BusScreen() {
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = microBus.vehicle_id.model,
+                text = microBus.vehicule_id,
                 fontWeight = FontWeight.Light,
                 fontSize = 20.sp,
             )
@@ -149,13 +131,13 @@ fun BusScreen() {
             InfoBox(
                 icon = Icons.Default.Person,
                 title = "Driver:",
-                data = microBus.vehicle_id.driver_id.forename + " " + microBus.vehicle_id.driver_id.surname,
+                data = microBus.vehicule_id,
             )
             Spacer(modifier = Modifier.height(10.dp))
             InfoBox(
                 icon = Icons.Default.DirectionsCar,
                 title = "Plaque:",
-                data = microBus.vehicle_id.plate,
+                data = microBus.vehicule_id,
             )
             /*
             Spacer(modifier = Modifier.height(10.dp))
@@ -169,7 +151,7 @@ fun BusScreen() {
             InfoBox(
                 icon = Icons.Default.Phone,
                 title = "Phone number:",
-                data = microBus.vehicle_id.driver_id.phoneNumber,
+                data = microBus.vehicule_id,
             )
             Spacer(modifier = Modifier.height(10.dp))
             InfoBox(

@@ -1,82 +1,28 @@
 package com.VaSeguro.ui.screens.Admin.Vehicle
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.VaSeguro.MyApplication
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
-import com.VaSeguro.data.model.Vehicle
+import com.VaSeguro.data.model.Vehicle.Vehicle
 import com.VaSeguro.data.model.User.UserData
 import com.VaSeguro.data.model.User.UserRole
+import com.VaSeguro.data.model.Vehicle.VehicleCreateRequest
+import com.VaSeguro.data.repository.Vehicle.VehicleRepository
+import com.VaSeguro.helpers.Resource
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
-class VehicleViewModel : ViewModel() {
-  private val _vehicles = MutableStateFlow(
-    listOf(
-      Vehicle(
-        id = "12451",
-        plate = "PABC123",
-        model = "Toyota Yaris",
-        driver_id = UserData(
-          id = "u1",
-          forename = "Daniel",
-          surname = "Hawkins",
-          email = "daniel@example.com",
-          phoneNumber = "1234567890",
-          profilePic = null,
-          role_id = UserRole(1, "Driver"),
-          gender = "Male"
-        ),
-        created_at = "17/04/2025 14:01"
-      ),
-      Vehicle(
-        id = "12452",
-        plate = "XDEF456",
-        model = "Honda Civic",
-        driver_id = UserData(
-          id = "u2",
-          forename = "Maria",
-          surname = "Lopez",
-          email = "maria@example.com",
-          phoneNumber = "0987654321",
-          profilePic = null,
-          role_id = UserRole(1, "Driver"),
-          gender = "Female"
-        ),
-        created_at = "17/04/2025 15:00"
-      ),
-      Vehicle(
-        id = "12453",
-        plate = "JKL789",
-        model = "Ford Focus",
-        driver_id = UserData(
-          id = "u3",
-          forename = "Carlos",
-          surname = "Martinez",
-          email = "carlos@example.com",
-          phoneNumber = "1112223333",
-          profilePic = null,
-          role_id = UserRole(1, "Driver"),
-          gender = "Male"
-        ),
-        created_at = "18/04/2025 09:30"
-      ),
-      Vehicle(
-        id = "12454",
-        plate = "XYZ321",
-        model = "Chevrolet Spark",
-        driver_id = UserData(
-          id = "u4",
-          forename = "Ana",
-          surname = "Gonzalez",
-          email = "ana@example.com",
-          phoneNumber = "4445556666",
-          profilePic = null,
-          role_id = UserRole(1, "Driver"),
-          gender = "Female"
-        ),
-        created_at = "18/04/2025 10:15"
-      )
-    )
-  )
+class VehicleViewModel(
+  private val vehicleRepository: VehicleRepository,
+) : ViewModel() {
 
   private val _drivers = MutableStateFlow(
     listOf(
@@ -113,6 +59,34 @@ class VehicleViewModel : ViewModel() {
     )
   )
 
+  fun getDriverForVehicle(driverId: String): UserData? {
+    return _drivers.value.firstOrNull { it.id == driverId }
+  }
+
+  private val _vehicles = MutableStateFlow<List<Vehicle>>(emptyList())
+
+  init {
+    loadVehicles()
+  }
+
+  private fun loadVehicles() {
+    viewModelScope.launch {
+      vehicleRepository.getVehicles().collect { resource ->
+        when (resource) {
+          is Resource.Success -> {
+            _vehicles.value = resource.data
+          }
+          is Resource.Error -> {
+            println("Error al cargar vehículos: ${resource.message}")
+          }
+          Resource.Loading -> {
+
+          }
+        }
+      }
+    }
+  }
+
   val drivers: StateFlow<List<UserData>> = _drivers
   val vehicles: StateFlow<List<Vehicle>> = _vehicles
 
@@ -139,25 +113,72 @@ class VehicleViewModel : ViewModel() {
   }
 
   fun deleteVehicle(vehicleId: String) {
-    _vehicles.update { list ->
-      list.filterNot { it.id == vehicleId }
+    viewModelScope.launch {
+      vehicleRepository.deleteVehicle(vehicleId).collectLatest { resource ->
+        when (resource) {
+          is Resource.Success -> {
+            _vehicles.update { list ->
+              list.filterNot { it.id == vehicleId }
+            }
+            _expandedMap.update { it - vehicleId }
+            _checkedMap.update { it - vehicleId }
+            loadVehicles()
+          }
+          is Resource.Error -> {
+            println("Error al eliminar vehículo: ${resource.message}")
+          }
+          Resource.Loading -> {
+
+          }
+        }
+      }
     }
-    _expandedMap.update { it - vehicleId }
-    _checkedMap.update { it - vehicleId }
   }
 
-  fun addVehicle(plate: String, model: String, driver: UserData) {
-    val randomId = (10000..99999).random().toString()
-    val now = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))
+  fun addVehicle(plate: String, model: String, driverId: String) {
+    viewModelScope.launch {
+      vehicleRepository.createVehicle(
+        VehicleCreateRequest(
+          plate = plate,
+          model = model,
+          brand = "Toyota",
+          driverId = driverId,
+          year = "2023",
+          capacity = "5",
+          color = "Gris",
+          carPic = ""
+        )
+      ).collectLatest { resource ->
+        when (resource) {
+          is Resource.Success -> {
+            resource.data?.let {
+              _vehicles.update { current -> current + it }
+              Log.d("VehicleViewModel", "Vehicle added: $plate, Model: $model, Driver ID: $driverId")
+            }
+            loadVehicles()
+          }
+          is Resource.Error -> {
+            println("Error al crear vehículo: ${resource.message}")
+          }
+          else -> {}
+        }
+      }
+    }
+  }
 
-    val vehicle = Vehicle(
-      id = randomId,
-      plate = plate,
-      model = model,
-      driver_id = driver,
-      created_at = now
-    )
-
-    _vehicles.update { it + vehicle }
+  companion object {
+    val Factory: ViewModelProvider.Factory = viewModelFactory {
+      initializer {
+        try {
+          val application = this[APPLICATION_KEY] as MyApplication
+          VehicleViewModel(
+            application.appProvider.provideVehicleRepository()
+          )
+        } catch (e: Exception) {
+          e.printStackTrace()
+          throw e
+        }
+      }
+    }
   }
 }

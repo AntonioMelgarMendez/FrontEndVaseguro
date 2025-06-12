@@ -20,6 +20,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.VaSeguro.ui.components.Container.GeneralScaffold
+import com.VaSeguro.ui.screens.Admin.Vehicle.VehicleScreen
 import com.VaSeguro.ui.screens.Start.Code.CodeScreen
 import com.VaSeguro.ui.screens.Start.Login.LoginScreen
 import com.VaSeguro.ui.screens.Start.SignUp.SignUpScreen
@@ -38,36 +39,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             VaSeguroTheme(darkTheme = false){
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    val navController = rememberNavController()
-
-                    NavHost(navController = navController, startDestination = "code") {
-                        composable("splash") {
-                            SplashScreen(navController)
-                        }
-                        composable("home") {
-                            GeneralScaffold()
-                        }
-                        composable("starting"){
-                            StartingScreen(navController)
-                        }
-                        composable("login"){
-                            LoginScreen(navController)
-                        }
-                        composable("signup"){
-                            SignUpScreen(navController)
-                        }
-                        composable("code"){
-                            CodeScreen(navController)
-                        }
-                        composable("message"){
-
-                        }
-                    }
-                }
+                VehicleScreen()
             }
         }
     }
