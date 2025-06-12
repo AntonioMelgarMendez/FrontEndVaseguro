@@ -18,6 +18,14 @@ import com.VaSeguro.data.AppProvider
 import com.VaSeguro.ui.components.Container.BottomBar.BottomBar
 import com.VaSeguro.ui.components.Container.TopBarContainer.TopBar
 import com.VaSeguro.ui.navigations.*
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.pager.PagerState
+import androidx.compose.foundation.layout.*
+import androidx.compose.runtime.*
+
+import kotlinx.coroutines.launch
+
 
 @Composable
 fun GeneralScaffold(navControllerx: NavController) {

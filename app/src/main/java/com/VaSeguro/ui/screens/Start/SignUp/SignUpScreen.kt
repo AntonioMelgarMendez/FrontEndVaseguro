@@ -98,8 +98,7 @@ fun SignUpScreen(navController: NavController) {
                         unfocusedContainerColor = Color(0xFFE3E3E3),
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
-                        focusedTextColor = Color(0xFFD1D1D1),
-                        unfocusedTextColor = Color(0xFFD1D1D1)
+
                     )
                 )
 
@@ -125,8 +124,7 @@ fun SignUpScreen(navController: NavController) {
                         unfocusedContainerColor = Color(0xFFE3E3E3),
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
-                        focusedTextColor = Color(0xFFD1D1D1),
-                        unfocusedTextColor = Color(0xFFD1D1D1)
+
                     )
                 )
 
@@ -157,8 +155,7 @@ fun SignUpScreen(navController: NavController) {
                         unfocusedContainerColor = Color(0xFFE3E3E3),
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
-                        focusedTextColor = Color(0xFFD1D1D1),
-                        unfocusedTextColor = Color(0xFFD1D1D1)
+
                     )
                 )
 
@@ -188,8 +185,7 @@ fun SignUpScreen(navController: NavController) {
                         unfocusedContainerColor = Color(0xFFE3E3E3),
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
-                        focusedTextColor = Color(0xFFD1D1D1),
-                        unfocusedTextColor = Color(0xFFD1D1D1)
+
                     )
                 )
 
