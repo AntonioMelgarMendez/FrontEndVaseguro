@@ -94,10 +94,11 @@ fun SignUpScreen(navController: NavController) {
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color(0xFFF3F3F3),
-                        unfocusedContainerColor = Color(0xFFF3F3F3),
+                        focusedContainerColor = Color(0xFFE3E3E3),
+                        unfocusedContainerColor = Color(0xFFE3E3E3),
                         focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent
+                        unfocusedIndicatorColor = Color.Transparent,
+
                     )
                 )
 
@@ -119,10 +120,11 @@ fun SignUpScreen(navController: NavController) {
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color(0xFFF3F3F3),
-                        unfocusedContainerColor = Color(0xFFF3F3F3),
+                        focusedContainerColor = Color(0xFFE3E3E3),
+                        unfocusedContainerColor = Color(0xFFE3E3E3),
                         focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent
+                        unfocusedIndicatorColor = Color.Transparent,
+
                     )
                 )
 
@@ -149,10 +151,11 @@ fun SignUpScreen(navController: NavController) {
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color(0xFFF3F3F3),
-                        unfocusedContainerColor = Color(0xFFF3F3F3),
+                        focusedContainerColor = Color(0xFFE3E3E3),
+                        unfocusedContainerColor = Color(0xFFE3E3E3),
                         focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent
+                        unfocusedIndicatorColor = Color.Transparent,
+
                     )
                 )
 
@@ -178,10 +181,11 @@ fun SignUpScreen(navController: NavController) {
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color(0xFFF3F3F3),
-                        unfocusedContainerColor = Color(0xFFF3F3F3),
+                        focusedContainerColor = Color(0xFFE3E3E3),
+                        unfocusedContainerColor = Color(0xFFE3E3E3),
                         focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent
+                        unfocusedIndicatorColor = Color.Transparent,
+
                     )
                 )
 
@@ -246,20 +250,7 @@ fun SignUpScreen(navController: NavController) {
                 }
 
                 TextButton(
-                    onClick = {
-                        val isPhoneValid = phoneNumber.all { it.isDigit() }
-                        val isEmailValid = Pattern.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$", email)
-                        phoneValid = isPhoneValid
-                        emailValid = isEmailValid
-
-                        if (isPhoneValid && isEmailValid) {
-                            viewModel.register(
-                                onSuccess = { navController.navigate("home") },
-                                onError = {}
-                            )
-                        }
-                    }
-
+                    onClick = { navController.navigate("login") }
                 ) {
                     Text(
                         buildAnnotatedString {

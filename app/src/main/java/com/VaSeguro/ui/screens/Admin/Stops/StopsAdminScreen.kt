@@ -47,21 +47,7 @@ fun StopsAdminScreen(
     var showAddDialog by remember { mutableStateOf(false) }
     var stopToDelete by remember { mutableStateOf<String?>(null) }
 
-    Scaffold(
-        topBar = {
-            TopBar("Stops")
-        },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                icon = { Icon(Icons.Default.Add, contentDescription = "Add") },
-                text = { Text("Add") },
-                onClick = { showAddDialog = true },
-                containerColor = Color(0xFF6C63FF),
-                contentColor = Color.White
-            )
-        }
-    ) { padding ->
-        LazyColumn(modifier = Modifier.padding(padding).padding(horizontal = 16.dp)) {
+        LazyColumn() {
             items(stops) { stop: StopData ->
                 ExpandableInfoCard(
                     id = stop.id,
@@ -95,7 +81,7 @@ fun StopsAdminScreen(
                 onDismiss = { stopToDelete = null }
             )
         }
-    }
+
 }
 
 @Composable

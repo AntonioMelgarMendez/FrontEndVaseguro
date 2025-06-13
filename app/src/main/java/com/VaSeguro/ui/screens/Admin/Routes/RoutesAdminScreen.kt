@@ -51,21 +51,7 @@ fun RoutesAdminScreen(
     var showAddDialog by remember { mutableStateOf(false) }
     var routeToDelete by remember { mutableStateOf<String?>(null) }
 
-    Scaffold(
-        topBar = {
-            TopBar("Routes")
-        },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                icon = { Icon(Icons.Default.Add, contentDescription = "Add") },
-                text = { Text("Add") },
-                onClick = { showAddDialog = true },
-                containerColor = Color(0xFF6C63FF),
-                contentColor = Color.White
-            )
-        }
-    ) { padding ->
-        LazyColumn(modifier = Modifier.padding(padding).padding(horizontal = 16.dp)) {
+        LazyColumn() {
             items(routes) { route ->
                 ExpandableInfoCard(
                     id = route.id,
@@ -100,7 +86,7 @@ fun RoutesAdminScreen(
                 onDismiss = { routeToDelete = null }
             )
         }
-    }
+
 }
 
 @Composable

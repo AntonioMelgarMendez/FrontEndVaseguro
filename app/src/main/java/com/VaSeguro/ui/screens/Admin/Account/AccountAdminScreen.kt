@@ -67,16 +67,9 @@ fun AccountAdminScreen(viewModel: AccountAdminScreenViewModel = viewModel()) {
             }
         )
     }
-
-    Scaffold(
-        topBar = {
-            TopBar("Account")
-        }
-    ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
@@ -118,7 +111,6 @@ fun AccountAdminScreen(viewModel: AccountAdminScreenViewModel = viewModel()) {
                 Text("Editar Información")
             }
         }
-    }
 }
 
 @Composable

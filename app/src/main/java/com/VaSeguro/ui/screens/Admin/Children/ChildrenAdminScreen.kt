@@ -58,23 +58,8 @@ fun ChildrenAdminScreen(
     val children by viewModel.children.collectAsState()
     var showConfirmDialog by remember { mutableStateOf<String?>(null) }
 
-    Scaffold(
-        topBar = {
-            TopBar("Children")
-        },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                icon = { Icon(Icons.Default.Add, contentDescription = "Add") },
-                text = { Text("Add") },
-                onClick = { showDialog = true },
-                containerColor = Color(0xFF6C63FF),
-                contentColor = Color.White
-            )
-        }
-    ) { padding ->
         LazyColumn(
             modifier = Modifier
-                .padding(padding)
                 .padding(horizontal = 16.dp)
         ) {
             items(children) { child ->
@@ -116,7 +101,7 @@ fun ChildrenAdminScreen(
                 onSave = { showDialog = false }
             )
         }
-    }
+
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

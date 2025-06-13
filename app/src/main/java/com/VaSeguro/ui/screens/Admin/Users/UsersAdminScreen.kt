@@ -45,24 +45,8 @@ fun UsersAdminScreen(
     var showDialog by remember { mutableStateOf(false) }
     val users by viewModel.users.collectAsState()
     var showConfirmDialog by remember { mutableStateOf<String?>(null) }
-
-    Scaffold(
-        topBar = {
-            TopBar("Users")
-        },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                icon = { Icon(Icons.Default.Add, contentDescription = "Add User") },
-                text = { Text("Add") },
-                onClick = { showDialog = true },
-                containerColor = Color(0xFF6C63FF),
-                contentColor = Color.White
-            )
-        }
-    ) { padding ->
         LazyColumn(
             modifier = Modifier
-                .padding(padding)
                 .padding(horizontal = 16.dp)
         ) {
             items(users) { user ->
@@ -99,7 +83,7 @@ fun UsersAdminScreen(
                 onSave = { showDialog = false }
             )
         }
-    }
+
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
