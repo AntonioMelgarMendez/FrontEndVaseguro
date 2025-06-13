@@ -26,7 +26,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.VaSeguro.ui.components.Container.ExpandableInfoCard
-import com.VaSeguro.ui.components.Container.TopBar
+
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import com.VaSeguro.ui.components.Container.ConfirmationDialog
 import com.VaSeguro.ui.components.Container.DropDownSelector
+import com.VaSeguro.ui.components.Container.TopBarContainer.TopBar
 import com.VaSeguro.ui.theme.PrimaryColor
 
 
@@ -44,24 +45,8 @@ fun UsersAdminScreen(
     var showDialog by remember { mutableStateOf(false) }
     val users by viewModel.users.collectAsState()
     var showConfirmDialog by remember { mutableStateOf<String?>(null) }
-
-    Scaffold(
-        topBar = {
-            TopBar("Users")
-        },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                icon = { Icon(Icons.Default.Add, contentDescription = "Add User") },
-                text = { Text("Add") },
-                onClick = { showDialog = true },
-                containerColor = Color(0xFF6C63FF),
-                contentColor = Color.White
-            )
-        }
-    ) { padding ->
         LazyColumn(
             modifier = Modifier
-                .padding(padding)
                 .padding(horizontal = 16.dp)
         ) {
             items(users) { user ->
@@ -98,7 +83,7 @@ fun UsersAdminScreen(
                 onSave = { showDialog = false }
             )
         }
-    }
+
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

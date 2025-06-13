@@ -5,6 +5,7 @@ import android.R.attr.title
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
@@ -20,17 +21,17 @@ import androidx.compose.runtime.Composable
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopBar(
-    title: String,
+    title: String = "VaSeguro",
     showBackButton: Boolean = false,
     onBackClick: () -> Unit = {}
 ) {
     TopAppBar(
-        title = {Text(title)},
+        title = {},
         navigationIcon = {
             if (showBackButton) {
                 IconButton(onClick = onBackClick) {
                     Icon(
-                        imageVector = Icons.Filled.ArrowBack,
+                        imageVector = Icons.Filled.ArrowBackIosNew,
                         contentDescription = "Back"
                     )
                 }

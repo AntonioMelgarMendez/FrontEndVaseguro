@@ -27,7 +27,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.VaSeguro.ui.components.Container.TopBar
+
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -44,6 +44,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import com.VaSeguro.data.model.User.UserData
 import com.VaSeguro.data.model.User.UserRole
+import com.VaSeguro.ui.components.Container.TopBarContainer.TopBar
 import com.VaSeguro.ui.theme.NeutralColor
 import com.VaSeguro.ui.theme.PrimaryColor
 
@@ -66,16 +67,9 @@ fun AccountAdminScreen(viewModel: AccountAdminScreenViewModel = viewModel()) {
             }
         )
     }
-
-    Scaffold(
-        topBar = {
-            TopBar("Account")
-        }
-    ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
@@ -117,7 +111,6 @@ fun AccountAdminScreen(viewModel: AccountAdminScreenViewModel = viewModel()) {
                 Text("Editar Información")
             }
         }
-    }
 }
 
 @Composable
