@@ -96,9 +96,6 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation(libs.androidx.material3)
-    implementation("com.google.accompanist:accompanist-pager:0.34.0")
-
-
-
+    implementation ("com.google.accompanist:accompanist-navigation-animation:0.34.0")
     ksp(libs.room.compiler)
 }
