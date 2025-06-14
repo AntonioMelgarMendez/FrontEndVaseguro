@@ -45,7 +45,7 @@ import coil3.compose.rememberAsyncImagePainter
 import com.VaSeguro.data.AppProvider
 import java.io.File
 import java.util.regex.Pattern
-
+import com.VaSeguro.R
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateAccountDriverScreen(navController: NavController) {
@@ -359,7 +359,15 @@ fun CreateAccountDriverScreen(navController: NavController) {
                     onClick = {
                         viewModel.register(
                             context = context,
-                            onSuccess = { navController.navigate("home") },
+                            onSuccess = {         navController.navigate(
+                                "content/" +
+                                        Uri.encode("¡Registro exitoso!") + "/" +
+                                        Uri.encode("Tu cuenta ha sido creada correctamente. Debes esperar a que sea verificada por nuestro grupo de expertos. Se te enviara un correo de verificacion ") + "/" +
+                                        R.drawable.aprove + "/" +
+                                        Uri.encode("Continuar")+"/"+
+                                        Uri.encode("login")
+
+                            )},
                             onError = { }
                         )
                     },
