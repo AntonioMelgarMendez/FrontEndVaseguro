@@ -25,6 +25,8 @@ import com.VaSeguro.ui.screens.Start.SplashScren.SplashScreen
 import com.VaSeguro.ui.theme.VaSeguroTheme
 import com.google.accompanist.navigation.animation.AnimatedNavHost
 import androidx.core.graphics.toColorInt
+import com.VaSeguro.ui.Aux.ContentScreen
+import com.VaSeguro.ui.screens.Start.CreateAccountDriver.CreateAccountDriverScreen
 
 class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalAnimationApi::class)
@@ -68,8 +70,27 @@ class MainActivity : ComponentActivity() {
                         composable("signup") {
                             SignUpScreen(navController)
                         }
+                        composable("driver_registration"){
+                            CreateAccountDriverScreen(navController)
+                        }
                         composable("code") { }
-                        composable("message") { }
+                        composable(
+                            route = "content/{message}/{description}/{imageRes}/{buttonText}/{destination}",
+                        ) { backStackEntry ->
+                            val message = backStackEntry.arguments?.getString("message") ?: ""
+                            val description = backStackEntry.arguments?.getString("description") ?: ""
+                            val imageRes = backStackEntry.arguments?.getString("imageRes")?.toIntOrNull() ?: R.drawable.ic_launcher_foreground
+                            val buttonText = backStackEntry.arguments?.getString("buttonText") ?: "Continue"
+                            val destination = backStackEntry.arguments?.getString("destination") ?: "home"
+                            ContentScreen(
+                                message = message,
+                                description = description,
+                                imageRes = imageRes,
+                                buttonText = buttonText,
+                                navController = navController,
+                                destination = destination
+                            )
+                        }
                     }
                 }
             }

@@ -40,7 +40,8 @@ fun SignUpScreen(navController: NavController) {
             override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
                 val appProvider = AppProvider(context.applicationContext)
                 return RegisterViewModel(
-                    appProvider.provideAuthRepository()
+                    appProvider.provideAuthRepository(),
+                    appProvider.provideUserPreferences()
                 ) as T
             }
         }
@@ -248,6 +249,14 @@ fun SignUpScreen(navController: NavController) {
                         modifier = Modifier.size(32.dp)
                     )
                 }
+                Text(
+                    text = "¿Quieres ser conductor?",
+                    color = Color(0xFF6C63FF),
+                    fontSize = 12.sp,
+                    modifier = Modifier
+                        .padding(top = 8.dp)
+                        .clickable { navController.navigate("driver_registration") }
+                )
 
                 TextButton(
                     onClick = { navController.navigate("login") }

@@ -1,7 +1,5 @@
-package com.VaSeguro.data.remote.Login
+package com.VaSeguro.data.remote.Auth
 
-
-import java.util.Date
 
 data class UserResponse(
     val id: Int,
