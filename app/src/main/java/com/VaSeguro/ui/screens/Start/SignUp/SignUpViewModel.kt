@@ -1,15 +1,16 @@
-
 package com.VaSeguro.ui.screens.Start.SignUp
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.VaSeguro.data.repository.AuthRepository.AuthRepository
+import com.VaSeguro.data.repository.UserPreferenceRepository.UserPreferencesRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class RegisterViewModel(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val userPreferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
     private val _name = MutableStateFlow("")
     val name: StateFlow<String> = _name
@@ -29,21 +30,10 @@ class RegisterViewModel(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
 
-    fun onNameChange(newName: String) {
-        _name.value = newName
-    }
-
-    fun onEmailChange(newEmail: String) {
-        _email.value = newEmail
-    }
-
-    fun onPhoneChange(newPhone: String) {
-        _phone.value = newPhone
-    }
-
-    fun onPasswordChange(newPassword: String) {
-        _password.value = newPassword
-    }
+    fun onNameChange(newName: String) { _name.value = newName }
+    fun onEmailChange(newEmail: String) { _email.value = newEmail }
+    fun onPhoneChange(newPhone: String) { _phone.value = newPhone }
+    fun onPasswordChange(newPassword: String) { _password.value = newPassword }
 
     fun register(onSuccess: () -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
@@ -59,9 +49,12 @@ class RegisterViewModel(
                     password = _password.value,
                     phone_number = _phone.value,
                     gender = "M",
-                    role_id = 2
+                    role_id = 3,
+                    profile_pic = null
                 )
                 if (response.token.isNotBlank()) {
+                    userPreferencesRepository.saveAuthToken(response.token)
+                    userPreferencesRepository.saveUserData(response.user)
                     onSuccess()
                 } else {
                     _error.value = "Registro fallido"
