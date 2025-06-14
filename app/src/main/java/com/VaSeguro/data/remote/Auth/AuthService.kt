@@ -1,12 +1,14 @@
-package com.VaSeguro.data.remote.Login
+package com.VaSeguro.data.remote.Auth
 
 
-import com.VaSeguro.data.remote.Login.Login.LoginRequest
-import com.VaSeguro.data.remote.Login.Login.LoginResponse
-import com.VaSeguro.data.remote.Login.Register.RegisterRequest
+import com.VaSeguro.data.remote.Auth.Login.LoginRequest
+import com.VaSeguro.data.remote.Auth.Login.LoginResponse
+import com.VaSeguro.data.remote.Auth.Register.RegisterRequest
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import retrofit2.http.Body
+import retrofit2.http.GET
+import retrofit2.http.Header
 import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.Part
@@ -32,6 +34,8 @@ interface AuthService {
 
     @POST("users/logout")
     suspend fun logout(): Unit
-
-
+    @GET("users/")
+    suspend fun getAllUsers(@Header("Authorization") token: String): List<UserResponse>
+    @GET("register-codes/users")
+    suspend fun getAllUsersWithCodes(@Header("Authorization") token: String): List<UserResponse>
 }

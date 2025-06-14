@@ -1,7 +1,8 @@
 
 package com.VaSeguro.data.repository.AuthRepository
 
-import com.VaSeguro.data.remote.Login.Login.LoginResponse
+import com.VaSeguro.data.remote.Auth.Login.LoginResponse
+import com.VaSeguro.data.remote.Auth.UserResponse
 import okhttp3.MultipartBody
 
 interface AuthRepository {
@@ -30,5 +31,7 @@ interface AuthRepository {
     ): LoginResponse
     suspend fun  logout(): Boolean
 
+    suspend fun getAllUsers(token: String): List<UserResponse>
 
+    suspend fun getAllUsersWithCodes(token: String): List<UserResponse>
 }

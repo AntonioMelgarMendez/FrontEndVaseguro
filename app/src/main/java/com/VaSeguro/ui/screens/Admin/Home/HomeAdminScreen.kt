@@ -1,7 +1,11 @@
 package com.VaSeguro.ui.screens.Admin.Home
 
-import androidx.compose.animation.*
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandIn
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -16,35 +20,64 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.VaSeguro.R
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
+import coil3.compose.rememberAsyncImagePainter
+import com.VaSeguro.data.AppProvider
 import com.VaSeguro.data.model.Aux.InfoCardData
-import com.VaSeguro.data.model.Aux.UsuarioSolicitud
 
 @Composable
 fun HomeAdminScreen() {
-    val totalUsuarios = 42
-    val totalConductores = 15
-    val totalHijos = 8
-    val totalDrivers = 19
-    val solicitudes = listOf(
-        UsuarioSolicitud("Juan Pérez", "juan@email.com", R.drawable.ic_launcher_foreground),
-        UsuarioSolicitud("Ana Gómez", "ana@email.com", R.drawable.ic_launcher_foreground),
-        UsuarioSolicitud("Carlos Ruiz", "carlos@email.com", R.drawable.ic_launcher_foreground)
+    val context = LocalContext.current
+    val viewModel: HomeAdminViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                val appProvider = AppProvider(context.applicationContext)
+                return HomeAdminViewModel(
+                    appProvider.provideAuthRepository(),
+                    appProvider.provideUserPreferences()
+                ) as T
+            }
+        }
     )
-
+    LaunchedEffect(Unit) {
+        viewModel.fetchUsers()
+        viewModel.fetchUsersWithCodes()
+    }
+    val pending by viewModel.pendingUsers.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val totalUsuarios by viewModel.totalUsers.collectAsState()
+    val totalConductores by viewModel.totalDrivers.collectAsState()
+    val totalHijos by viewModel.totalChildren.collectAsState()
+    val totalPadres by viewModel.totalParents.collectAsState()
+    val animatedTotalUsuarios by animateIntAsState(
+        targetValue = totalUsuarios,
+        animationSpec = tween(durationMillis = 800)
+    )
+    val animatedTotalConductores by animateIntAsState(
+        targetValue = totalConductores,
+        animationSpec = tween(durationMillis = 800)
+    )
+    val animatedTotalHijos by animateIntAsState(
+        targetValue = totalHijos,
+        animationSpec = tween(durationMillis = 800)
+    )
+    val animatedTotalPadres by animateIntAsState(
+        targetValue = totalPadres,
+        animationSpec = tween(durationMillis = 800)
+    )
     val cards = listOf(
-        InfoCardData(Icons.Filled.Group, "Usuarios", totalUsuarios, Color(0xFFD1C4E9)),
-        InfoCardData(Icons.Filled.DirectionsBus, "Conductores", totalConductores, Color(0xFFB2DFDB)),
-        InfoCardData(Icons.Filled.Person, "Hijos", totalHijos, Color(0xFFFFF9C4)),
-        InfoCardData(Icons.Filled.PersonAdd, "Drivers", totalDrivers, Color(0xFFFFCCBC))
+        InfoCardData(Icons.Filled.Group, "Usuarios totales", animatedTotalUsuarios, Color(0xFFD1C4E9)),
+        InfoCardData(Icons.Filled.DirectionsBus, "Conductores", animatedTotalConductores, Color(0xFFB2DFDB)),
+        InfoCardData(Icons.Filled.Person, "Hijos", animatedTotalHijos, Color(0xFFFFF9C4)),
+        InfoCardData(Icons.Filled.Person, "Padres", animatedTotalPadres, Color(0xFFFFCCBC))
     )
 
     var showIcons by remember { mutableStateOf(false) }
@@ -55,13 +88,11 @@ fun HomeAdminScreen() {
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background),
         contentAlignment = Alignment.Center
-
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth(0.95f)
                 .wrapContentHeight(),
-
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -119,71 +150,106 @@ fun HomeAdminScreen() {
 
             Text(
                 text = "Solicitudes pendientes:",
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.Bold,
                 fontSize = 18.sp,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
+            // --- Fixed height container for requests ---
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .height(388.dp)
                     .background(Color.Transparent, RoundedCornerShape(16.dp))
                     .padding(12.dp),
                 contentAlignment = Alignment.Center
             ) {
-                if (solicitudes.isEmpty()) {
-                    Text(
-                        text = "No hay solicitudes pendientes",
-                        color = Color.Gray
-                    )
-                } else {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 350.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        items(solicitudes) { solicitud ->
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 6.dp),
-                                shape = RoundedCornerShape(16.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color.White)
-                            ) {
-                                Row(
+                when {
+                    isLoading -> {
+                        CircularProgressIndicator()
+                    }
+                    pending.isEmpty() -> {
+                        Text(
+                            text = "No hay solicitudes pendientes",
+                            color = Color.Gray
+                        )
+                    }
+                    else -> {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 386.dp), // 220 - padding
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            items(pending) { user ->
+                                Card(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(16.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                                        .padding(vertical = 6.dp),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = CardDefaults.cardColors(containerColor = Color.White)
                                 ) {
-                                    Image(
-                                        painter = painterResource(id = solicitud.fotoRes),
-                                        contentDescription = "Foto de ${solicitud.nombre}",
+                                    Row(
                                         modifier = Modifier
-                                            .size(56.dp)
-                                            .clip(RoundedCornerShape(50)),
-                                        contentScale = ContentScale.Crop
-                                    )
-                                    Spacer(modifier = Modifier.width(16.dp))
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(text = solicitud.nombre, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                                        Text(text = solicitud.email, fontSize = 14.sp, color = Color.Gray)
-                                    }
-                                    Row {
-                                        IconButton(
-                                            onClick = { },
-                                            modifier = Modifier
-                                                .size(40.dp)
-                                                .padding(end = 4.dp)
-                                        ) {
-                                            Icon(Icons.Filled.Check, contentDescription = "Aceptar", tint = Color(0xFF81C784))
+                                            .fillMaxWidth()
+                                            .padding(16.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        if (user.profile_pic != null) {
+                                            Image(
+                                                painter = rememberAsyncImagePainter(user.profile_pic),
+                                                contentDescription = "Foto de ${user.forenames}",
+                                                modifier = Modifier
+                                                    .size(56.dp)
+                                                    .clip(RoundedCornerShape(50)),
+                                                contentScale = ContentScale.Crop
+                                            )
+                                        } else {
+                                            Icon(
+                                                imageVector = Icons.Default.Person,
+                                                contentDescription = "Foto de ${user.forenames}",
+                                                modifier = Modifier
+                                                    .size(56.dp)
+                                                    .clip(RoundedCornerShape(50)),
+                                                tint = Color.Gray
+                                            )
                                         }
-                                        IconButton(
-                                            onClick = {},
-                                            modifier = Modifier.size(40.dp)
-                                        ) {
-                                            Icon(Icons.Filled.Close, contentDescription = "Rechazar", tint = Color(0xFFE57373))
+                                        Spacer(modifier = Modifier.width(16.dp))
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = "${user.forenames} ${user.surnames}",
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 18.sp
+                                            )
+                                            Text(
+                                                text = user.email,
+                                                fontSize = 14.sp,
+                                                color = Color.Gray
+                                            )
+                                        }
+                                        Row {
+                                            IconButton(
+                                                onClick = { },
+                                                modifier = Modifier
+                                                    .size(40.dp)
+                                                    .padding(end = 4.dp)
+                                            ) {
+                                                Icon(
+                                                    Icons.Filled.Check,
+                                                    contentDescription = "Aceptar",
+                                                    tint = Color(0xFF81C784)
+                                                )
+                                            }
+                                            IconButton(
+                                                onClick = {},
+                                                modifier = Modifier.size(40.dp)
+                                            ) {
+                                                Icon(
+                                                    Icons.Filled.Close,
+                                                    contentDescription = "Rechazar",
+                                                    tint = Color(0xFFE57373)
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -195,6 +261,7 @@ fun HomeAdminScreen() {
         }
     }
 }
+
 @Preview
 @Composable
 fun HomeAdminScreenPreview() {

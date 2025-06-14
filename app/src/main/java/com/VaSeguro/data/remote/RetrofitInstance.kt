@@ -1,12 +1,13 @@
 package com.VaSeguro.data.remote
 
-import com.VaSeguro.data.remote.Login.AuthService
+import com.VaSeguro.data.remote.Auth.AuthService
 import com.VaSeguro.map.services.MapsApiService
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import com.VaSeguro.BuildConfig
+import com.VaSeguro.data.remote.Request.RequestService
 import com.VaSeguro.map.services.RoutesApiService
 import com.agarcia.myfirstandroidapp.data.remote.interceptor.SmartAuthInterceptor
 
@@ -54,6 +55,9 @@ object RetrofitInstance {
 
     val authService: AuthService by lazy {
         retrofit.create(AuthService::class.java)
+    }
+    val requestService: RequestService by lazy {
+        retrofit.create(RequestService::class.java)
     }
     val mapsApiService: MapsApiService by lazy {
         mapsRetrofit.create(MapsApiService::class.java)

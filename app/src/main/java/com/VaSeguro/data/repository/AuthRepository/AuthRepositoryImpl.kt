@@ -1,9 +1,10 @@
 package com.VaSeguro.data.repository.AuthRepository
 
-import com.VaSeguro.data.remote.Login.AuthService
-import com.VaSeguro.data.remote.Login.Login.LoginRequest
-import com.VaSeguro.data.remote.Login.Login.LoginResponse
-import com.VaSeguro.data.remote.Login.Register.RegisterRequest
+import com.VaSeguro.data.remote.Auth.AuthService
+import com.VaSeguro.data.remote.Auth.Login.LoginRequest
+import com.VaSeguro.data.remote.Auth.Login.LoginResponse
+import com.VaSeguro.data.remote.Auth.Register.RegisterRequest
+import com.VaSeguro.data.remote.Auth.UserResponse
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 
@@ -69,7 +70,11 @@ class AuthRepositoryImpl(
             profile_pic = profile_pic
         )
     }
-
-
+    override suspend fun getAllUsers(token: String): List<UserResponse> {
+        return authService.getAllUsers("Bearer $token")
+    }
+    override suspend fun getAllUsersWithCodes(token: String): List<UserResponse> {
+        return authService.getAllUsersWithCodes("Bearer $token")
+    }
 
 }

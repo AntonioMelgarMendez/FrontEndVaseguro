@@ -1,6 +1,6 @@
 package com.VaSeguro.data.repository.UserPreferenceRepository
 
-import com.VaSeguro.data.remote.Login.UserResponse
+import com.VaSeguro.data.remote.Auth.UserResponse
 import kotlinx.coroutines.flow.Flow
 
 interface UserPreferencesRepository {

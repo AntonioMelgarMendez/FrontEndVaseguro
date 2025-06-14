@@ -1,4 +1,4 @@
-package com.VaSeguro.data.remote.Login.Register
+package com.VaSeguro.data.remote.Auth.Register
 
 import okhttp3.MultipartBody
 
