@@ -1,4 +1,4 @@
-package com.VaSeguro.ui.screens.Parents.Configuration
+package com.VaSeguro.data.model.Security
 
 data class SecurityFormState(
     val oldPassword: String = "",

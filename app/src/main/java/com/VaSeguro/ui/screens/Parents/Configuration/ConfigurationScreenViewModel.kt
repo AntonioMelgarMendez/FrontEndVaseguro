@@ -2,6 +2,7 @@ package com.VaSeguro.ui.screens.Parents.Configuration
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
+import com.VaSeguro.data.model.Security.SecurityFormState
 import com.VaSeguro.data.model.User.UserData
 import com.VaSeguro.data.model.User.UserRole
 import kotlinx.coroutines.flow.MutableStateFlow

@@ -1,4 +1,4 @@
-package com.VaSeguro.ui.screens.Parents.Configuration
+package com.VaSeguro.ui.screens.Admin.Account
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
@@ -38,7 +38,6 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.VaSeguro.data.model.Security.SecurityFormState
-import com.VaSeguro.data.model.User.UserData
 import com.VaSeguro.ui.components.Container.ConfirmationDialog
 import com.VaSeguro.ui.components.Forms.ValidationChecklist
 import com.VaSeguro.ui.theme.PrimaryColor
