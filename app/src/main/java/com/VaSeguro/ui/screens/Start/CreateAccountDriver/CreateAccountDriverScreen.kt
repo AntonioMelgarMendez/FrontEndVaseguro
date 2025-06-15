@@ -359,15 +359,12 @@ fun CreateAccountDriverScreen(navController: NavController) {
                     onClick = {
                         viewModel.register(
                             context = context,
-                            onSuccess = {         navController.navigate(
-                                "content/" +
-                                        Uri.encode("¡Registro exitoso!") + "/" +
-                                        Uri.encode("Tu cuenta ha sido creada correctamente. Debes esperar a que sea verificada por nuestro grupo de expertos. Se te enviara un correo de verificacion ") + "/" +
-                                        R.drawable.aprove + "/" +
-                                        Uri.encode("Continuar")+"/"+
-                                        Uri.encode("login")
+                            onSuccess = {
+                                navController.navigate("save_bus") {
+                                    popUpTo("create_account_driver") { inclusive = true }
+                                }
+                            },
 
-                            )},
                             onError = { }
                         )
                     },

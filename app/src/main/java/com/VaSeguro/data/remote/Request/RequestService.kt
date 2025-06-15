@@ -11,13 +11,13 @@ interface RequestService {
     @PATCH("register-codes/{id}/state")
     suspend fun approveRequest(
         @Header("Authorization") token: String,
-        @Path("id") userId: String,
+        @Path("id") userId: Int,
         @Body request: RequestState
     ): Response<Unit>
 
     @DELETE("register-codes/{id}")
     suspend fun deleteRequest(
         @Header("Authorization") token: String,
-        @Path("id") userId: String
+        @Path("id") userId: Int
     ): Response<Unit>
 }

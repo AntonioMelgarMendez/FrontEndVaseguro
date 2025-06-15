@@ -89,7 +89,8 @@ fun GeneralScaffold(navControllerx: NavController) {
         }
         TopBar(
             title = title,
-            navController = navControllerx
+            navController = navControllerx,
+            navControllerx = navController,
         )
         SnackbarHost(
             hostState = snackbarHostState,

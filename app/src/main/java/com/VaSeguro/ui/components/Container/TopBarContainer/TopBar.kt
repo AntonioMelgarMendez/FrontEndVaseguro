@@ -18,6 +18,9 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.VaSeguro.data.AppProvider
+import com.VaSeguro.ui.navigations.ConfigurationScreenNavigation
+import com.VaSeguro.ui.navigations.MapScreenNavigation
+import com.VaSeguro.ui.screens.Parents.Configuration.ConfigurationScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,7 +28,8 @@ fun TopBar(
     title: String = "VaSeguro",
     showBackButton: Boolean = false,
     onBackClick: () -> Unit = {},
-    navController: NavController
+    navController: NavController,
+    navControllerx: NavController
 ) {
     val context = LocalContext.current
     val viewModel: TopBarViewModel = viewModel(
@@ -110,6 +114,10 @@ fun TopBar(
                         )
 
                         ConfigOption("Cuenta", Icons.Outlined.AccountCircle)
+                        {
+                            viewModel.closeConfigDialog()
+                            navControllerx.navigate(ConfigurationScreenNavigation)
+                        }
                         Spacer(modifier = Modifier.height(8.dp))
                         ConfigOption("Transporte", Icons.Filled.DirectionsCar)
                         Spacer(modifier = Modifier.height(8.dp))

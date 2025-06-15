@@ -27,6 +27,7 @@ import com.google.accompanist.navigation.animation.AnimatedNavHost
 import androidx.core.graphics.toColorInt
 import com.VaSeguro.ui.Aux.ContentScreen
 import com.VaSeguro.ui.screens.Start.CreateAccountDriver.CreateAccountDriverScreen
+import com.VaSeguro.ui.screens.Start.CreateAccountDriver.RegisterBus.RegisterBusScreen
 
 class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalAnimationApi::class)
@@ -90,6 +91,9 @@ class MainActivity : ComponentActivity() {
                                 navController = navController,
                                 destination = destination
                             )
+                        }
+                        composable("save_bus") {
+                            RegisterBusScreen(navController,{})
                         }
                     }
                 }

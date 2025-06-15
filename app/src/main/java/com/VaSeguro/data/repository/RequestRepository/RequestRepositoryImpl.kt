@@ -7,18 +7,18 @@ class RequestRepositoryImpl(
     private val requestService: RequestService
 ) : RequestRepository {
 
-    override suspend fun sendRequest(token: String, userId: String): Result<Unit> {
+    override suspend fun sendRequest(token: String, userId: Int): Result<Unit> {
         val response = requestService.approveRequest(
-            token = token,
+            token = "Bearer $token",
             userId = userId,
             request = RequestState(isSuccessful = true)
         )
         return if (response.isSuccessful) Result.success(Unit) else Result.failure(Exception("Error"))
     }
 
-    override suspend fun rejectRequest(token: String, userId: String): Result<Unit> {
+    override suspend fun rejectRequest(token: String, userId: Int): Result<Unit> {
         val response = requestService.deleteRequest(
-            token = token,
+            token = "Bearer $token",
             userId = userId
         )
         return if (response.isSuccessful) Result.success(Unit) else Result.failure(Exception("Error"))
