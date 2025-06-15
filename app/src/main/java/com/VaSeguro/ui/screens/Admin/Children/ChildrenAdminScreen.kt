@@ -55,6 +55,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import com.VaSeguro.data.model.Child.Child
@@ -71,6 +72,7 @@ import java.util.UUID
 
 @Composable
 fun ChildrenAdminScreen(viewModel: ChildrenAdminScreenViewModel = viewModel()) {
+    val context = LocalContext.current
     val children = viewModel.children.collectAsState().value
     val expandedMap = viewModel.expandedMap.collectAsState().value
     val checkedMap = viewModel.checkedMap.collectAsState().value
@@ -90,7 +92,8 @@ fun ChildrenAdminScreen(viewModel: ChildrenAdminScreenViewModel = viewModel()) {
             )
             .clip(RoundedCornerShape(16.dp))
             .background(Color.White)
-            .padding(16.dp)
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
     ) {
         Column(
             modifier = Modifier.fillMaxWidth(),

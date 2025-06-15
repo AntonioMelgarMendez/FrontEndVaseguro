@@ -22,6 +22,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 
 import kotlinx.coroutines.launch
@@ -49,7 +50,7 @@ fun GeneralScaffold(navControllerx: NavController) {
 
     val navItems = when (user?.role_id) {
         2 -> listOf("Inicio", "Hijos", "Rutas", "Paradas", "Usuarios", "Buses")
-        3 -> listOf("Mapa", "Historial", "Bus", "Hijos")
+        3 -> listOf("Mapa", "Historial", "Bus", "Hijo")
         4 -> listOf("Mapa", "Mis Rutas", "Mi Bus", "Clientes")
         else -> listOf("Map")
     }
@@ -72,7 +73,8 @@ fun GeneralScaffold(navControllerx: NavController) {
             "Historial" -> navController.navigate(HistoryScreenNavigation)
             "Mi Bus" -> navController.navigate(BusDriverScreenNavigation)
             "Bus" -> navController.navigate(BusScreenNavigation)
-            "Hijos" -> navController.navigate(ChildrenScreenNavigation)
+            "Hijos" -> navController.navigate(ChildrenAdminScreenNavigation)
+            "Hijo" -> navController.navigate(ChildrenScreenNavigation)
             "Clientes" -> navController.navigate(ChildrenDriverScreenNavigation)
             "Inicio" -> navController.navigate(HomeAdminScreenNavigation)
             "Rutas" -> navController.navigate(RoutesAdminScreenNavigation)
@@ -83,27 +85,32 @@ fun GeneralScaffold(navControllerx: NavController) {
         }
     }
 
-    Box(Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            Box(modifier = Modifier.weight(1f)) {
-                MainNavigation(navController = navController, isAdmin = isAdmin)
-            }
+    Scaffold(
+        topBar = {
+            TopBar(
+                title = title,
+                navController = navControllerx,
+                navControllerx = navController
+            )
+        },
+        bottomBar = {
             BottomBar(
                 selectedItem = selectedItem,
                 onItemSelected = { onItemSelected(it) },
                 navItems = navItems
             )
+        },
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState)
+        },
+        content = { innerPadding ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding) // 👈 Esto respeta top/bottom bars
+            ) {
+                MainNavigation(navController = navController, isAdmin = isAdmin)
+            }
         }
-        TopBar(
-            title = title,
-            navController = navControllerx,
-            navControllerx = navController,
-        )
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier.align(Alignment.BottomCenter)
-        )
-    }
+    )
 }

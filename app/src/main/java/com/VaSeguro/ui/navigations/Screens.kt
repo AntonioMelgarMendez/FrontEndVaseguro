@@ -37,7 +37,7 @@ object StopsAdminScreenNavigation
 @Serializable
 object UsersAdminScreenNavigation
 @Serializable
-object  VehiclesAdminScreenNavigation
+object VehiclesAdminScreenNavigation
 @Serializable
 object HomeAdminScreenNavigation
 @Serializable
