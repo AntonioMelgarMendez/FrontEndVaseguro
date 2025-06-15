@@ -26,7 +26,6 @@ import androidx.compose.runtime.*
 
 import kotlinx.coroutines.launch
 
-
 @Composable
 fun GeneralScaffold(navControllerx: NavController) {
     val context = LocalContext.current
@@ -43,10 +42,10 @@ fun GeneralScaffold(navControllerx: NavController) {
     val user by viewModel.user.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val navController = rememberNavController()
-    var title by remember { mutableStateOf("Map") }
-    var selectedItem by remember { mutableStateOf("Map") }
 
     if (user == null) return
+
+    val isAdmin = user?.role_id == 2
 
     val navItems = when (user?.role_id) {
         2 -> listOf("Inicio", "Hijos", "Rutas", "Paradas", "Usuarios", "Buses")
@@ -54,6 +53,16 @@ fun GeneralScaffold(navControllerx: NavController) {
         4 -> listOf("Mapa", "Mis Rutas", "Mi Bus", "Clientes")
         else -> listOf("Map")
     }
+
+    // Set initial selected item and title based on role
+    val initialSelected = when (user?.role_id) {
+        2 -> "Inicio"
+        3 -> "Mapa"
+        4 -> "Mapa"
+        else -> "Map"
+    }
+    var selectedItem by remember { mutableStateOf(initialSelected) }
+    var title by remember { mutableStateOf(initialSelected) }
 
     fun onItemSelected(currentItem: String) {
         selectedItem = currentItem
@@ -79,7 +88,7 @@ fun GeneralScaffold(navControllerx: NavController) {
             modifier = Modifier.fillMaxSize()
         ) {
             Box(modifier = Modifier.weight(1f)) {
-                MainNavigation(navController = navController)
+                MainNavigation(navController = navController, isAdmin = isAdmin)
             }
             BottomBar(
                 selectedItem = selectedItem,
@@ -89,7 +98,8 @@ fun GeneralScaffold(navControllerx: NavController) {
         }
         TopBar(
             title = title,
-            navController = navControllerx
+            navController = navControllerx,
+            navControllerx = navController,
         )
         SnackbarHost(
             hostState = snackbarHostState,

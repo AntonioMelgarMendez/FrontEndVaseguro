@@ -42,7 +42,8 @@ fun HomeAdminScreen() {
                 val appProvider = AppProvider(context.applicationContext)
                 return HomeAdminViewModel(
                     appProvider.provideAuthRepository(),
-                    appProvider.provideUserPreferences()
+                    appProvider.provideUserPreferences(),
+                    appProvider.provideRequestRepository()
                 ) as T
             }
         }
@@ -57,6 +58,7 @@ fun HomeAdminScreen() {
     val totalConductores by viewModel.totalDrivers.collectAsState()
     val totalHijos by viewModel.totalChildren.collectAsState()
     val totalPadres by viewModel.totalParents.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
     val animatedTotalUsuarios by animateIntAsState(
         targetValue = totalUsuarios,
         animationSpec = tween(durationMillis = 800)
@@ -168,6 +170,12 @@ fun HomeAdminScreen() {
                     isLoading -> {
                         CircularProgressIndicator()
                     }
+                    errorMessage != null -> {
+                        Text(
+                            text = errorMessage ?: "",
+                            color = Color.Red
+                        )
+                    }
                     pending.isEmpty() -> {
                         Text(
                             text = "No hay solicitudes pendientes",
@@ -229,7 +237,7 @@ fun HomeAdminScreen() {
                                         }
                                         Row {
                                             IconButton(
-                                                onClick = { },
+                                                onClick = {viewModel.approveUser(user.id)},
                                                 modifier = Modifier
                                                     .size(40.dp)
                                                     .padding(end = 4.dp)
@@ -241,7 +249,7 @@ fun HomeAdminScreen() {
                                                 )
                                             }
                                             IconButton(
-                                                onClick = {},
+                                                onClick = {viewModel.rejectUser(user.id) },
                                                 modifier = Modifier.size(40.dp)
                                             ) {
                                                 Icon(

@@ -21,11 +21,13 @@ import com.VaSeguro.ui.screens.Parents.Map.MapScreen
 import kotlinx.serialization.Serializable
 
 @Composable
-fun MainNavigation(navController: NavHostController) {
-    NavHost(navController = navController, startDestination = RouteScreenNavigation) {
+fun MainNavigation(navController: NavHostController, isAdmin: Boolean) {
+    val startDestination = if (isAdmin) HomeAdminScreenNavigation else MapScreenNavigation
+
+    NavHost(navController = navController, startDestination = startDestination) {
 
         //PARENTS SCREENS
-        composable<MapScreenNavigation> { MapScreen() }
+        composable<MapScreenNavigation> { RouteScreen() }
         composable<HistoryScreenNavigation> { HistoryScreen() }
         composable<BusScreenNavigation> { BusScreen() }
         composable<ChildrenScreenNavigation> { ChildrenScreen() }
@@ -40,9 +42,10 @@ fun MainNavigation(navController: NavHostController) {
         composable<VehiclesAdminScreenNavigation> { VehicleScreen() }
 
         //DRIVER SCREENS
-        composable<RouteScreenNavigation> { RouteScreen() }
+        composable<RouteScreenNavigation> { RoutesAdminScreen() }
         composable<BusDriverScreenNavigation>{BusScreen()}
         composable<ChildrenDriverScreenNavigation>{ChildrenScreen() }
+
 
 
 

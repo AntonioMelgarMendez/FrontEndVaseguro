@@ -9,6 +9,7 @@ import com.VaSeguro.data.remote.RetrofitInstance
 import com.VaSeguro.data.repository.AuthRepository.AuthRepositoryImpl
 import com.VaSeguro.data.repository.RequestRepository.RequestRepositoryImpl
 import com.VaSeguro.data.repository.UserPreferenceRepository.UserPreferencesRepositoryImpl
+import com.VaSeguro.data.repository.VehicleRepository.VehicleRepositoryImpl
 import com.VaSeguro.map.repository.MapsApiRepositoryImpl
 import com.VaSeguro.map.repository.RoutesApiRepository
 import com.VaSeguro.map.repository.RoutesApiRepositoryImpl
@@ -25,10 +26,12 @@ class AppProvider(context: Context) {
     private val requestRepository= RequestRepositoryImpl(RetrofitInstance.requestService)
     private val mapsApiRepository = MapsApiRepositoryImpl(mapsApiService)
     private val routesApiRepository = RoutesApiRepositoryImpl(routesApiService)
+    private val vehicleRepository = VehicleRepositoryImpl(RetrofitInstance.vehicleService) // <-- FIXED
 
     fun provideUserPreferences() = userPreferencesRepository
     fun provideAuthRepository() = authRepository
     fun provideMapsApiRepository() = mapsApiRepository
     fun provideRoutesApiRepository() = routesApiRepository
     fun provideRequestRepository() = requestRepository
+    fun provideVehicleRepository() = vehicleRepository
 }
