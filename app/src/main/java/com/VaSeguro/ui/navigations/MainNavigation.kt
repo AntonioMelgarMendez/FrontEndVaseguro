@@ -15,6 +15,7 @@ import com.VaSeguro.ui.screens.Admin.Vehicle.VehicleScreen
 import com.VaSeguro.ui.screens.Driver.Route.RouteScreen
 import com.VaSeguro.ui.screens.Parents.Bus.BusScreen
 import com.VaSeguro.ui.screens.Parents.Children.ChildrenScreen
+import com.VaSeguro.ui.screens.Parents.Configuration.ConfigurationScreen
 import com.VaSeguro.ui.screens.Parents.History.HistoryScreen
 import com.VaSeguro.ui.screens.Parents.Map.MapScreen
 import kotlinx.serialization.Serializable
@@ -28,6 +29,7 @@ fun MainNavigation(navController: NavHostController) {
         composable<HistoryScreenNavigation> { HistoryScreen() }
         composable<BusScreenNavigation> { BusScreen() }
         composable<ChildrenScreenNavigation> { ChildrenScreen() }
+        composable<ConfigurationScreenNavigation> { ConfigurationScreen() }
         //ADMIN SCREENS
         composable <HomeAdminScreenNavigation>{ HomeAdminScreen() }
         composable<AccountScreenNavigation> { AccountAdminScreen() }
