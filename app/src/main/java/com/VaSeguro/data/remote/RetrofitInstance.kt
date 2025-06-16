@@ -11,7 +11,6 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import com.VaSeguro.BuildConfig
 import com.VaSeguro.data.remote.Request.RequestService
-import com.VaSeguro.data.remote.Vehicle.VehicleService
 import com.VaSeguro.map.services.RoutesApiService
 import com.agarcia.myfirstandroidapp.data.remote.interceptor.SmartAuthInterceptor
 
@@ -71,9 +70,7 @@ object RetrofitInstance {
     val requestService: RequestService by lazy {
         retrofit.create(RequestService::class.java)
     }
-    val vehicleService: VehicleService by lazy{
-        retrofit.create(VehicleService::class.java)
-    }
+
     val mapsApiService: MapsApiService by lazy {
         mapsRetrofit.create(MapsApiService::class.java)
     }
