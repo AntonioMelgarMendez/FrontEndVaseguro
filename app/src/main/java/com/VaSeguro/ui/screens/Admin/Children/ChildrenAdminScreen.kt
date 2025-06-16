@@ -1,6 +1,7 @@
 package com.VaSeguro.ui.screens.Admin.Children
 
 import android.R
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -216,6 +217,7 @@ fun AddChildDialog(
     onDismiss: () -> Unit,
     onSave: () -> Unit
 ) {
+    val context = LocalContext.current
     var forenames by remember { mutableStateOf(TextFieldValue("")) }
     var surnames by remember { mutableStateOf(TextFieldValue("")) }
     var medicalInfo by remember { mutableStateOf(TextFieldValue("")) }
@@ -273,6 +275,18 @@ fun AddChildDialog(
         confirmButton = {
             Button(
                 onClick = {
+                    if (
+                        forenames.text.isBlank() ||
+                        surnames.text.isBlank() ||
+                        selectedDateText.isBlank() ||
+                        medicalInfo.text.isBlank() ||
+                        selectedParent.isNullOrBlank() ||
+                        selectedDriver.isNullOrBlank()
+                    ) {
+                        Toast.makeText(context, "Por favor completa todos los campos.", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
+
                     val fullName = "${forenames.text} ${surnames.text}"
                     val birth = selectedDateText
                     val age = selectedDateMillis?.let {

@@ -2,6 +2,7 @@ package com.VaSeguro.ui.components
 
 import android.R.attr.enabled
 import android.R.attr.type
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -35,6 +36,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.*
+import androidx.compose.ui.platform.LocalContext
 import com.VaSeguro.data.model.User.UserData
 import com.VaSeguro.data.model.User.UserRole
 import com.VaSeguro.ui.theme.PrimaryColor
@@ -46,6 +48,7 @@ fun AddVehicleDialog(
   onConfirm: (String, String, UserData) -> Unit,
   drivers: List<UserData>
 ) {
+  val context = LocalContext.current
   val customColor = Color(0xFF6C63FF)
   var plate by remember { mutableStateOf("") }
   var model by remember { mutableStateOf("") }
@@ -156,8 +159,9 @@ fun AddVehicleDialog(
 
           Button(
             onClick = {
-              if (plate.isNotBlank() && model.isNotBlank() && selectedDriver != null) {
-                onConfirm(plate, model, selectedDriver!!)
+              if (plate.isBlank() || model.isBlank() || selectedDriver == null) {
+                Toast.makeText(context, "Por favor completa todos los campos.", Toast.LENGTH_SHORT).show()
+                return@Button
               }
             },
             modifier = Modifier.weight(1f),

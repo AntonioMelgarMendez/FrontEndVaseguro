@@ -1,5 +1,6 @@
 package com.VaSeguro.ui.screens.Admin.Routes
 
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -44,6 +45,7 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.platform.LocalContext
 import com.VaSeguro.data.model.Routes.RoutesData
 import com.VaSeguro.ui.components.CustomizableOutlinedTextField
 import java.util.UUID
@@ -189,6 +191,8 @@ fun AddRouteDialog(
     onDismiss: () -> Unit,
     onSave: () -> Unit
 ) {
+    val context = LocalContext.current
+
     var name by remember { mutableStateOf(TextFieldValue("")) }
     var startDate by remember { mutableStateOf(TextFieldValue("")) }
     var endDate by remember { mutableStateOf(TextFieldValue("")) }
@@ -236,6 +240,18 @@ fun AddRouteDialog(
         confirmButton = {
             Button(
                 onClick = {
+                    if (
+                        name.text.isBlank() ||
+                        startDate.text.isBlank() ||
+                        endDate.text.isBlank() ||
+                        vehiculeId.text.isBlank() ||
+                        routeType == null ||
+                        routeStatus == null
+                    ) {
+                        Toast.makeText(context, "Por favor completa todos los campos.", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
+
                     if (routeType != null && routeStatus != null) {
                         val route = RoutesData(
                             id = UUID.randomUUID().toString(),

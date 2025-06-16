@@ -1,5 +1,6 @@
 package com.VaSeguro.ui.screens.Admin.Users
 
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -47,6 +48,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import com.VaSeguro.ui.components.AdminCardItem
 import com.VaSeguro.ui.components.Container.ConfirmationDialog
@@ -196,6 +198,8 @@ fun AddUserDialog(
     onDismiss: () -> Unit,
     onSave: () -> Unit
 ) {
+    val context = LocalContext.current
+
     var forename by remember { mutableStateOf(TextFieldValue("")) }
     var surname by remember { mutableStateOf(TextFieldValue("")) }
     var email by remember { mutableStateOf(TextFieldValue("")) }
@@ -236,6 +240,17 @@ fun AddUserDialog(
         confirmButton = {
             Button(
                 onClick = {
+                    if (
+                        forename.text.isBlank() ||
+                        surname.text.isBlank() ||
+                        email.text.isBlank() ||
+                        phone.text.isBlank() ||
+                        gender.isNullOrBlank()
+                    ) {
+                        Toast.makeText(context, "Por favor completa todos los campos.", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
+
                     viewModel.addUser(
                         forename.text,
                         surname.text,

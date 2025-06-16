@@ -1,5 +1,6 @@
 package com.VaSeguro.ui.screens.Admin.Stops
 
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -46,6 +47,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import com.VaSeguro.data.model.Stop.StopData
@@ -197,6 +199,9 @@ fun AddStopDialog(
     onDismiss: () -> Unit,
     onSave: () -> Unit
 ) {
+
+    val context = LocalContext.current
+
     var name by remember { mutableStateOf(TextFieldValue("")) }
     var latitude by remember { mutableStateOf(TextFieldValue("")) }
     var longitude by remember { mutableStateOf(TextFieldValue("")) }
@@ -237,6 +242,17 @@ fun AddStopDialog(
         confirmButton = {
             Button(
                 onClick = {
+
+                    if (name.text.isBlank() ||
+                        latitude.text.isBlank() ||
+                        longitude.text.isBlank() ||
+                        stopType == null ||
+                        driver.isNullOrBlank()
+                    ) {
+                        Toast.makeText(context, "Por favor completa todos los campos.", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
+
                     if (stopType != null && driver != null) {
                         val newStop = StopData(
                             id = (1000..9999).random().toString(),
