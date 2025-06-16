@@ -1,15 +1,16 @@
 package com.VaSeguro.data.repository.VehicleRepository
 
-import com.VaSeguro.data.remote.Vehicle.SimpleResponse
 import com.VaSeguro.data.remote.Vehicle.VehicleResponse
+import com.VaSeguro.helpers.Resource
+import kotlinx.coroutines.flow.Flow
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
 
 interface VehicleRepository
 {
-    suspend fun getAllVehicles(): List<VehicleResponse>
-    suspend fun getVehicleById(id: Int): VehicleResponse
+    suspend fun getAllVehicles(): Flow<Resource<List<VehicleResponse>>>
+    suspend fun getVehicleById(id: Int): Flow<Resource<VehicleResponse>>
     suspend fun createVehicle(
         plate: String,
         model: String,
@@ -19,7 +20,7 @@ interface VehicleRepository
         capacity: String,
         driver_id: Int,
         carPic: MultipartBody.Part?
-    ): VehicleResponse
+    ): Flow<Resource<VehicleResponse>>
     suspend fun updateVehicle(
         id: Int,
         plate: String,
@@ -30,6 +31,6 @@ interface VehicleRepository
         capacity: String,
         driverId: Int,
         carPic: MultipartBody.Part?
-    ): VehicleResponse
-    suspend fun deleteVehicle(id: Int): Boolean
+    ): Flow<Resource<VehicleResponse>>
+    suspend fun deleteVehicle(id: Int): Flow<Resource<Boolean>>
 }

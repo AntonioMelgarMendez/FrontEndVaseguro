@@ -14,9 +14,8 @@ import kotlinx.coroutines.flow.update
 import com.VaSeguro.data.model.Vehicle.Vehicle
 import com.VaSeguro.data.model.User.UserData
 import com.VaSeguro.data.model.User.UserRole
-import com.VaSeguro.data.model.Vehicle.VehicleCreateRequest
+import com.VaSeguro.data.remote.Vehicle.toDomain
 import com.VaSeguro.data.repository.VehicleRepository.VehicleRepository
-
 import com.VaSeguro.helpers.Resource
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -72,11 +71,10 @@ class VehicleViewModel(
 
   private fun loadVehicles() {
     viewModelScope.launch {
-      /*vehicleRepository.getVehicles().collect { resource ->
-        Log.d("API_TEST", "Respuesta: $resource")
+      vehicleRepository.getAllVehicles().collect { resource ->
         when (resource) {
           is Resource.Success -> {
-            _vehicles.value = resource.data
+            _vehicles.value = resource.data.map { it.toDomain() }
           }
           is Resource.Error -> {
             println("Error al cargar vehículos: ${resource.message}")
@@ -85,9 +83,10 @@ class VehicleViewModel(
 
           }
         }
-      }*/
+      }
     }
   }
+
 
   val drivers: StateFlow<List<UserData>> = _drivers
   val vehicles: StateFlow<List<Vehicle>> = _vehicles
@@ -115,8 +114,8 @@ class VehicleViewModel(
   }
 
   fun deleteVehicle(vehicleId: String) {
-    viewModelScope.launch {/*
-      vehicleRepository.deleteVehicle(vehicleId).collectLatest { resource ->
+    viewModelScope.launch {
+      vehicleRepository.deleteVehicle(vehicleId.toInt()).collect { resource ->
         when (resource) {
           is Resource.Success -> {
             _vehicles.update { list ->
@@ -133,38 +132,40 @@ class VehicleViewModel(
 
           }
         }
-      }*/
+      }
     }
   }
 
   fun addVehicle(plate: String, model: String, driverId: String) {
-    viewModelScope.launch {/*
+    viewModelScope.launch {
       vehicleRepository.createVehicle(
-        VehicleCreateRequest(
-          plate = plate,
-          model = model,
-          brand = "Toyota",
-          driverId = driverId,
-          year = "2023",
-          capacity = "5",
-          color = "Gris",
-          carPic = ""
-        )
+        plate,
+        model,
+        "Toyota",
+        "2023",
+        "Gris",
+        "5",
+        driverId.toInt(),
+        null
       ).collectLatest { resource ->
         when (resource) {
           is Resource.Success -> {
-            resource.data?.let {
-              _vehicles.update { current -> current + it }
-              Log.d("VehicleViewModel", "Vehicle added: $plate, Model: $model, Driver ID: $driverId")
+            resource.data?.let { newVehicleResponse ->
+              val newVehicle = newVehicleResponse.toDomain()
+              _vehicles.update { current -> current + newVehicle }
+              Log.d("VehicleViewModel", "Vehicle added: ${newVehicle.plate}, Model: ${newVehicle.model}, Driver ID: ${newVehicle.driver_id}")
             }
+
             loadVehicles()
           }
           is Resource.Error -> {
             println("Error al crear vehículo: ${resource.message}")
           }
-          else -> {}
+          Resource.Loading -> {
+            // Mostrar loading si querés
+          }
         }
-      }*/
+      }
     }
   }
 

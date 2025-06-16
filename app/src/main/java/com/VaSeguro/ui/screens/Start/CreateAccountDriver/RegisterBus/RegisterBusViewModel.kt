@@ -5,9 +5,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.VaSeguro.data.repository.UserPreferenceRepository.UserPreferencesRepository
 import com.VaSeguro.data.repository.VehicleRepository.VehicleRepository
+import com.VaSeguro.helpers.Resource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -117,13 +119,28 @@ class RegisterBusViewModel(private val vehicleRepository: VehicleRepository,  pr
                     return@launch
                 }
 
-                val response = vehicleRepository.createVehicle(
+                vehicleRepository.createVehicle(
                     plate, model, brand, year, color, capacity, driverId, carPicPart
-                )
-                if (response.id > 0) {
-                    onSuccess()
-                } else {
-                    onError("Vehicle creation failed")
+                ).collectLatest { resource ->
+                    when (resource) {
+                        is Resource.Loading -> {
+                            // Opcional: puedes usar esto si quieres mostrar un loading en UI
+                            _isRegisterLoading.value = true
+                        }
+                        is Resource.Success -> {
+                            val newVehicle = resource.data
+                            if (newVehicle != null && newVehicle.id > 0) {
+                                onSuccess()
+                            } else {
+                                onError("Vehicle creation failed")
+                            }
+                            _isRegisterLoading.value = false
+                        }
+                        is Resource.Error -> {
+                            onError(resource.message ?: "Error al registrar el vehículo")
+                            _isRegisterLoading.value = false
+                        }
+                    }
                 }
             } catch (e: Exception) {
                 onError(e.message ?: "Error registering bus")
