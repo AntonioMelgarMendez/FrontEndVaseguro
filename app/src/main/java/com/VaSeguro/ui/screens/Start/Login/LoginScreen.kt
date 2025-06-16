@@ -1,6 +1,5 @@
 package com.VaSeguro.ui.screens.Start.Login
 
-
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -100,8 +99,8 @@ fun LoginScreen(navController: NavController) {
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color(0xFFD3D3D3),
-                        unfocusedContainerColor = Color(0xFFD3D3D3),
+                        focusedContainerColor = Color(0xFFE3E3E3),
+                        unfocusedContainerColor = Color(0xFFE3E3E3),
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
                     )
@@ -119,8 +118,8 @@ fun LoginScreen(navController: NavController) {
                     visualTransformation = PasswordVisualTransformation(),
                     shape = RoundedCornerShape(16.dp),
                     colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color(0xFFD3D3D3),
-                        unfocusedContainerColor = Color(0xFFD3D3D3),
+                        focusedContainerColor = Color(0xFFE3E3E3),
+                        unfocusedContainerColor = Color(0xFFE3E3E3),
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
                     )
@@ -144,17 +143,31 @@ fun LoginScreen(navController: NavController) {
                         )
                         Text("Recuérdame", modifier = Modifier.padding(start = 8.dp))
                     }
-                    TextButton(onClick = { /* TODO: Navegar a recuperación de contraseña */ }) {
+                    TextButton(onClick = { navController.navigate("forgot_password") }) {
                         Text("¿Olvidaste tu contraseña?")
                     }
                 }
 
-                // Mostrar errores
-                error?.let {
+                // Mostrar errores con mensajes comprensibles
+                error?.let { errorCode ->
+                    val errorMessage = when (errorCode) {
+                        "401" -> "Credenciales incorrectas. Por favor verifica tu email y contraseña."
+                        "402" -> "Pago requerido. Por favor completa tu suscripción."
+                        "403" -> "Acceso denegado. Su cuenta aun no ha sido verificada"
+                        "404" -> "Usuario no encontrado. Verifica tus datos o regístrate."
+                        "408" -> "Tiempo de espera agotado. Por favor intenta nuevamente."
+                        "500" -> "Error del servidor. Por favor intenta más tarde."
+                        "network_error" -> "Problema de conexión. Verifica tu conexión a internet."
+                        "invalid_email" -> "Formato de email inválido. Por favor corrígelo."
+                        "weak_password" -> "Contraseña demasiado débil. Debe tener al menos 6 caracteres."
+                        else -> "Ocurrió un error inesperado. Por favor intenta nuevamente."
+                    }
+
                     Text(
-                        text = it,
+                        text = errorMessage,
                         color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(vertical = 8.dp)
+                        modifier = Modifier.padding(vertical = 8.dp),
+                        textAlign = TextAlign.Center
                     )
                 }
 
@@ -162,7 +175,10 @@ fun LoginScreen(navController: NavController) {
                 Button(
                     onClick = {
                         viewModel.login(
-                            onSuccess = { navController.navigate("home") }
+                            onSuccess = { navController.navigate("home") },
+                            onError = { errorCode ->
+                                viewModel.setError(errorCode)
+                            }
                         )
                     },
                     modifier = Modifier
@@ -201,3 +217,4 @@ fun LoginScreen(navController: NavController) {
         }
     }
 }
+

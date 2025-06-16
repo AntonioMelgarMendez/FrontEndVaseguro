@@ -6,48 +6,63 @@ import com.VaSeguro.data.model.Routes.RouteType
 import com.VaSeguro.data.model.Routes.RoutesData
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 
 class RoutesAdminScreenViewModel : ViewModel(){
 
     private val _routes = MutableStateFlow(
         listOf(
             RoutesData(
-                id = "R01", name = "Route A", start_date = "01/01/2023", vehicule_id = "V001",
-                status_id = RouteStatus("1", "Active"),
-                type_id = RouteType("1", "Long Distance"),
-                end_date = "01/12/2023"
+                id = "R001",
+                name = "Ruta A",
+                start_date = "2025-06-01",
+                vehicule_id = "12451",
+                status_id = RouteStatus(id = "1", status = "Active"),
+                type_id = RouteType(id = "A", type = "School"),
+                end_date = "2025-12-15"
             ),
             RoutesData(
-                id = "R02", name = "Route B", start_date = "01/03/2023", vehicule_id = "V002",
-                status_id = RouteStatus("2", "Inactive"),
-                type_id = RouteType("2", "Short Distance"),
-                end_date = "01/09/2023"
+                id = "R002",
+                name = "Ruta B",
+                start_date = "2025-06-10",
+                vehicule_id = "12452",
+                status_id = RouteStatus(id = "2", status = "Inactive"),
+                type_id = RouteType(id = "B", type = "Weekend"),
+                end_date = "2025-12-20"
             )
         )
     )
     val routes: StateFlow<List<RoutesData>> = _routes
 
-    fun addRoute(
-        name: String,
-        startDate: String,
-        vehiculeId: String,
-        status: RouteStatus,
-        type: RouteType,
-        endDate: String
-    ) {
-        val newRoute = RoutesData(
-            id = System.currentTimeMillis().toString().takeLast(5),
-            name = name,
-            start_date = startDate,
-            vehicule_id = vehiculeId,
-            status_id = status,
-            type_id = type,
-            end_date = endDate
-        )
-        _routes.value = _routes.value + newRoute
+    private val _expandedMap = MutableStateFlow<Map<String, Boolean>>(emptyMap())
+    val expandedMap: StateFlow<Map<String, Boolean>> = _expandedMap
+
+    private val _checkedMap = MutableStateFlow<Map<String, Boolean>>(emptyMap())
+    val checkedMap: StateFlow<Map<String, Boolean>> = _checkedMap
+
+    fun toggleExpand(routeId: String) {
+        _expandedMap.update { map ->
+            map.toMutableMap().apply {
+                this[routeId] = !(this[routeId] ?: false)
+            }
+        }
     }
 
-    fun deleteRoute(id: String) {
-        _routes.value = _routes.value.filterNot { it.id == id }
+    fun setChecked(routeId: String, checked: Boolean) {
+        _checkedMap.update { map ->
+            map.toMutableMap().apply {
+                this[routeId] = checked
+            }
+        }
+    }
+
+    fun deleteRoute(routeId: String) {
+        _routes.update { it.filterNot { route -> route.id == routeId } }
+        _expandedMap.update { it - routeId }
+        _checkedMap.update { it - routeId }
+    }
+
+    fun addRoute(route: RoutesData) {
+        _routes.update { it + route }
     }
 }

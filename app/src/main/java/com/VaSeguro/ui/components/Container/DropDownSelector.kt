@@ -14,6 +14,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import com.VaSeguro.ui.theme.PrimaryColor
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -36,7 +37,15 @@ fun DropDownSelector(
             readOnly = true,
             label = { Text(label) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-            modifier = Modifier.menuAnchor().fillMaxWidth()
+            modifier = Modifier.menuAnchor().fillMaxWidth(),
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color.Transparent,
+                unfocusedContainerColor = Color.Transparent,
+                focusedIndicatorColor = PrimaryColor,
+                unfocusedIndicatorColor = Color.LightGray,
+                focusedLabelColor = PrimaryColor,
+                unfocusedLabelColor = Color.Gray
+            )
         )
 
         ExposedDropdownMenu(

@@ -40,7 +40,8 @@ fun SignUpScreen(navController: NavController) {
             override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
                 val appProvider = AppProvider(context.applicationContext)
                 return RegisterViewModel(
-                    appProvider.provideAuthRepository()
+                    appProvider.provideAuthRepository(),
+                    appProvider.provideUserPreferences()
                 ) as T
             }
         }
@@ -94,10 +95,11 @@ fun SignUpScreen(navController: NavController) {
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color(0xFFD3D3D3),
-                        unfocusedContainerColor = Color(0xFFD3D3D3),
+                        focusedContainerColor = Color(0xFFE3E3E3),
+                        unfocusedContainerColor = Color(0xFFE3E3E3),
                         focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent
+                        unfocusedIndicatorColor = Color.Transparent,
+
                     )
                 )
 
@@ -119,10 +121,11 @@ fun SignUpScreen(navController: NavController) {
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color(0xFFD3D3D3),
-                        unfocusedContainerColor = Color(0xFFD3D3D3),
+                        focusedContainerColor = Color(0xFFE3E3E3),
+                        unfocusedContainerColor = Color(0xFFE3E3E3),
                         focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent
+                        unfocusedIndicatorColor = Color.Transparent,
+
                     )
                 )
 
@@ -149,10 +152,11 @@ fun SignUpScreen(navController: NavController) {
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color(0xFFD3D3D3),
-                        unfocusedContainerColor = Color(0xFFD3D3D3),
+                        focusedContainerColor = Color(0xFFE3E3E3),
+                        unfocusedContainerColor = Color(0xFFE3E3E3),
                         focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent
+                        unfocusedIndicatorColor = Color.Transparent,
+
                     )
                 )
 
@@ -178,10 +182,11 @@ fun SignUpScreen(navController: NavController) {
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color(0xFFD3D3D3),
-                        unfocusedContainerColor = Color(0xFFD3D3D3),
+                        focusedContainerColor = Color(0xFFE3E3E3),
+                        unfocusedContainerColor = Color(0xFFE3E3E3),
                         focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent
+                        unfocusedIndicatorColor = Color.Transparent,
+
                     )
                 )
 
@@ -244,11 +249,17 @@ fun SignUpScreen(navController: NavController) {
                         modifier = Modifier.size(32.dp)
                     )
                 }
+                Text(
+                    text = "¿Quieres ser conductor?",
+                    color = Color(0xFF6C63FF),
+                    fontSize = 12.sp,
+                    modifier = Modifier
+                        .padding(top = 8.dp)
+                        .clickable { navController.navigate("driver_registration") }
+                )
 
                 TextButton(
-                    onClick = {
-                        navController.navigate("login")
-                    }
+                    onClick = { navController.navigate("login") }
                 ) {
                     Text(
                         buildAnnotatedString {

@@ -1,23 +1,16 @@
 package com.VaSeguro.ui.screens.Start.Login
 
-import android.app.Application
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
-import com.VaSeguro.MyApplication
-import com.VaSeguro.data.remote.Login.UserResponse
 import com.VaSeguro.data.repository.AuthRepository.AuthRepository
 import com.VaSeguro.data.repository.UserPreferenceRepository.UserPreferencesRepository
-
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
 
 class LoginViewModel(
     private val authRepository: AuthRepository,
@@ -63,7 +56,7 @@ class LoginViewModel(
         _password.value = newPassword
     }
 
-    fun login(onSuccess: () -> Unit) {
+    fun login(onSuccess: () -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
@@ -82,15 +75,15 @@ class LoginViewModel(
                     onSuccess()
                 } else {
                     _error.value = "Respuesta inválida del servidor"
+                    onError("invalid_response")
                 }
-            } catch (e: retrofit2.HttpException) {
-                _error.value = when (e.code()) {
-                    401 -> "Credenciales incorrectas"
-                    500 -> "Error del servidor"
-                    else -> "Error de conexión (${e.code()})"
-                }
+            } catch (e: HttpException) {
+                val code = e.code().toString()
+                _error.value = code
+                onError(code)
             } catch (e: Exception) {
-                _error.value = "Error: ${e.message ?: "Desconocido"}"
+                _error.value = "network_error"
+                onError("network_error")
             } finally {
                 _isLoading.value = false
             }
@@ -108,5 +101,7 @@ class LoginViewModel(
             userPreferencesRepository.saveRememberMePreference(value)
         }
     }
-
+    fun setError(errorCode: String?) {
+        _error.value = errorCode
+    }
 }

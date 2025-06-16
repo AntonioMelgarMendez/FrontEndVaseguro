@@ -1,0 +1,120 @@
+secrets.properties
+# Build output
+/build
+*/build
+
+# Gradle
+.gradle
+/local.properties
+/.gradle
+/captures
+.externalNativeBuild
+
+# IDE
+.idea
+*.iml
+
+# Kotlin/Java
+*.class
+*.jar
+*.war# Build output
+/build
+*/build
+
+# Gradle
+.gradle
+/local.properties
+/.gradle
+/captures
+.externalNativeBuild
+
+# IDE
+.idea
+*.iml
+
+# Kotlin/Java
+*.class
+*.jar
+*.war
+*.ear
+
+# Jetpack Compose-specific (intermediate files)
+*.kotlin_metadata
+*.kotlin_module
+
+# Android Studio auto generated
+/.idea/*
+*.ipr
+*.iws
+*.iml
+.idea/caches
+.idea/libraries
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+.idea/gradle.xml
+.idea/compiler.xml
+
+# Keystores (si estás usando uno localmente)
+*.jks
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+
+# Jetpack Compose Preview cache
+.idea/compose-compiler.xml
+.idea/compose-preview.xml
+
+# Build artifacts
+*.apk
+*.ap_
+
+# Misc
+*.tmp
+*.temp
+*.ear
+
+# Jetpack Compose-specific (intermediate files)
+*.kotlin_metadata
+*.kotlin_module
+
+# Android Studio auto generated
+/.idea/*
+*.ipr
+*.iws
+*.iml
+.idea/caches
+.idea/libraries
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+.idea/gradle.xml
+.idea/compiler.xml
+
+# Keystores (si estás usando uno localmente)
+*.jks
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+
+# Jetpack Compose Preview cache
+.idea/compose-compiler.xml
+.idea/compose-preview.xml
+
+# Build artifacts
+*.apk
+*.ap_
+
+# Misc
+*.tmp
+*.temp

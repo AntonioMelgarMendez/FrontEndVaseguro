@@ -37,13 +37,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.RectangleShape
-import com.VaSeguro.ui.components.AddDialogues.AddVehicleDialog
-import com.VaSeguro.ui.components.Cards.VehicleCard
+import com.VaSeguro.ui.components.AddVehicleDialog
+import com.VaSeguro.ui.components.AdminCardItem
 
 @Composable
-fun VehicleScreen(
-  viewModel: VehicleViewModel = viewModel(factory = VehicleViewModel.Factory)
-) {
+fun VehicleScreen(viewModel: VehicleViewModel = viewModel()) {
   val vehicles = viewModel.vehicles.collectAsState().value
   val drivers = viewModel.drivers.collectAsState().value
   val expandedMap = viewModel.expandedMap.collectAsState().value
@@ -61,7 +59,8 @@ fun VehicleScreen(
       )
       .clip(RoundedCornerShape(16.dp))
       .background(Color.White)
-      .padding(16.dp)
+      .padding(16.dp),
+    contentAlignment = Alignment.Center
   ) {
     Column(
       modifier = Modifier.fillMaxWidth(),
@@ -110,34 +109,38 @@ fun VehicleScreen(
       Spacer(modifier = Modifier.height(8.dp))
 
       LazyColumn {
-        if (vehicles.isNotEmpty()) {
-          itemsIndexed(vehicles) { index, vehicle ->
-            val isFirst = index == 0
-            val isLast = index == vehicles.lastIndex
+        itemsIndexed(vehicles) { index, vehicle ->
+          val isFirst = index == 0
+          val isLast = index == vehicles.lastIndex
 
-            val cardShape = when {
-              isFirst && isLast -> RoundedCornerShape(16.dp)
-              isFirst -> RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
-              isLast -> RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp)
-              else -> RectangleShape
-            }
+          val cardShape = when {
+            isFirst && isLast -> RoundedCornerShape(16.dp)
+            isFirst -> RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+            isLast -> RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp)
+            else -> RectangleShape
+          }
 
-            VehicleCard(
-              vehicle = vehicle,
-              isExpanded = expandedMap[vehicle.id] ?: false,
-              isChecked = checkedMap[vehicle.id] ?: false,
-              onToggleExpand = { viewModel.toggleExpand(vehicle.id) },
-              onCheckedChange = { viewModel.setChecked(vehicle.id, it) },
-              onDeleteClick = { viewModel.deleteVehicle(vehicle.id) },
-              onEditClick = { println("Editar ${vehicle.plate}") },
-              shape = cardShape,
-              viewModel = viewModel
-            )
-          }
-        } else {
-          item {
-            Text("No vehicles found")
-          }
+          AdminCardItem(
+            id = vehicle.id,
+            title = vehicle.plate,
+            subtitle = "Modelo: ${vehicle.model} | Conductor: ${vehicle.driver_id.forename} ${vehicle.driver_id.surname}",
+            details = listOf(
+              "Modelo" to vehicle.model,
+              "Conductor" to "${vehicle.driver_id.forename} ${vehicle.driver_id.surname}",
+              "Email" to vehicle.driver_id.email,
+              "Teléfono" to vehicle.driver_id.phoneNumber,
+              "Género" to (vehicle.driver_id.gender ?: "N/D"),
+              "Fecha" to vehicle.created_at
+            ),
+            isExpanded = expandedMap[vehicle.id] ?: false,
+            isChecked = checkedMap[vehicle.id] ?: false,
+            shape = cardShape,
+            onCheckedChange = { viewModel.setChecked(vehicle.id, it) },
+            onEditClick = { println("Editar ${vehicle.plate}") },
+            onDeleteClick = { viewModel.deleteVehicle(vehicle.id) },
+            onToggleExpand = { viewModel.toggleExpand(vehicle.id) }
+          )
+
         }
       }
     }
@@ -147,7 +150,7 @@ fun VehicleScreen(
     AddVehicleDialog(
       onDismiss = { showDialog = false },
       onConfirm = { plate, model, driver ->
-        viewModel.addVehicle(plate, model, driver.id)
+        viewModel.addVehicle(plate, model, driver)
         showDialog = false
       },
       drivers = drivers,

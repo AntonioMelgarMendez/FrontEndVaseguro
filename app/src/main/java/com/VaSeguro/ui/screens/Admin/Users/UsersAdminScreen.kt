@@ -1,9 +1,19 @@
 package com.VaSeguro.ui.screens.Admin.Users
 
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -28,13 +38,24 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.VaSeguro.ui.components.Container.ExpandableInfoCard
 
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import com.VaSeguro.ui.components.AdminCardItem
 import com.VaSeguro.ui.components.Container.ConfirmationDialog
 import com.VaSeguro.ui.components.Container.DropDownSelector
 import com.VaSeguro.ui.components.Container.TopBarContainer.TopBar
+import com.VaSeguro.ui.components.CustomizableOutlinedTextField
+import com.VaSeguro.ui.components.Forms.CustomOutlinedTextField
 import com.VaSeguro.ui.theme.PrimaryColor
 
 
@@ -42,63 +63,131 @@ import com.VaSeguro.ui.theme.PrimaryColor
 fun UsersAdminScreen(
     viewModel: UsersAdminScreenViewModel = viewModel()
 ){
-    var showDialog by remember { mutableStateOf(false) }
     val users by viewModel.users.collectAsState()
-    var showConfirmDialog by remember { mutableStateOf<String?>(null) }
+    val expandedMap by viewModel.expandedMap.collectAsState()
+    val checkedMap by viewModel.checkedMap.collectAsState()
+    var showDialog by remember { mutableStateOf(false) }
 
-    Scaffold(
-        topBar = {
-            TopBar("Users")
-        },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                icon = { Icon(Icons.Default.Add, contentDescription = "Add User") },
-                text = { Text("Add") },
-                onClick = { showDialog = true },
-                containerColor = Color(0xFF6C63FF),
-                contentColor = Color.White
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var selectedIdToDelete by remember { mutableStateOf<String?>(null) }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+            .border(
+                width = 1.dp,
+                color = Color.LightGray,
+                shape = RoundedCornerShape(16.dp)
             )
-        }
-    ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .padding(padding)
-                .padding(horizontal = 16.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color.White)
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            items(users) { user ->
-                ExpandableInfoCard(
-                    id = user.id,
-                    title = "${user.forename} ${user.surname}",
-                    info = listOf(
-                        "Forename" to user.forename,
-                        "Surname" to user.surname,
-                        "Email" to user.email,
-                        "Phone Number" to user.phoneNumber,
-                        "Gender" to (user.gender ?: "Not specified")
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Button(
+                    onClick = { },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = Color.Transparent,
+                        contentColor = Color.Black
                     ),
-                    onEdit = { /* Future edit */ },
-                    onDelete = { showConfirmDialog = user.id }
-                )
+                    border = BorderStroke(1.dp, Color.Gray),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(text = "Filter")
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Icon(Icons.Default.FilterList, contentDescription = "Filter")
+                    }
+                }
+
+                Button(
+                    onClick = { showDialog = true },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF7367F0),
+                        contentColor = Color.White
+                    ),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(text = "Add")
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Icon(Icons.Default.Add, contentDescription = "Add")
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            LazyColumn {
+                itemsIndexed(users) { index, user ->
+                    val isFirst = index == 0
+                    val isLast = index == users.lastIndex
+
+                    val shape = when {
+                        isFirst && isLast -> RoundedCornerShape(16.dp)
+                        isFirst -> RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+                        isLast -> RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp)
+                        else -> RectangleShape
+                    }
+
+                    AdminCardItem(
+                        id = user.id,
+                        title = "${user.forename} ${user.surname}",
+                        subtitle = "Phone: ${user.phoneNumber} | Gender: ${user.gender ?: "N/A"}",
+                        details = listOf(
+                            "Email" to user.email,
+                            "Gender" to (user.gender ?: "N/A"),
+                            "Phone" to user.phoneNumber
+                        ),
+                        isExpanded = expandedMap[user.id] ?: false,
+                        isChecked = checkedMap[user.id] ?: false,
+                        onToggleExpand = { viewModel.toggleExpand(user.id) },
+                        onCheckedChange = { viewModel.setChecked(user.id, it) },
+                        onDeleteClick = {
+                            selectedIdToDelete = user.id
+                            showDeleteDialog = true
+                        },
+                        onEditClick = { println("Editar ${user.forename}") },
+                        shape = shape
+                    )
+                }
             }
         }
+    }
 
-        if (showConfirmDialog != null) {
-            ConfirmationDialog(
-                message = "Are you sure you want to delete this user?",
-                onConfirm = {
-                    viewModel.deleteUser(showConfirmDialog!!)
-                    showConfirmDialog = null
-                },
-                onDismiss = { showConfirmDialog = null }
-            )
-        }
+    if (showDialog) {
+        AddUserDialog(
+            onDismiss = { showDialog = false },
+            onSave = { showDialog = false }
+        )
+    }
 
-        if (showDialog) {
-            AddUserDialog(
-                onDismiss = { showDialog = false },
-                onSave = { showDialog = false }
-            )
-        }
+    if (showDeleteDialog && selectedIdToDelete != null) {
+        ConfirmationDialog(
+            message = "Are you sure you want to delete this item?",
+            onConfirm = {
+                viewModel.deleteUser(selectedIdToDelete!!)
+                showDeleteDialog = false
+                selectedIdToDelete = null
+            },
+            onDismiss = {
+                showDeleteDialog = false
+                selectedIdToDelete = null
+            }
+        )
     }
 }
 
@@ -109,6 +198,8 @@ fun AddUserDialog(
     onDismiss: () -> Unit,
     onSave: () -> Unit
 ) {
+    val context = LocalContext.current
+
     var forename by remember { mutableStateOf(TextFieldValue("")) }
     var surname by remember { mutableStateOf(TextFieldValue("")) }
     var email by remember { mutableStateOf(TextFieldValue("")) }
@@ -116,16 +207,27 @@ fun AddUserDialog(
     val genderOptions = listOf("Male", "Female", "Other")
     var gender by remember { mutableStateOf<String?>(null) }
 
+    fun resetForm() {
+        forename = TextFieldValue("")
+        surname = TextFieldValue("")
+        email = TextFieldValue("")
+        phone = TextFieldValue("")
+        gender = null
+    }
 
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = {
+            resetForm()
+            onDismiss()
+        },
         title = { Text("Add User") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(value = forename, onValueChange = { forename = it }, label = { Text("Forename") })
-                OutlinedTextField(value = surname, onValueChange = { surname = it }, label = { Text("Surname") })
-                OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text("Email") })
-                OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text("Phone Number") })
+
+                CustomizableOutlinedTextField(value = forename, onValueChange = { forename = it }, label = "Forename")
+                CustomizableOutlinedTextField(value = surname, onValueChange = { surname = it }, label = "Surname")
+                CustomizableOutlinedTextField(value = email, onValueChange = { email = it }, label = "Email")
+                CustomizableOutlinedTextField(value = phone, onValueChange = { phone = it }, label = "Phone Number")
 
                 DropDownSelector(
                     label = "Gender",
@@ -136,16 +238,29 @@ fun AddUserDialog(
             }
         },
         confirmButton = {
-            Button(onClick = {
-                viewModel.addUser(
-                    forename.text,
-                    surname.text,
-                    email.text,
-                    phone.text,
-                    gender ?: "Not specified"
-                )
-                onSave()
-            },
+            Button(
+                onClick = {
+                    if (
+                        forename.text.isBlank() ||
+                        surname.text.isBlank() ||
+                        email.text.isBlank() ||
+                        phone.text.isBlank() ||
+                        gender.isNullOrBlank()
+                    ) {
+                        Toast.makeText(context, "Por favor completa todos los campos.", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
+
+                    viewModel.addUser(
+                        forename.text,
+                        surname.text,
+                        email.text,
+                        phone.text,
+                        gender ?: "Not specified"
+                    )
+                    resetForm()
+                    onSave()
+                },
                 colors = ButtonDefaults.buttonColors(
                     contentColor = Color.White,
                     containerColor = PrimaryColor
@@ -154,7 +269,10 @@ fun AddUserDialog(
         },
         dismissButton = {
             OutlinedButton(
-                onClick = onDismiss,
+                onClick = {
+                    resetForm()
+                    onDismiss()
+                },
                 border = BorderStroke(2.dp, PrimaryColor),
                 colors = ButtonDefaults.outlinedButtonColors(
                     contentColor = PrimaryColor
@@ -163,6 +281,7 @@ fun AddUserDialog(
         }
     )
 }
+
 
 @Preview(showBackground = true)
 @Composable
