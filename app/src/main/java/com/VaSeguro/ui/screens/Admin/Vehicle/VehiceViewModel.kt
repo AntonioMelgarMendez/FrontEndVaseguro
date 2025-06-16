@@ -15,7 +15,8 @@ import com.VaSeguro.data.model.Vehicle.Vehicle
 import com.VaSeguro.data.model.User.UserData
 import com.VaSeguro.data.model.User.UserRole
 import com.VaSeguro.data.model.Vehicle.VehicleCreateRequest
-import com.VaSeguro.data.repository.Vehicle.VehicleRepository
+import com.VaSeguro.data.repository.VehicleRepository.VehicleRepository
+
 import com.VaSeguro.helpers.Resource
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -71,7 +72,7 @@ class VehicleViewModel(
 
   private fun loadVehicles() {
     viewModelScope.launch {
-      vehicleRepository.getVehicles().collect { resource ->
+      /*vehicleRepository.getVehicles().collect { resource ->
         Log.d("API_TEST", "Respuesta: $resource")
         when (resource) {
           is Resource.Success -> {
@@ -84,7 +85,7 @@ class VehicleViewModel(
 
           }
         }
-      }
+      }*/
     }
   }
 
@@ -114,7 +115,7 @@ class VehicleViewModel(
   }
 
   fun deleteVehicle(vehicleId: String) {
-    viewModelScope.launch {
+    viewModelScope.launch {/*
       vehicleRepository.deleteVehicle(vehicleId).collectLatest { resource ->
         when (resource) {
           is Resource.Success -> {
@@ -132,12 +133,12 @@ class VehicleViewModel(
 
           }
         }
-      }
+      }*/
     }
   }
 
   fun addVehicle(plate: String, model: String, driverId: String) {
-    viewModelScope.launch {
+    viewModelScope.launch {/*
       vehicleRepository.createVehicle(
         VehicleCreateRequest(
           plate = plate,
@@ -163,7 +164,7 @@ class VehicleViewModel(
           }
           else -> {}
         }
-      }
+      }*/
     }
   }
 
@@ -182,4 +183,5 @@ class VehicleViewModel(
       }
     }
   }
+
 }

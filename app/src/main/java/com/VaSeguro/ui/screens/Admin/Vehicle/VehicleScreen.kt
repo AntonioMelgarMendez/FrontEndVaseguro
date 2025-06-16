@@ -120,6 +120,7 @@ fun VehicleScreen(viewModel: VehicleViewModel = viewModel()) {
             else -> RectangleShape
           }
 
+          /*
           AdminCardItem(
             id = vehicle.id,
             title = vehicle.plate,
@@ -140,13 +141,14 @@ fun VehicleScreen(viewModel: VehicleViewModel = viewModel()) {
             onDeleteClick = { viewModel.deleteVehicle(vehicle.id) },
             onToggleExpand = { viewModel.toggleExpand(vehicle.id) }
           )
-
+          */
         }
       }
     }
   }
 
   if (showDialog) {
+    /*
     AddVehicleDialog(
       onDismiss = { showDialog = false },
       onConfirm = { plate, model, driver ->
@@ -155,6 +157,7 @@ fun VehicleScreen(viewModel: VehicleViewModel = viewModel()) {
       },
       drivers = drivers,
     )
+    */
   }
 }
 

@@ -1,7 +1,6 @@
 package com.VaSeguro.data.remote
 
 import com.VaSeguro.data.remote.Children.ChildrenService
-import com.VaSeguro.data.remote.Login.AuthService
 import com.VaSeguro.data.remote.Vehicle.VehicleService
 import com.VaSeguro.data.remote.Auth.AuthService
 import com.VaSeguro.map.services.MapsApiService

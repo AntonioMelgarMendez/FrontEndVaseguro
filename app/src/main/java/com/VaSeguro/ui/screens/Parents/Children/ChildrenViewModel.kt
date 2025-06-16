@@ -8,10 +8,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.VaSeguro.MyApplication
 import com.VaSeguro.data.model.Child.Child
 import com.VaSeguro.data.model.User.UserData
-import com.VaSeguro.data.model.Vehicle.Vehicle
 import com.VaSeguro.data.repository.Children.ChildrenRepository
-import com.VaSeguro.data.repository.Vehicle.VehicleRepository
-import com.VaSeguro.ui.screens.Admin.Vehicle.VehicleViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update

@@ -43,6 +43,7 @@ fun VehicleCard(
   onToggleExpand: () -> Unit,
   viewModel: VehicleViewModel
 ) {
+  /*
   Card(
     modifier = Modifier
       .fillMaxWidth(),
@@ -104,5 +105,5 @@ fun VehicleCard(
         )
       }
     }
-  }
+  }*/
 }

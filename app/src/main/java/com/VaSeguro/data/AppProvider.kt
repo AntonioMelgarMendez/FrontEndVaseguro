@@ -14,7 +14,7 @@ import com.VaSeguro.data.repository.VehicleRepository.VehicleRepositoryImpl
 import com.VaSeguro.map.repository.MapsApiRepositoryImpl
 import com.VaSeguro.map.repository.RoutesApiRepository
 import com.VaSeguro.map.repository.RoutesApiRepositoryImpl
-import com.VaSeguro.data.repository.Vehicle.VehicleRepositoryImpl
+
 
 private const val USER_PREFERENCE_NAME = "user_preferences"
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = USER_PREFERENCE_NAME)
