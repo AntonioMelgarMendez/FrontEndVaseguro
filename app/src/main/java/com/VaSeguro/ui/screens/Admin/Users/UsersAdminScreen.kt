@@ -42,6 +42,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -51,6 +52,8 @@ import com.VaSeguro.ui.components.AdminCardItem
 import com.VaSeguro.ui.components.Container.ConfirmationDialog
 import com.VaSeguro.ui.components.Container.DropDownSelector
 import com.VaSeguro.ui.components.Container.TopBarContainer.TopBar
+import com.VaSeguro.ui.components.CustomizableOutlinedTextField
+import com.VaSeguro.ui.components.Forms.CustomOutlinedTextField
 import com.VaSeguro.ui.theme.PrimaryColor
 
 
@@ -216,10 +219,11 @@ fun AddUserDialog(
         title = { Text("Add User") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(value = forename, onValueChange = { forename = it }, label = { Text("Forename") })
-                OutlinedTextField(value = surname, onValueChange = { surname = it }, label = { Text("Surname") })
-                OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text("Email") })
-                OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text("Phone Number") })
+
+                CustomizableOutlinedTextField(value = forename, onValueChange = { forename = it }, label = "Forename")
+                CustomizableOutlinedTextField(value = surname, onValueChange = { surname = it }, label = "Surname")
+                CustomizableOutlinedTextField(value = email, onValueChange = { email = it }, label = "Email")
+                CustomizableOutlinedTextField(value = phone, onValueChange = { phone = it }, label = "Phone Number")
 
                 DropDownSelector(
                     label = "Gender",

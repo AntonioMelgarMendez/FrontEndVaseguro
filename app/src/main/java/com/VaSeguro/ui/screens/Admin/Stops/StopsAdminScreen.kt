@@ -41,6 +41,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -55,6 +56,7 @@ import com.VaSeguro.ui.components.Container.TopBarContainer.TopBar
 import com.VaSeguro.ui.screens.Admin.Users.UsersAdminScreen
 import com.VaSeguro.ui.theme.PrimaryColor
 import com.VaSeguro.ui.components.AdminCardItem
+import com.VaSeguro.ui.components.CustomizableOutlinedTextField
 
 @Composable
 fun StopsAdminScreen(
@@ -222,9 +224,9 @@ fun AddStopDialog(
         title = { Text("Add Stop") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Name") })
-                OutlinedTextField(value = latitude, onValueChange = { latitude = it }, label = { Text("Latitude") })
-                OutlinedTextField(value = longitude, onValueChange = { longitude = it }, label = { Text("Longitude") })
+                CustomizableOutlinedTextField(value = name, onValueChange = { name = it }, label = "Name")
+                CustomizableOutlinedTextField(value = latitude, onValueChange = { latitude = it }, label = "Latitude")
+                CustomizableOutlinedTextField(value = longitude, onValueChange = { longitude = it }, label = "Longitude")
 
                 DropDownSelector("Stop Type", stopTypes.map { it.type }, stopType?.type) { selectedType ->
                     stopType = stopTypes.find { it.type == selectedType }
@@ -254,7 +256,7 @@ fun AddStopDialog(
                     containerColor = PrimaryColor
                 )
             ) {
-                Text("Save")
+                Text("Agregar")
             }
         },
         dismissButton = {
@@ -268,7 +270,7 @@ fun AddStopDialog(
                     contentColor = PrimaryColor
                 )
             ) {
-                Text("Cancel")
+                Text("Cancelar")
             }
         }
     )

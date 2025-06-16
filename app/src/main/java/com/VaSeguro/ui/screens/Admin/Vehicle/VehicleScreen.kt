@@ -38,7 +38,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.RectangleShape
 import com.VaSeguro.ui.components.AddVehicleDialog
-import com.VaSeguro.ui.components.VehicleCard
+import com.VaSeguro.ui.components.AdminCardItem
 
 @Composable
 fun VehicleScreen(viewModel: VehicleViewModel = viewModel()) {
@@ -120,16 +120,27 @@ fun VehicleScreen(viewModel: VehicleViewModel = viewModel()) {
             else -> RectangleShape
           }
 
-          VehicleCard(
-            vehicle = vehicle,
+          AdminCardItem(
+            id = vehicle.id,
+            title = vehicle.plate,
+            subtitle = "Modelo: ${vehicle.model} | Conductor: ${vehicle.driver_id.forename} ${vehicle.driver_id.surname}",
+            details = listOf(
+              "Modelo" to vehicle.model,
+              "Conductor" to "${vehicle.driver_id.forename} ${vehicle.driver_id.surname}",
+              "Email" to vehicle.driver_id.email,
+              "Teléfono" to vehicle.driver_id.phoneNumber,
+              "Género" to (vehicle.driver_id.gender ?: "N/D"),
+              "Fecha" to vehicle.created_at
+            ),
             isExpanded = expandedMap[vehicle.id] ?: false,
             isChecked = checkedMap[vehicle.id] ?: false,
-            onToggleExpand = { viewModel.toggleExpand(vehicle.id) },
+            shape = cardShape,
             onCheckedChange = { viewModel.setChecked(vehicle.id, it) },
-            onDeleteClick = { viewModel.deleteVehicle(vehicle.id) },
             onEditClick = { println("Editar ${vehicle.plate}") },
-            shape = cardShape
+            onDeleteClick = { viewModel.deleteVehicle(vehicle.id) },
+            onToggleExpand = { viewModel.toggleExpand(vehicle.id) }
           )
+
         }
       }
     }

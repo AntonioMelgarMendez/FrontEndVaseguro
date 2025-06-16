@@ -49,6 +49,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -62,6 +63,7 @@ import com.VaSeguro.data.model.Child.Child
 import com.VaSeguro.ui.components.AdminCardItem
 import com.VaSeguro.ui.components.Container.ConfirmationDialog
 import com.VaSeguro.ui.components.Container.DropDownSelector
+import com.VaSeguro.ui.components.CustomizableOutlinedTextField
 import com.VaSeguro.ui.theme.PrimaryColor
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -239,8 +241,9 @@ fun AddChildDialog(
         title = { Text("Add Child") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(value = forenames, onValueChange = { forenames = it }, label = { Text("Forenames") })
-                OutlinedTextField(value = surnames, onValueChange = { surnames = it }, label = { Text("Surnames") })
+
+                CustomizableOutlinedTextField(forenames, { forenames = it }, "Forenames")
+                CustomizableOutlinedTextField(surnames, { surnames = it }, "Surnames")
 
                 OutlinedTextField(
                     value = selectedDateText,
@@ -251,10 +254,18 @@ fun AddChildDialog(
                         IconButton(onClick = { showDatePicker = true }) {
                             Icon(Icons.Default.CalendarToday, contentDescription = "Calendar")
                         }
-                    }
+                    },
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedIndicatorColor = PrimaryColor,
+                        unfocusedIndicatorColor = Color.LightGray,
+                        focusedLabelColor = PrimaryColor,
+                        unfocusedLabelColor = Color.Gray
+                    )
                 )
 
-                OutlinedTextField(value = medicalInfo, onValueChange = { medicalInfo = it }, label = { Text("Medical Info") })
+                CustomizableOutlinedTextField(medicalInfo, { medicalInfo = it }, "Medical Info")
                 DropDownSelector("Parent", parents, selectedParent) { selectedParent = it }
                 DropDownSelector("Driver", drivers, selectedDriver) { selectedDriver = it }
             }
@@ -296,7 +307,7 @@ fun AddChildDialog(
                     containerColor = PrimaryColor
                 )
             ) {
-                Text("Save")
+                Text("Agregar")
             }
         },
         dismissButton = {
@@ -308,7 +319,7 @@ fun AddChildDialog(
                 border = BorderStroke(2.dp, PrimaryColor),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = PrimaryColor)
             ) {
-                Text("Cancel")
+                Text("Cancelar")
             }
         }
     )

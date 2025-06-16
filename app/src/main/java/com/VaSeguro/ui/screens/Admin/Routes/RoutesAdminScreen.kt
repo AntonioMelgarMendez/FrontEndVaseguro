@@ -40,10 +40,12 @@ import androidx.compose.material3.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.RectangleShape
 import com.VaSeguro.data.model.Routes.RoutesData
+import com.VaSeguro.ui.components.CustomizableOutlinedTextField
 import java.util.UUID
 
 
@@ -216,10 +218,11 @@ fun AddRouteDialog(
         title = { Text("Add Route") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Route Name") })
-                OutlinedTextField(value = startDate, onValueChange = { startDate = it }, label = { Text("Start Date") })
-                OutlinedTextField(value = endDate, onValueChange = { endDate = it }, label = { Text("End Date") })
-                OutlinedTextField(value = vehiculeId, onValueChange = { vehiculeId = it }, label = { Text("Vehicule ID") })
+                CustomizableOutlinedTextField(value = name, onValueChange = { name = it }, label = "Route Name")
+                CustomizableOutlinedTextField(value = startDate, onValueChange = { startDate = it }, label = "Start Date")
+                CustomizableOutlinedTextField(value = endDate, onValueChange = { endDate = it }, label = "End Date")
+                CustomizableOutlinedTextField(value = vehiculeId, onValueChange = { vehiculeId = it }, label = "Vehicule ID")
+
 
                 DropDownSelector("Route Type", routeTypes.map { it.type }, routeType?.type) { selectedType ->
                     routeType = routeTypes.find { it.type == selectedType }
@@ -252,7 +255,7 @@ fun AddRouteDialog(
                     containerColor = PrimaryColor
                 )
             ) {
-                Text("Save")
+                Text("Agregar")
             }
         },
         dismissButton = {
@@ -264,7 +267,7 @@ fun AddRouteDialog(
                 border = BorderStroke(2.dp, PrimaryColor),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = PrimaryColor)
             ) {
-                Text("Cancel")
+                Text("Cancelar")
             }
         }
     )

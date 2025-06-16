@@ -2,6 +2,7 @@ package com.VaSeguro.ui.components
 
 import android.R.attr.enabled
 import android.R.attr.type
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -36,6 +37,7 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.*
 import com.VaSeguro.data.model.User.UserData
 import com.VaSeguro.data.model.User.UserRole
+import com.VaSeguro.ui.theme.PrimaryColor
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -140,14 +142,14 @@ fun AddVehicleDialog(
           modifier = Modifier.fillMaxWidth(),
           horizontalArrangement = Arrangement.SpaceBetween
         ) {
-          TextButton(
-            onClick = onDismiss,
-            modifier = Modifier.weight(1f),
-            colors = ButtonDefaults.textButtonColors(
-              contentColor = customColor
-            )
+          OutlinedButton(
+            onClick = {
+              onDismiss()
+            },
+            border = BorderStroke(2.dp, PrimaryColor),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = PrimaryColor)
           ) {
-            Text("Cancelar", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+            Text("Cancelar")
           }
 
           Spacer(modifier = Modifier.width(8.dp))
