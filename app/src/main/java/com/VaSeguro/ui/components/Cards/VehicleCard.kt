@@ -1,4 +1,4 @@
-package com.VaSeguro.ui.components
+package com.VaSeguro.ui.components.Cards
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
@@ -27,12 +27,9 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.VaSeguro.data.model.User.UserData
-import com.VaSeguro.data.model.User.UserRole
 import com.VaSeguro.data.model.Vehicle.Vehicle
+import com.VaSeguro.ui.components.Misc.TextRow
 import com.VaSeguro.ui.screens.Admin.Vehicle.VehicleViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
 
 @Composable
 fun VehicleCard(

@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import com.VaSeguro.data.remote.RetrofitInstance
 import com.VaSeguro.data.repository.AuthRepository.AuthRepositoryImpl
+import com.VaSeguro.data.repository.Children.ChildrenRepositoryImpl
 import com.VaSeguro.data.repository.UserPreferenceRepository.UserPreferencesRepositoryImpl
 import com.VaSeguro.data.repository.Vehicle.VehicleRepositoryImpl
 
@@ -18,8 +19,10 @@ class AppProvider(context: Context) {
     private val userPreferencesRepository = UserPreferencesRepositoryImpl(context.dataStore)
     private val authRepository = AuthRepositoryImpl(RetrofitInstance.authService)
     private val vehicleRespository = VehicleRepositoryImpl(RetrofitInstance.vehicleService)
+    private val childrenRespository = ChildrenRepositoryImpl(RetrofitInstance.childrenService)
 
     fun provideUserPreferences() = userPreferencesRepository
     fun provideAuthRepository() = authRepository
     fun provideVehicleRepository() = vehicleRespository
+    fun provideChildrenRepository() = childrenRespository
 }

@@ -1,7 +1,5 @@
-package com.VaSeguro.ui.components
+package com.VaSeguro.ui.components.AddDialogues
 
-import android.R.attr.enabled
-import android.R.attr.type
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement

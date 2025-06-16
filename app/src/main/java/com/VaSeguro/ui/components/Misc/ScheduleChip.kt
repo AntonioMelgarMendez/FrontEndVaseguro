@@ -1,4 +1,4 @@
-package com.VaSeguro.ui.components
+package com.VaSeguro.ui.components.Misc
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding

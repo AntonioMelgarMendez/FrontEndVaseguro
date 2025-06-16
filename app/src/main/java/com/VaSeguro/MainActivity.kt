@@ -21,6 +21,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.VaSeguro.ui.components.Container.GeneralScaffold
 import com.VaSeguro.ui.screens.Admin.Vehicle.VehicleScreen
+import com.VaSeguro.ui.screens.Parents.Children.ChildrenScreen
 import com.VaSeguro.ui.screens.Start.Code.CodeScreen
 import com.VaSeguro.ui.screens.Start.Login.LoginScreen
 import com.VaSeguro.ui.screens.Start.SignUp.SignUpScreen
@@ -39,7 +40,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             VaSeguroTheme(darkTheme = false){
-                VehicleScreen()
+                ChildrenScreen()
             }
         }
     }

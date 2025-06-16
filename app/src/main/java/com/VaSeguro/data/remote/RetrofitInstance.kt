@@ -1,5 +1,6 @@
 package com.VaSeguro.data.remote
 
+import com.VaSeguro.data.remote.Children.ChildrenService
 import com.VaSeguro.data.remote.Login.AuthService
 import com.VaSeguro.data.remote.Vehicle.VehicleService
 import okhttp3.OkHttpClient
@@ -28,5 +29,9 @@ object RetrofitInstance {
 
     val vehicleService: VehicleService by lazy {
         retrofit.create(VehicleService::class.java)
+    }
+
+    val childrenService: ChildrenService by lazy {
+        retrofit.create(ChildrenService::class.java)
     }
 }
