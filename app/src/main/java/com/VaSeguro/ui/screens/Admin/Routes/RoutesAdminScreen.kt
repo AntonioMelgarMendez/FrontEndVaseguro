@@ -25,21 +25,16 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.VaSeguro.data.model.Routes.RouteStatus
-import com.VaSeguro.data.model.Routes.RouteType
-import com.VaSeguro.data.model.Stop.StopType
 import com.VaSeguro.ui.components.Container.ConfirmationDialog
 import com.VaSeguro.ui.components.Container.DropDownSelector
 import com.VaSeguro.ui.components.Container.ExpandableInfoCard
-import com.VaSeguro.ui.screens.Admin.Stops.StopsAdminScreen
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.TextField
+import com.VaSeguro.data.model.Route.RouteStatus
+import com.VaSeguro.data.model.Route.RouteType
 import com.VaSeguro.ui.components.Container.TopBarContainer.TopBar
 import com.VaSeguro.ui.theme.PrimaryColor
 
@@ -68,12 +63,12 @@ fun RoutesAdminScreen(
         LazyColumn(modifier = Modifier.padding(padding).padding(horizontal = 16.dp)) {
             items(routes) { route ->
                 ExpandableInfoCard(
-                    id = route.id,
+                    id = route.id.toInt(),
                     title = route.name,
                     info = listOf(
                         "Start Date" to route.start_date,
                         "End Date" to route.end_date,
-                        "Vehicle ID" to route.vehicule_id,
+                        "Vehicle ID" to route.vehicle_id.id,
                         "Status" to route.status_id.status,
                         "Type" to route.type_id.type
                     ),

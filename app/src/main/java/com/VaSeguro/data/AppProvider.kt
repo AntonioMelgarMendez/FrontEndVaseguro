@@ -7,6 +7,8 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import com.VaSeguro.data.remote.RetrofitInstance
 import com.VaSeguro.data.repository.AuthRepository.AuthRepositoryImpl
+import com.VaSeguro.data.repository.SavedRoutesRepository
+import com.VaSeguro.data.repository.StopPassengerRepository
 import com.VaSeguro.data.repository.UserPreferenceRepository.UserPreferencesRepositoryImpl
 import com.VaSeguro.map.repository.MapsApiRepositoryImpl
 import com.VaSeguro.map.repository.RoutesApiRepository
@@ -24,9 +26,13 @@ class AppProvider(context: Context) {
 
     private val mapsApiRepository = MapsApiRepositoryImpl(mapsApiService)
     private val routesApiRepository = RoutesApiRepositoryImpl(routesApiService)
+    private val stopPassengerRepository = StopPassengerRepository()
+    private val savedRoutesRepository = SavedRoutesRepository()
 
     fun provideUserPreferences() = userPreferencesRepository
     fun provideAuthRepository() = authRepository
     fun provideMapsApiRepository() = mapsApiRepository
     fun provideRoutesApiRepository() = routesApiRepository
+    fun provideStopPassengerRepository() = stopPassengerRepository
+    fun provideSavedRoutesRepository() = savedRoutesRepository
 }

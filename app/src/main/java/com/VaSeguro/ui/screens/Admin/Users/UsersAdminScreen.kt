@@ -67,7 +67,7 @@ fun UsersAdminScreen(
         ) {
             items(users) { user ->
                 ExpandableInfoCard(
-                    id = user.id,
+                    id = user.id.toInt(),
                     title = "${user.forename} ${user.surname}",
                     info = listOf(
                         "Forename" to user.forename,

@@ -56,7 +56,7 @@ fun ChildrenAdminScreen(
 ) {
     var showDialog by remember { mutableStateOf(false) }
     val children by viewModel.children.collectAsState()
-    var showConfirmDialog by remember { mutableStateOf<String?>(null) }
+    var childToDelete by remember { mutableStateOf<Int?>(null) }
 
     Scaffold(
         topBar = {
@@ -93,20 +93,20 @@ fun ChildrenAdminScreen(
                     ),
                     onEdit = { /* Acción futura */ },
                     onDelete = {
-                        showConfirmDialog = child.id
+                        childToDelete = child.id
                     }
                 )
             }
         }
 
-        if (showConfirmDialog != null) {
+        if (childToDelete != null) {
             ConfirmationDialog(
                 message = "Are you sure you want to delete this child?",
                 onConfirm = {
-                    viewModel.deleteChild(showConfirmDialog!!)
-                    showConfirmDialog = null
+                    viewModel.deleteChild(childToDelete!!)
+                    childToDelete = null
                 },
-                onDismiss = { showConfirmDialog = null }
+                onDismiss = { childToDelete = null }
             )
         }
 
@@ -233,3 +233,4 @@ fun AddChildDialog(
 fun ChildrenAdminScreenPreview() {
     ChildrenAdminScreen()
 }
+

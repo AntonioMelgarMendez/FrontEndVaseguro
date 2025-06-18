@@ -9,6 +9,10 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.VaSeguro.MyApplication
+import com.VaSeguro.data.model.Child.Child
+import com.VaSeguro.data.model.Routes.RoutesData
+import com.VaSeguro.data.model.StopPassenger.StopPassenger
+import com.VaSeguro.data.repository.StopPassengerRepository
 import com.VaSeguro.map.calculateDistance
 import com.VaSeguro.map.data.PlaceResult
 import com.VaSeguro.map.data.Polyline
@@ -16,7 +20,6 @@ import com.VaSeguro.map.data.Route
 import com.VaSeguro.map.data.RoutePoint
 import com.VaSeguro.map.data.RouteSegment
 import com.VaSeguro.map.decodePolyline
-import com.VaSeguro.map.formatWaypointsForApi
 import com.VaSeguro.map.isPointNearPolyline
 import com.VaSeguro.map.repository.MapsApiRepository
 import com.VaSeguro.map.repository.RoutesApiRepository
@@ -26,6 +29,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
@@ -35,8 +39,27 @@ import kotlinx.coroutines.launch
  */
 class RouteScreenViewModel(
     private val mapsApiRepository: MapsApiRepository,
-    private val routesApiRepository: RoutesApiRepository
+    private val routesApiRepository: RoutesApiRepository,
+    private val stopPassengerRepository: StopPassengerRepository
 ) : ViewModel() {
+
+    // Estados para niños y paradas
+    private val _children = MutableStateFlow<List<Child>>(emptyList())
+    val children: StateFlow<List<Child>> = _children.asStateFlow()
+
+    private val _stopPassengers = MutableStateFlow<List<StopPassenger>>(emptyList())
+    val stopPassengers: StateFlow<List<StopPassenger>> = _stopPassengers.asStateFlow()
+
+    // Estado para mantener los niños seleccionados
+    private val _selectedChildIds = MutableStateFlow<List<Int>>(emptyList())
+    val selectedChildIds: StateFlow<List<Int>> = _selectedChildIds.asStateFlow()
+
+    // Estado para la búsqueda de niños
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    // Estado para niños filtrados por búsqueda
+    val filteredChildren = MutableStateFlow<List<Child>>(emptyList())
 
     // Estados para puntos de la ruta
     private val _routePoints = mutableStateListOf<RoutePoint>()
@@ -89,18 +112,236 @@ class RouteScreenViewModel(
     private val _adjustedTimeToNextPoint = MutableStateFlow("")
     val adjustedTimeToNextPoint: StateFlow<String> = _adjustedTimeToNextPoint.asStateFlow()
 
+    // Estado para controlar si la ruta actual está guardada en la base de datos
+    private val _isCurrentRouteSaved = MutableStateFlow(false)
+    val isCurrentRouteSaved: StateFlow<Boolean> = _isCurrentRouteSaved.asStateFlow()
+
+    // ID de la ruta cargada actualmente (si es una ruta guardada)
+    private val _currentRouteId = MutableStateFlow<String?>(null)
+    val currentRouteId: StateFlow<String?> = _currentRouteId.asStateFlow()
+
     // Última ubicación para calcular velocidad
     private var lastLocation: LatLng? = null
     private var lastLocationTime: Long = 0
 
     // Distancia en metros para considerar que estamos cerca de un punto
-    private val proximityThreshold = 100.0
+    private val proximityThreshold = 50.0
 
     // Distancia en metros para considerar que hemos llegado a un punto y pasar al siguiente segmento
-    private val waypointArrivalThreshold = 50.0
+    private val waypointArrivalThreshold = 20.0
 
     // Job para control de alertas de proximidad
     private var proximityAlertJob: Job? = null
+
+    init {
+        // Cargar los datos de niños y sus paradas al iniciar
+        loadChildrenData()
+
+        // Iniciar observador para filtrado de niños
+        viewModelScope.launch {
+            // Combinar estado de niños y búsqueda para filtrar
+            _children.collect { childrenList ->
+                updateFilteredChildren()
+            }
+        }
+
+        viewModelScope.launch {
+            _searchQuery.collect {
+                updateFilteredChildren()
+            }
+        }
+    }
+
+    /**
+     * Carga los datos de los niños y sus paradas
+     */
+    private fun loadChildrenData() {
+        viewModelScope.launch {
+            try {
+                // Obtener todas las paradas
+                val stops = stopPassengerRepository.getAllStopPassengers().first()
+                _stopPassengers.value = stops
+
+                // Extraer los niños únicos
+                val uniqueChildren = stops.map { it.child }.distinctBy { it.id }
+                _children.value = uniqueChildren
+            } catch (e: Exception) {
+                showError("Error al cargar datos de niños: ${e.localizedMessage}")
+            }
+        }
+    }
+
+    /**
+     * Actualiza la lista de niños filtrados basado en la búsqueda
+     */
+    private fun updateFilteredChildren() {
+        val query = _searchQuery.value.trim().lowercase()
+        val allChildren = _children.value
+
+        filteredChildren.value = if (query.isEmpty()) {
+            allChildren
+        } else {
+            allChildren.filter { child ->
+                child.fullName.lowercase().contains(query) ||
+                child.forenames.lowercase().contains(query) ||
+                child.surnames.lowercase().contains(query)
+            }
+        }
+    }
+
+    /**
+     * Actualiza el texto de búsqueda
+     */
+    fun updateSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
+
+    /**
+     * Alterna la selección de un niño
+     */
+    fun toggleChildSelection(childId: Int) {
+        val currentSelection = _selectedChildIds.value.toMutableList()
+
+        if (currentSelection.contains(childId)) {
+            currentSelection.remove(childId)
+        } else {
+            currentSelection.add(childId)
+        }
+
+        _selectedChildIds.value = currentSelection
+    }
+
+    /**
+     * Añade un niño a la selección si no está ya seleccionado
+     */
+    fun selectChild(childId: Int) {
+        if (!_selectedChildIds.value.contains(childId)) {
+            val updatedSelection = _selectedChildIds.value.toMutableList()
+            updatedSelection.add(childId)
+            _selectedChildIds.value = updatedSelection
+        }
+    }
+
+    /**
+     * Elimina un niño de la selección
+     */
+    fun unselectChild(childId: Int) {
+        if (_selectedChildIds.value.contains(childId)) {
+            val updatedSelection = _selectedChildIds.value.toMutableList()
+            updatedSelection.remove(childId)
+            _selectedChildIds.value = updatedSelection
+        }
+    }
+
+    /**
+     * Verifica si un niño está seleccionado
+     */
+    fun isChildSelected(childId: Int): Boolean {
+        return _selectedChildIds.value.contains(childId)
+    }
+
+    /**
+     * Establece la selección de niños
+     */
+    fun setSelectedChildren(childIds: List<Int>) {
+        _selectedChildIds.value = childIds
+    }
+
+    /**
+     * Limpia la selección de niños
+     */
+    fun clearSelectedChildren() {
+        _selectedChildIds.value = emptyList()
+    }
+
+    /**
+     * Obtiene las paradas asociadas a un niño específico
+     */
+    fun getStopsByChild(childId: Int): List<StopPassenger> {
+        return _stopPassengers.value.filter { it.child.id == childId }
+    }
+
+    /**
+     * Añade los puntos de parada de un niño a la ruta, con opción para calcular o no la ruta automáticamente
+     */
+    fun addChildStopsToRoute(childId: Int, calculateRouteAutomatically: Boolean = true) {
+        val childStops = getStopsByChild(childId)
+
+        if (childStops.isEmpty()) {
+            showError("No hay paradas definidas para este niño")
+            return
+        }
+
+        // Si hay paradas existentes, mantenemos el historial
+        // Si no, limpiamos la ruta
+        if (_routePoints.isEmpty()) {
+            clearRoute()
+        }
+
+        // Convertir StopPassenger a RoutePoint y agregar a la ruta
+        childStops.forEach { stop ->
+            val latLng = LatLng(stop.stop.latitude, stop.stop.longitude)
+            val name = "${stop.child.fullName} - ${stop.stop.name} (${stop.stopType.name})"
+            addRoutePoint(latLng, name)
+        }
+
+        // Calcular la ruta con los nuevos puntos solo si se solicita y hay suficientes puntos
+        if (calculateRouteAutomatically && _routePoints.size >= 2) {
+            calculateRoute()
+        }
+    }
+
+    /**
+     * Elimina los puntos de parada asociados a un niño específico
+     */
+    fun removeChildStops(childId: Int) {
+        val childStops = getStopsByChild(childId)
+
+        // Si no hay paradas para este niño, no hacemos nada
+        if (childStops.isEmpty()) return
+
+        // Creamos un conjunto con los nombres de las paradas del niño para búsqueda eficiente
+        val childStopNames = childStops.map { stop ->
+            "${stop.child.fullName} - ${stop.stop.name} (${stop.stopType.name})"
+        }.toSet()
+
+        // Eliminamos los puntos que corresponden a este niño
+        val pointsToRemove = _routePoints.filter { point ->
+            point.name in childStopNames
+        }
+
+        pointsToRemove.forEach { point ->
+            removeRoutePoint(point.location)
+        }
+    }
+
+    /**
+     * Añade los puntos de parada de múltiples niños a la ruta
+     * pero sin calcular automáticamente la ruta
+     */
+    fun addMultipleChildrenStopsToRoute(childrenIds: List<Int>) {
+        if (childrenIds.isEmpty()) {
+            showError("No se han seleccionado niños")
+            return
+        }
+
+        clearRoute()
+
+        // Obtener todas las paradas de los niños seleccionados
+        childrenIds.forEach { childId ->
+            val childStops = getStopsByChild(childId)
+            childStops.forEach { stop ->
+                val latLng = LatLng(stop.stop.latitude, stop.stop.longitude)
+                val name = "${stop.child.fullName} - ${stop.stop.name} (${stop.stopType.name})"
+                addRoutePoint(latLng, name)
+            }
+        }
+
+        // Ya no calculamos la ruta aquí, solo notificamos que hay puntos disponibles
+        if (_routePoints.size < 2) {
+            showError("No hay suficientes paradas para una ruta. Necesitas al menos 2 puntos.")
+        }
+    }
 
     /**
      * Añade un punto a la ruta con información opcional
@@ -119,6 +360,8 @@ class RouteScreenViewModel(
         _currentSegmentIndex.value = 0
         _nextPointName.value = ""
         _timeToNextPoint.value = ""
+        _isCurrentRouteSaved.value = false
+        _currentRouteId.value = null
         dismissProximityAlert()
     }
 
@@ -318,8 +561,9 @@ class RouteScreenViewModel(
             return
         }
 
-        // Verificar proximidad a cada punto de la ruta (excepto el que ya llegamos)
-        for (i in _currentSegmentIndex.value until _routePoints.size) {
+        // Verificar proximidad a cada punto de la ruta (excepto el punto de partida y los que ya pasamos)
+        // Comenzamos desde el índice 1 para saltar el punto de partida ("Mi ubicación")
+        for (i in maxOf(1, _currentSegmentIndex.value) until _routePoints.size) {
             val point = _routePoints[i]
             val distance = calculateDistance(currentLocation, point.location)
             if (distance <= proximityThreshold && distance > waypointArrivalThreshold) {
@@ -378,6 +622,57 @@ class RouteScreenViewModel(
 
         // Calcula el progreso basado en la distancia recorrida
         _routeProgress.value = closestPointIndex.toFloat() / decodedPoints.size
+    }
+
+    /**
+     * Actualiza manualmente el progreso de la ruta (útil para simular el inicio de la ruta)
+     */
+    fun updateRouteProgress(progress: Float) {
+        if (progress in 0.0f..1.0f) {
+            _routeProgress.value = progress
+        }
+    }
+
+    /**
+     * Carga una ruta guardada desde su ID
+     */
+    fun loadSavedRoute(routeData: RoutesData) {
+        _isLoading.value = true
+        _errorMessage.value = null
+
+        viewModelScope.launch {
+            try {
+                // Limpiar cualquier ruta anterior
+                clearRoute()
+
+                // Actualizar estados para indicar que esta es una ruta guardada
+                _isCurrentRouteSaved.value = true
+                _currentRouteId.value = routeData.id
+
+                // Convertir paradas de la ruta guardada a puntos de ruta
+                routeData.stopRoute.forEach { stopRoute ->
+                    val stop = stopRoute.stopPassenger.stop
+                    val latLng = LatLng(stop.latitude, stop.longitude)
+                    val childName = stopRoute.stopPassenger.child.fullName
+                    val stopName = stop.name
+                    val stopTypeName = stopRoute.stopPassenger.stopType.name
+
+                    val name = "$childName - $stopName ($stopTypeName)"
+                    addRoutePoint(latLng, name)
+                }
+
+                // Si tenemos ubicación actual y al menos un punto, calcular la ruta
+                if (currentLocation.value != null && _routePoints.isNotEmpty()) {
+                    calculateRoute()
+                } else {
+                    showError("No se puede cargar la ruta sin ubicación actual")
+                }
+            } catch (e: Exception) {
+                showError("Error al cargar la ruta: ${e.message}")
+            } finally {
+                _isLoading.value = false
+            }
+        }
     }
 
     /**
@@ -456,24 +751,36 @@ class RouteScreenViewModel(
                         .joinToString("|") { it.toApiString() }
                 } else null
 
+                // Log detallado para depuración
+                println("DEBUG_ROUTES: Calculando ruta:")
+                println("DEBUG_ROUTES: Origen: $origin")
+                println("DEBUG_ROUTES: Destino: $destination")
+                println("DEBUG_ROUTES: Waypoints: $waypoints")
+                println("DEBUG_ROUTES: Total puntos: ${_routePoints.size}")
+
                 val response = routesApiRepository.getDirections(
                     origin = origin,
                     destination = destination,
                     waypoints = waypoints
                 )
 
+                println("DEBUG_ROUTES: Rutas recibidas: ${response.size}")
+
                 if (response.isNotEmpty()) {
                     // Crear segmentos de ruta
                     val originalRoute = response.first()
+                    println("DEBUG_ROUTES: Distancia de ruta: ${originalRoute.distanceMeters} metros")
                     val routeWithSegments = createRouteSegments(originalRoute)
 
                     _selectedRoute.value = routeWithSegments
                     _currentSegmentIndex.value = 0
                     updateNextPointInfo()
                 } else {
+                    println("DEBUG_ROUTES: La API devolvió una respuesta vacía")
                     showError("No se pudo calcular la ruta")
                 }
             } catch (e: Exception) {
+                println("DEBUG_ROUTES: Error al calcular ruta: ${e.message}")
                 showError("Error al calcular la ruta: ${e.localizedMessage}")
                 e.printStackTrace()
             } finally {
@@ -570,36 +877,6 @@ class RouteScreenViewModel(
     }
 
     /**
-     * Reordena una lista específica de puntos de ruta por proximidad
-     */
-    private fun reorderRoutePointsByProximity(currentLocation: LatLng, points: MutableList<RoutePoint>) {
-        if (points.isEmpty()) return
-
-        val orderedPoints = mutableListOf<RoutePoint>()
-        val mutablePoints = points.toMutableList()
-
-        // Punto de referencia inicial
-        var currentPosition = currentLocation
-
-        // Ordenar los puntos por cercanía
-        while (mutablePoints.isNotEmpty()) {
-            // Encontrar el punto más cercano al punto actual
-            val (nextPointIndex, _) = findClosestPointIndex(currentPosition, mutablePoints)
-
-            // Agregar el punto más cercano a la lista ordenada
-            val nextPoint = mutablePoints.removeAt(nextPointIndex)
-            orderedPoints.add(nextPoint)
-
-            // Actualizar la posición actual para la próxima iteración
-            currentPosition = nextPoint.location
-        }
-
-        // Actualizar la lista original con los puntos ordenados
-        points.clear()
-        points.addAll(orderedPoints)
-    }
-
-    /**
      * Encuentra el índice del punto más cercano en la lista de puntos
      */
     private fun findClosestPointIndex(currentLocation: LatLng, points: List<RoutePoint>): Pair<Int, Double> {
@@ -667,7 +944,7 @@ class RouteScreenViewModel(
     /**
      * Formatea la duración en segundos a un formato legible
      */
-    private fun formatDuration(seconds: Long): String {
+    public fun formatDuration(seconds: Long): String {
         val hours = seconds / 3600
         val minutes = (seconds % 3600) / 60
 
@@ -695,7 +972,8 @@ class RouteScreenViewModel(
                 val application = this[APPLICATION_KEY] as MyApplication
                 RouteScreenViewModel(
                     mapsApiRepository = application.appProvider.provideMapsApiRepository(),
-                    routesApiRepository = application.appProvider.provideRoutesApiRepository()
+                    routesApiRepository = application.appProvider.provideRoutesApiRepository(),
+                    stopPassengerRepository = application.appProvider.provideStopPassengerRepository()
                 )
             }
         }

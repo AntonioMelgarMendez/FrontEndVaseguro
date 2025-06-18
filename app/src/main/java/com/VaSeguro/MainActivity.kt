@@ -20,6 +20,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.VaSeguro.ui.components.Container.GeneralScaffold
+import com.VaSeguro.ui.navigations.MainNavigation
+import com.VaSeguro.ui.navigations.SplashScreenNavigation
+import com.VaSeguro.ui.screens.Driver.Route.RouteScreen
 import com.VaSeguro.ui.screens.Start.Login.LoginScreen
 import com.VaSeguro.ui.screens.Start.SignUp.SignUpScreen
 import com.VaSeguro.ui.screens.Start.Starting.StartingScreen
@@ -43,33 +46,11 @@ class MainActivity : ComponentActivity() {
                 ) {
                     val navController = rememberNavController()
 
-                    NavHost(navController = navController, startDestination = "splash") {
-                        composable("splash") {
-                            SplashScreen(navController)
-                        }
-                        composable("home") {
-                            GeneralScaffold()
-                        }
-                        composable("starting"){
-                            StartingScreen(navController)
-                        }
-                        composable("login"){
-                            LoginScreen(navController)
-                        }
-                        composable("signup"){
-                            SignUpScreen(navController)
-                        }
-                        composable("code"){
-
-                        }
-                        composable("message"){
-
-                        }
-                    }
+                    // Usamos el sistema de navegación principal definido en MainNavigation
+                    MainNavigation(navController = navController)
                 }
             }
         }
     }
-
 }
 

@@ -11,7 +11,6 @@ import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -36,7 +35,6 @@ import com.VaSeguro.data.model.Stop.StopType
 import com.VaSeguro.ui.components.Container.ConfirmationDialog
 import com.VaSeguro.ui.components.Container.DropDownSelector
 import com.VaSeguro.ui.components.Container.TopBarContainer.TopBar
-import com.VaSeguro.ui.screens.Admin.Users.UsersAdminScreen
 import com.VaSeguro.ui.theme.PrimaryColor
 
 @Composable
@@ -45,7 +43,7 @@ fun StopsAdminScreen(
 ) {
     val stops by viewModel.stops.collectAsState()
     var showAddDialog by remember { mutableStateOf(false) }
-    var stopToDelete by remember { mutableStateOf<String?>(null) }
+    var stopToDelete by remember { mutableStateOf<Int?>(null) }
 
     Scaffold(
         topBar = {
@@ -67,10 +65,8 @@ fun StopsAdminScreen(
                     id = stop.id,
                     title = stop.name,
                     info = listOf(
-                        "Latitude" to stop.latitude,
-                        "Longitude" to stop.longitude,
-                        "Stop Type" to stop.stopType.type,
-                        "Driver" to stop.driver
+                        "Latitude" to stop.latitude.toString(),
+                        "Longitude" to stop.longitude.toString()
                     ),
                     onEdit = { /* future */ },
                     onDelete = { stopToDelete = stop.id }
@@ -107,10 +103,10 @@ fun AddStopDialog(
     var name by remember { mutableStateOf(TextFieldValue("")) }
     var latitude by remember { mutableStateOf(TextFieldValue("")) }
     var longitude by remember { mutableStateOf(TextFieldValue("")) }
-    var stopType by remember { mutableStateOf<StopType?>(null) }
+    var stopType by remember { mutableStateOf<StopType>(StopType.HOME) }
     var driver by remember { mutableStateOf<String?>(null) }
 
-    val stopTypes = listOf(StopType("1", "School"), StopType("2", "House"), StopType("3", "Another"))
+    val stopTypes = StopType.getAll()
     val drivers = listOf("Juan Mendoza", "Pedro Torres")
 
     AlertDialog(
@@ -122,8 +118,8 @@ fun AddStopDialog(
                 OutlinedTextField(value = latitude, onValueChange = { latitude = it }, label = { Text("Latitude") })
                 OutlinedTextField(value = longitude, onValueChange = { longitude = it }, label = { Text("Longitude") })
 
-                DropDownSelector("Stop Type", stopTypes.map { it.type }, stopType?.type) { selectedType ->
-                    stopType = stopTypes.find { it.type == selectedType }
+                DropDownSelector("Stop Type", stopTypes.map { it.type }, stopType.type) { selectedType ->
+                    stopType = stopTypes.find { it.type == selectedType } ?: StopType.HOME
                 }
                 DropDownSelector("Driver", drivers, driver) { driver = it }
             }
@@ -132,9 +128,9 @@ fun AddStopDialog(
             Button(onClick = {
                 viewModel.addStop(
                     name.text,
-                    latitude.text,
-                    longitude.text,
-                    stopType!!,
+                    latitude.text.toDoubleOrNull() ?: 0.0,
+                    longitude.text.toDoubleOrNull() ?: 0.0,
+                    stopType,
                     driver ?: "Unknown"
                 )
                 onSave()
@@ -162,3 +158,4 @@ fun AddStopDialog(
 fun StopsAdminPreview() {
     StopsAdminScreen()
 }
+

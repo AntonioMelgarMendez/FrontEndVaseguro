@@ -37,9 +37,9 @@ import coil3.compose.AsyncImage
 import coil3.compose.AsyncImagePainter
 import coil3.request.ImageRequest
 import coil3.request.crossfade
-import com.VaSeguro.data.model.Route.Route
 import com.VaSeguro.data.model.Route.RouteStatus
 import com.VaSeguro.data.model.Route.RouteType
+import com.VaSeguro.data.model.Routes.RoutesData
 import com.VaSeguro.data.model.User.UserData
 import com.VaSeguro.data.model.User.UserRole
 import com.VaSeguro.ui.components.InfoBox
@@ -48,40 +48,40 @@ import com.VaSeguro.data.model.Vehicle
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+val driverRole = UserRole(
+    id = 1,
+    role_name = "Driver"
+)
+
+val driver = UserData(
+    id = "USR-001",
+    forename = "Carlos",
+    surname = "Ramírez",
+    email = "carlos.ramirez@example.com",
+    phoneNumber = "+50312345678",
+    profilePic = null,
+    role_id = driverRole,
+    gender = "Male"
+)
+
+val burnedVehicle = Vehicle(
+    id = "VEH-002",
+    plate = "P987654",
+    model = "Toyota Hiace 2020",
+    driver_id = driver,
+    created_at = "2025-06-16T09:00:00"
+)
 
 val routeList = listOf(
-    Route(
+    RoutesData(
         id = "1",
         name = "Route 1",
         start_date = "2023-10-01",
-        vehicle_id = Vehicle(
-            id = "1",
-            plate = "577955",
-            model = "Microbus 1",
-            driver_id = UserData(
-                id = "1",
-                forename = "John",
-                surname = "Doe",
-                email = "user@example.com",
-                phoneNumber = "123-456-7890",
-                profilePic = null,
-                role_id = UserRole(
-                    id = 1,
-                    role_name = "Driver",
-                ),
-                gender = "binary",
-            ),
-            created_at = "2023-10-01",
-        ),
-        route_status = RouteStatus(
-            id = 1,
-            status = "Active",
-        ),
-        route_type = RouteType(
-            id = 1,
-            type = "Regular",
-        ),
+        vehicle_id = burnedVehicle,
+        status_id = RouteStatus.FINISHED,
+        type_id = RouteType.OUTBOUND,
         end_date = "2023-10-31",
+        stopRoute = emptyList()
     )
 )
 
