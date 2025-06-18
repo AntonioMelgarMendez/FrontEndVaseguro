@@ -160,12 +160,12 @@ fun RoutesAdminScreen(
         }
     }
 
-        if (showDialog) {
-            AddRouteDialog(
-                onDismiss = { showDialog = false },
-                onSave = { showDialog = false }
-            )
-        }
+    if (showDialog) {
+        AddRouteDialog(
+            onDismiss = { showDialog = false },
+            onSave = { showDialog = false }
+        )
+    }
 
     if (showDeleteDialog && selectedIdToDelete != null) {
         ConfirmationDialog(

@@ -2,9 +2,12 @@
 package com.VaSeguro.ui.navigations
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.VaSeguro.data.repository.SavedRoutesRepository
 import com.VaSeguro.ui.screens.Admin.Account.AccountAdminScreen
 import com.VaSeguro.ui.screens.Admin.Children.ChildrenAdminScreen
 import com.VaSeguro.ui.screens.Admin.Home.HomeAdminScreen
@@ -13,20 +16,45 @@ import com.VaSeguro.ui.screens.Admin.Stops.StopsAdminScreen
 import com.VaSeguro.ui.screens.Admin.Users.UsersAdminScreen
 import com.VaSeguro.ui.screens.Admin.Vehicle.VehicleScreen
 import com.VaSeguro.ui.screens.Driver.Route.RouteScreen
+import com.VaSeguro.ui.screens.Driver.Route.RouteScreenViewModel
+import com.VaSeguro.ui.screens.Driver.SavedRoutes.SavedRoutesScreen
+import com.VaSeguro.ui.screens.Driver.SavedRoutes.SavedRoutesViewModel
 import com.VaSeguro.ui.screens.Parents.Bus.BusScreen
 import com.VaSeguro.ui.screens.Parents.Children.ChildrenScreen
 import com.VaSeguro.ui.screens.Parents.Configuration.ConfigurationScreen
 import com.VaSeguro.ui.screens.Parents.History.HistoryScreen
 import com.VaSeguro.ui.screens.Parents.Map.MapScreen
-import kotlinx.serialization.Serializable
 
 @Composable
-fun MainNavigation(navController: NavHostController, isAdmin: Boolean) {
-    val startDestination = if (isAdmin) HomeAdminScreenNavigation else MapScreenNavigation
+fun MainNavigation(navController: NavHostController) {
+    // Creamos un repositorio compartido para las rutas guardadas
+    val savedRoutesRepository = remember { SavedRoutesRepository() }
 
-    NavHost(navController = navController, startDestination = startDestination) {
+    // Compartimos un ViewModel para la pantalla principal de Rutas
+    val routeViewModel: RouteScreenViewModel = viewModel(factory = RouteScreenViewModel.Factory)
 
-        //PARENTS SCREENS
+    // Compartimos el ViewModel para la pantalla de rutas guardadas
+    val savedRoutesViewModel: SavedRoutesViewModel = viewModel(
+        factory = SavedRoutesViewModel.Factory
+    )
+
+    // Definimos las acciones de navegación
+    val onNavigateToSavedRoutes = {
+        println("DEBUG: Navegando a rutas guardadas")
+        navController.navigate(SavedRoutesScreenNavigation)
+    }
+
+    val onRunRoute = { routeId: String ->
+        println("DEBUG: Ejecutando ruta $routeId")
+        navController.navigate(RouteScreenNavigation(routeId))
+    }
+
+    val onEditRoute = { routeId: String ->
+        println("DEBUG: Editando ruta $routeId")
+        navController.navigate(RouteScreenNavigation(routeId))
+    }
+
+    NavHost(navController = navController, startDestination = RouteScreenNavigation) {
         composable<MapScreenNavigation> { RouteScreen() }
         composable<HistoryScreenNavigation> { HistoryScreen() }
         composable<BusScreenNavigation> { BusScreen() }
@@ -42,14 +70,27 @@ fun MainNavigation(navController: NavHostController, isAdmin: Boolean) {
         composable<VehiclesAdminScreenNavigation> { VehicleScreen() }
 
         //DRIVER SCREENS
-        composable<RouteScreenNavigation> { RoutesAdminScreen() }
-        composable<BusDriverScreenNavigation>{BusScreen()}
-        composable<ChildrenDriverScreenNavigation>{ChildrenScreen() }
+        composable<RouteScreenNavigation> { backStackEntry ->
+            // Obtenemos el parámetro routeId si existe
+            val routeId = backStackEntry.arguments?.getString("routeId")
 
+            RouteScreen(
+                viewModel = routeViewModel,
+                routeId = routeId,
+                savedRoutesRepository = savedRoutesRepository,
+                onNavigateToSavedRoutes = onNavigateToSavedRoutes
+            )
+        }
 
-
-
-
+        composable<SavedRoutesScreenNavigation> {
+            println("DEBUG: Mostrando pantalla de rutas guardadas")
+            SavedRoutesScreen(
+                navController = navController,
+                viewModel = savedRoutesViewModel,
+                onRunRoute = onRunRoute,
+                onEditRoute = onEditRoute
+            )
+        }
     }
 }
 

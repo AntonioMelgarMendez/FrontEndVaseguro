@@ -16,6 +16,8 @@ object ConfigurationScreenNavigation
 @Serializable
 object RouteScreenNavigation
 @Serializable
+object SavedRoutesScreenNavigation
+@Serializable
 object RouteMenuScreenNavigation
 @Serializable
 object ChatScreenNavigation

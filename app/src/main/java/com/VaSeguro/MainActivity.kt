@@ -101,3 +101,8 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+
+//val navController = rememberNavController()
+//
+//// Usamos el sistema de navegación principal definido en MainNavigation
+//MainNavigation(navController = navController)

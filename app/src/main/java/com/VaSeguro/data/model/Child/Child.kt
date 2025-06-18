@@ -1,7 +1,7 @@
 package com.VaSeguro.data.model.Child
 
 data class Child (
-    val id: String,
+    val id: Int,
     val fullName: String,
     val forenames: String,
     val surnames: String,

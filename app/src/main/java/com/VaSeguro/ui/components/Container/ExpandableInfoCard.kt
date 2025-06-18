@@ -30,7 +30,7 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun ExpandableInfoCard(
-    id: String,
+    id: Int,
     title: String,
     info: List<Pair<String, String>>,
     isInitiallyExpanded: Boolean = false,
