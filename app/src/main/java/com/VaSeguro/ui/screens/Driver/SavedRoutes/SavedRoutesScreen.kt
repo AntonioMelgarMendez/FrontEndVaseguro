@@ -24,8 +24,8 @@ import com.VaSeguro.data.model.Routes.RoutesData
 fun SavedRoutesScreen(
     navController: NavController,
     viewModel: SavedRoutesViewModel = viewModel(factory = SavedRoutesViewModel.Factory),
-    onRunRoute: (String) -> Unit,
-    onEditRoute: (String) -> Unit
+    onRunRoute: (Int) -> Unit,
+    onEditRoute: (Int) -> Unit
 ) {
     // Estados de la UI
     val savedRoutes by viewModel.savedRoutes.collectAsStateWithLifecycle()
@@ -112,8 +112,8 @@ fun SavedRoutesScreen(
                         SavedRouteCard(
                             route = route,
                             duration = viewModel.calculateRouteDuration(route),
-                            onRunClick = { onRunRoute(route.id) },
-                            onEditClick = { onEditRoute(route.id) },
+                            onRunClick = { onRunRoute(route.id.toInt()) },
+                            onEditClick = { onEditRoute(route.id.toInt()) },
                             onDeleteClick = { routeToDelete = route }
                         )
                         Spacer(modifier = Modifier.height(8.dp))

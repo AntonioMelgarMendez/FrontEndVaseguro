@@ -7,15 +7,11 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import com.VaSeguro.data.remote.RetrofitInstance
 import com.VaSeguro.data.repository.AuthRepository.AuthRepositoryImpl
-import com.VaSeguro.data.repository.Children.ChildrenRepositoryImpl
-import com.VaSeguro.data.repository.SavedRoutesRepository
-import com.VaSeguro.data.repository.StopPassengerRepository
-import com.VaSeguro.data.repository.SavedRoutesRepository
-import com.VaSeguro.data.repository.StopPassengerRepository
 import com.VaSeguro.data.repository.RequestRepository.RequestRepositoryImpl
 import com.VaSeguro.data.repository.Children.ChildrenRepositoryImpl
+import com.VaSeguro.data.repository.SavedRoutesRepository
+import com.VaSeguro.data.repository.StopPassengerRepository
 import com.VaSeguro.data.repository.UserPreferenceRepository.UserPreferencesRepositoryImpl
-import com.VaSeguro.data.repository.VehicleRepository.VehicleRepositoryImpl
 import com.VaSeguro.data.repository.VehicleRepository.VehicleRepositoryImpl
 import com.VaSeguro.map.repository.MapsApiRepositoryImpl
 import com.VaSeguro.map.repository.RoutesApiRepository

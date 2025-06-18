@@ -42,9 +42,8 @@ import com.VaSeguro.data.model.Route.RouteType
 import com.VaSeguro.data.model.Routes.RoutesData
 import com.VaSeguro.data.model.User.UserData
 import com.VaSeguro.data.model.User.UserRole
-import com.VaSeguro.ui.components.InfoBox
-import com.VaSeguro.ui.components.ScheduleChip
-import com.VaSeguro.data.model.Vehicle
+import com.VaSeguro.data.model.Vehicle.Vehicle
+import com.VaSeguro.ui.components.Misc.InfoBox
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -64,12 +63,19 @@ val driver = UserData(
     gender = "Male"
 )
 
+
 val burnedVehicle = Vehicle(
     id = "VEH-002",
     plate = "P987654",
     model = "Toyota Hiace 2020",
-    driver_id = driver,
-    created_at = "2025-06-16T09:00:00"
+    driver_id = driver.id,
+    year = "2020",
+    color = "White",
+    capacity = "20",
+    updated_at = "2025-06-16T09:00:00",
+    carPic = "https://example.com/toyota_hiace_2020.jpg",
+    created_at = "2025-06-16T09:00:00",
+    brand = "Toyota",
 )
 
 val routeList = listOf(
@@ -96,6 +102,7 @@ fun String.toAmPmFormat(): String {
     }
 }
 
+
 @Composable
 fun BusScreen() {
     var isLoading by remember { mutableStateOf(true) }
@@ -113,7 +120,7 @@ fun BusScreen() {
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = microBus.vehicle_id.model,
+                text = microBus.vehicle_id.toString(),
                 fontWeight = FontWeight.Light,
                 fontSize = 20.sp,
             )
@@ -149,13 +156,13 @@ fun BusScreen() {
             InfoBox(
                 icon = Icons.Default.Person,
                 title = "Driver:",
-                data = microBus.vehicle_id.driver_id.forename + " " + microBus.vehicle_id.driver_id.surname,
+                data = microBus.vehicle_id.toString(),
             )
             Spacer(modifier = Modifier.height(10.dp))
             InfoBox(
                 icon = Icons.Default.DirectionsCar,
                 title = "Plaque:",
-                data = microBus.vehicle_id.plate,
+                data = microBus.vehicle_id.toString(),
             )
             /*
             Spacer(modifier = Modifier.height(10.dp))
@@ -169,7 +176,7 @@ fun BusScreen() {
             InfoBox(
                 icon = Icons.Default.Phone,
                 title = "Phone number:",
-                data = microBus.vehicle_id.driver_id.phoneNumber,
+                data = microBus.vehicle_id.toString(),
             )
             Spacer(modifier = Modifier.height(10.dp))
             InfoBox(

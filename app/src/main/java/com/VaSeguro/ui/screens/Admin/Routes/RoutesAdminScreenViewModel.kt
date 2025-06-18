@@ -1,34 +1,50 @@
 package com.VaSeguro.ui.screens.Admin.Routes
 
 import androidx.lifecycle.ViewModel
-import com.VaSeguro.data.model.Routes.RouteStatus
-import com.VaSeguro.data.model.Routes.RouteType
+import com.VaSeguro.data.model.Route.RouteStatus
+import com.VaSeguro.data.model.Route.RouteType
 import com.VaSeguro.data.model.Routes.RoutesData
+import com.VaSeguro.data.model.Vehicle.Vehicle
+import com.VaSeguro.map.data.driver
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 
 class RoutesAdminScreenViewModel : ViewModel(){
-
+    val burnedVehicle = Vehicle(
+        id = "VEH-002",
+        plate = "P987654",
+        model = "Toyota Hiace 2020",
+        driver_id = driver.id,
+        year = "2020",
+        color = "White",
+        capacity = "20",
+        updated_at = "2025-06-16T09:00:00",
+        carPic = "https://example.com/toyota_hiace_2020.jpg",
+        created_at = "2025-06-16T09:00:00",
+        brand = "Toyota",
+    )
     private val _routes = MutableStateFlow(
         listOf(
             RoutesData(
                 id = "R001",
                 name = "Ruta A",
                 start_date = "2025-06-01",
-                vehicule_id = "12451",
+                vehicle_id = burnedVehicle,
                 status_id = RouteStatus(id = "1", status = "Active"),
                 type_id = RouteType(id = "A", type = "School"),
-                end_date = "2025-12-15"
+                end_date = "2025-12-15",
+                stopRoute = emptyList()
             ),
             RoutesData(
                 id = "R002",
                 name = "Ruta B",
                 start_date = "2025-06-10",
-                vehicule_id = "12452",
+                vehicle_id = burnedVehicle,
                 status_id = RouteStatus(id = "2", status = "Inactive"),
                 type_id = RouteType(id = "B", type = "Weekend"),
-                end_date = "2025-12-20"
+                end_date = "2025-12-20",
+                stopRoute = emptyList()
             )
         )
     )

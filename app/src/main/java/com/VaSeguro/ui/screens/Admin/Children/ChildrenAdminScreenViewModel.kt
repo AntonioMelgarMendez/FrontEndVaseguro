@@ -10,7 +10,7 @@ class ChildrenAdminScreenViewModel : ViewModel() {
     private val _children = MutableStateFlow(
         listOf(
             Child(
-                id = "C01",
+                id = 1,
                 fullName = "Andrea Castillo",
                 forenames = "Andrea",
                 surnames = "Castillo",
@@ -23,7 +23,7 @@ class ChildrenAdminScreenViewModel : ViewModel() {
                 profilePic = null
             ),
             Child(
-                id = "C02",
+                id = 2,
                 fullName = "Samuel Méndez",
                 forenames = "Samuel",
                 surnames = "Méndez",
@@ -61,10 +61,10 @@ class ChildrenAdminScreenViewModel : ViewModel() {
         }
     }
 
-    fun deleteChild(childId: String) {
+    fun deleteChild(childId: Int) {
         _children.update { it.filterNot { child -> child.id == childId } }
-        _expandedMap.update { it - childId }
-        _checkedMap.update { it - childId }
+        _expandedMap.update { it - childId.toString() }
+        _checkedMap.update { it - childId.toString() }
     }
 
     fun addChild(child: Child) {

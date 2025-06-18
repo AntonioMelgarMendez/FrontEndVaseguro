@@ -3,7 +3,7 @@ package com.VaSeguro.data.model.Routes
 import com.VaSeguro.data.model.Route.RouteStatus
 import com.VaSeguro.data.model.Route.RouteType
 import com.VaSeguro.data.model.Stop.StopRoute
-import com.VaSeguro.data.model.Vehicle
+import com.VaSeguro.data.model.Vehicle.Vehicle
 
 data class RoutesData (
     val id: String,

@@ -8,6 +8,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.VaSeguro.data.repository.SavedRoutesRepository
+import com.VaSeguro.ui.navigations.RouteScreenNavigation
 import com.VaSeguro.ui.screens.Admin.Account.AccountAdminScreen
 import com.VaSeguro.ui.screens.Admin.Children.ChildrenAdminScreen
 import com.VaSeguro.ui.screens.Admin.Home.HomeAdminScreen
@@ -26,7 +27,8 @@ import com.VaSeguro.ui.screens.Parents.History.HistoryScreen
 import com.VaSeguro.ui.screens.Parents.Map.MapScreen
 
 @Composable
-fun MainNavigation(navController: NavHostController) {
+fun MainNavigation(navController: NavHostController, isAdmin: Boolean) {
+    val startDestination = if (isAdmin) HomeAdminScreenNavigation else MapScreenNavigation
     // Creamos un repositorio compartido para las rutas guardadas
     val savedRoutesRepository = remember { SavedRoutesRepository() }
 
@@ -38,23 +40,24 @@ fun MainNavigation(navController: NavHostController) {
         factory = SavedRoutesViewModel.Factory
     )
 
+
     // Definimos las acciones de navegación
     val onNavigateToSavedRoutes = {
         println("DEBUG: Navegando a rutas guardadas")
         navController.navigate(SavedRoutesScreenNavigation)
     }
 
-    val onRunRoute = { routeId: String ->
+    val onRunRoute = { routeId: Int ->
         println("DEBUG: Ejecutando ruta $routeId")
         navController.navigate(RouteScreenNavigation(routeId))
     }
 
-    val onEditRoute = { routeId: String ->
+    val onEditRoute = { routeId: Int ->
         println("DEBUG: Editando ruta $routeId")
         navController.navigate(RouteScreenNavigation(routeId))
     }
 
-    NavHost(navController = navController, startDestination = RouteScreenNavigation) {
+    NavHost(navController = navController, startDestination = RouteScreenNavigation()) {
         composable<MapScreenNavigation> { RouteScreen() }
         composable<HistoryScreenNavigation> { HistoryScreen() }
         composable<BusScreenNavigation> { BusScreen() }

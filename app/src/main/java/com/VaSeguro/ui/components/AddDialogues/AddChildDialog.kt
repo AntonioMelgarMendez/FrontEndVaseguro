@@ -215,7 +215,7 @@ fun AddChildDialog(
                 age.isNotBlank() && selectedDriver != null && selectedParent != null
               ) {
                 val newChild = Child(
-                  id = existingChild?.id ?: (10000..99999).random().toString(),
+                  id = existingChild?.id ?: (10000..99999).random(),
                   fullName = "$forenames $surnames",
                   surnames = surnames,
                   forenames = forenames,

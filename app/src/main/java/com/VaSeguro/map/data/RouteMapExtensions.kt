@@ -10,7 +10,8 @@ import com.VaSeguro.data.model.Stop.StopType
 import com.VaSeguro.data.model.StopPassenger.StopPassenger
 import com.VaSeguro.data.model.User.UserData
 import com.VaSeguro.data.model.User.UserRole
-import com.VaSeguro.data.model.Vehicle
+import com.VaSeguro.data.model.Vehicle.Vehicle
+import com.VaSeguro.ui.screens.Parents.Bus.driver
 import com.google.android.gms.maps.model.LatLng
 import java.util.UUID
 
@@ -43,8 +44,14 @@ val burnedVehicle = Vehicle(
     id = "VEH-002",
     plate = "P987654",
     model = "Toyota Hiace 2020",
-    driver_id = driver,
-    created_at = "2025-06-16T09:00:00"
+    driver_id = driver.id,
+    year = "2020",
+    color = "White",
+    capacity = "20",
+    updated_at = "2025-06-16T09:00:00",
+    carPic = "https://example.com/toyota_hiace_2020.jpg",
+    created_at = "2025-06-16T09:00:00",
+    brand = "Toyota",
 )
 
 fun Route.toRoutesData(

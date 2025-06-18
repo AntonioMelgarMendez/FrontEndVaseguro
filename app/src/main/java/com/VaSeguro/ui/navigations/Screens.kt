@@ -14,7 +14,8 @@ object ChildrenScreenNavigation
 object ConfigurationScreenNavigation
 // Driver
 @Serializable
-object RouteScreenNavigation
+data class RouteScreenNavigation(val routeId: Int = -1)
+
 @Serializable
 object SavedRoutesScreenNavigation
 @Serializable
@@ -49,3 +50,4 @@ object StopsScreenNavigation
 object SplashScreenNavigation
 @Serializable
 object HomeScreenNavigation
+

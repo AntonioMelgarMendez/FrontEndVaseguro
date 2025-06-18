@@ -23,7 +23,7 @@ class ChildrenViewModel(
   private val _children = MutableStateFlow(
     listOf(
       Child(
-        id = "1",
+        id = 1,
         fullName = "Jonh Doe",
         surnames = "Doe",
         forenames = "Jonh",
@@ -36,7 +36,7 @@ class ChildrenViewModel(
         profilePic = null
       ),
       Child(
-        id = "2",
+        id = 2,
         fullName = "Emma López",
         surnames = "López",
         forenames = "Emma",
@@ -49,7 +49,7 @@ class ChildrenViewModel(
         profilePic = null
       ),
       Child(
-        id = "3",
+        id = 3,
         fullName = "Mateo Rodríguez",
         surnames = "Rodríguez",
         forenames = "Mateo",
@@ -62,7 +62,7 @@ class ChildrenViewModel(
         profilePic = null
       ),
       Child(
-        id = "4",
+        id = 4,
         fullName = "Sofía Martínez",
         surnames = "Martínez",
         forenames = "Sofía",
@@ -75,7 +75,7 @@ class ChildrenViewModel(
         profilePic = null
       ),
       Child(
-        id = "5",
+        id = 5,
         fullName = "Lucas Ramírez",
         surnames = "Ramírez",
         forenames = "Lucas",
@@ -110,14 +110,14 @@ class ChildrenViewModel(
 
   fun deleteChild(childId: String) {
     _children.update { list ->
-      list.filterNot { it.id == childId }
+      list.filterNot { it.id.toString() == childId }
     }
     _expandedMap.update { it - childId }
   }
 
   fun addChild(child: Child) {
     _children.update { current -> current + child }
-    _expandedMap.update { current -> current + (child.id to false) }
+    _expandedMap.update { current -> current + (child.id.toString() to false) }
   }
 
   fun updateChild(updatedChild: Child) {
