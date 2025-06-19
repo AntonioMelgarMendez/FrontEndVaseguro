@@ -9,16 +9,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -33,6 +30,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.VaSeguro.data.model.Child.Child
+import com.VaSeguro.data.repository.SavedRoutesRepository
 import com.VaSeguro.map.data.PlaceResult
 import com.VaSeguro.map.data.RoutePoint
 import com.VaSeguro.map.decodePolyline
@@ -51,6 +50,7 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapType
+import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.Polyline
@@ -60,7 +60,10 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
 fun RouteScreen(
-    viewModel: RouteScreenViewModel = viewModel(factory = RouteScreenViewModel.Factory)
+    viewModel: RouteScreenViewModel = viewModel(factory = RouteScreenViewModel.Factory),
+    routeId: String? = null,  // Parámetro para recibir el ID de la ruta
+    savedRoutesRepository: SavedRoutesRepository? = null,  // Repositorio compartido
+    onNavigateToSavedRoutes: () -> Unit = {} // Navegación a pantalla de rutas guardadas
 ) {
     // Estados principales
     val routePoints by remember { derivedStateOf { viewModel.routePoints } }
@@ -72,11 +75,32 @@ fun RouteScreen(
     val isProximityAlertVisible by viewModel.isProximityAlertVisible.collectAsStateWithLifecycle()
     val currentPointName by viewModel.currentPointName.collectAsStateWithLifecycle()
 
+    // Estados para controlar la navegación y el estado de la ruta
+    val isCurrentRouteSaved by viewModel.isCurrentRouteSaved.collectAsStateWithLifecycle()
+    val currentRouteId by viewModel.currentRouteId.collectAsStateWithLifecycle()
+
     // Nuevos estados para la información dinámica
     val nextPointName by viewModel.nextPointName.collectAsStateWithLifecycle()
     val timeToNextPoint by viewModel.timeToNextPoint.collectAsStateWithLifecycle()
     val adjustedTimeToNextPoint by viewModel.adjustedTimeToNextPoint.collectAsStateWithLifecycle()
     val currentSpeed by viewModel.currentSpeed.collectAsStateWithLifecycle()
+
+    // Estados para control de ruta
+    var showStartRouteConfirmation by remember { mutableStateOf(false) }
+    // Estado para controlar si la ruta ya fue iniciada
+    var isRouteStarted by remember { mutableStateOf(false) }
+
+    // Efecto para cargar la ruta especificada por ID cuando se inicia la pantalla
+    LaunchedEffect(routeId, currentLocation) {
+        if (routeId != null && savedRoutesRepository != null && currentLocation != null) {
+            // Obtenemos la ruta del repositorio y la cargamos si está disponible
+            savedRoutesRepository.getRoute(routeId).collect { route ->
+                route?.let {
+                    viewModel.loadSavedRoute(it)
+                }
+            }
+        }
+    }
 
     // Estados de UI
     val cameraPositionState = rememberCameraPositionState()
@@ -199,7 +223,7 @@ fun RouteScreen(
 
     // Efecto para mostrar alerta cuando estamos cerca de un punto de ruta
     LaunchedEffect(isProximityAlertVisible, currentPointName) {
-        if (isProximityAlertVisible && currentPointName.isNotEmpty()) {
+        if (isProximityAlertVisible && currentPointName.isNotEmpty() ) {
             snackbarHostState.showSnackbar(
                 message = "Estás cerca de: $currentPointName",
                 duration = SnackbarDuration.Short
@@ -217,10 +241,90 @@ fun RouteScreen(
         }
     }
 
+    // ModalBottomSheet para mostrar opciones de ruta
+    if (showBottomSheet) {
+        LaunchedEffect(Unit) {
+            // Expandir automáticamente el BottomSheet al mostrarlo
+            modalBottomSheetState.expand()
+        }
+
+        ModalBottomSheet(
+            onDismissRequest = {
+                showBottomSheet = false
+            },
+            sheetState = modalBottomSheetState,
+            // Configuramos el sheet para que use el máximo tamaño disponible
+            dragHandle = {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Divider(
+                        modifier = Modifier
+                            .width(36.dp)
+                            .height(4.dp)
+                            .clip(MaterialTheme.shapes.medium),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                    )
+                }
+            }
+        ) {
+            RouteMenuBottomSheetContent(
+                viewModel = viewModel,
+                onDismiss = {
+                    coroutineScope.launch {
+                        modalBottomSheetState.hide()
+                        showBottomSheet = false
+                    }
+                }
+            )
+        }
+    }
+
+    // Diálogo de confirmación para iniciar la ruta
+    if (showStartRouteConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showStartRouteConfirmation = false },
+            title = { Text("Iniciar ruta") },
+            text = { Text("¿Estás seguro de iniciar esta ruta? Una vez iniciada, se comenzará a monitorear tu progreso.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        // Aquí es donde realmente inicia la ruta
+                        isRouteStarted = true
+                        // Si el progreso es 0, lo inicializamos con un valor pequeño para mostrar que ha comenzado
+                        if (viewModel.routeProgress.value == 0f) {
+                            viewModel.updateRouteProgress(0.001f)
+                        }
+                        showStartRouteConfirmation = false
+
+                        // Mostrar mensaje de confirmación
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar("Ruta iniciada correctamente")
+                        }
+                    }
+                ) {
+                    Text("Iniciar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showStartRouteConfirmation = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
+
+    // Scaffold para organizar la UI con Snackbar
+    Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+    ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-
+                .padding(paddingValues)
         ) {
             // Mapa principal
             if (locationPermissions.allPermissionsGranted) {
@@ -230,8 +334,14 @@ fun RouteScreen(
                     properties = MapProperties(
                         isMyLocationEnabled = true,
                         mapType = MapType.NORMAL,
-                        isTrafficEnabled = true
+                        isTrafficEnabled = true,
+                        isBuildingEnabled = false
                     ),
+                    uiSettings = MapUiSettings(
+                        zoomControlsEnabled = false,
+                        myLocationButtonEnabled = false,
+
+                        ),
                     onMapLoaded = {
                         // Cuando se carga el mapa, centramos en la ubicación actual si existe
                         currentLocation?.let { location ->
@@ -295,9 +405,9 @@ fun RouteScreen(
                         .align(Alignment.TopCenter)
                 ) {
                     // Indicador de progreso
-                    if (routeProgress > 0) {
+                    if (routeProgress > 0 || isRouteStarted) {
                         LinearProgressIndicator(
-                            progress = { routeProgress },
+                            progress = if (routeProgress > 0) routeProgress else 0.001f,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(6.dp)
@@ -385,80 +495,55 @@ fun RouteScreen(
                 }
             }
 
-            // Menú flotante
-            FloatingMenu(
+            // Menú flotante extendido con opción para rutas guardadas
+            Column(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(16.dp),
-                onOptionSelected = { option ->
-                    when (option) {
-                        1 -> {
-                            // Centrar en ubicación actual
-                            currentLocation?.let { location ->
-                                coroutineScope.launch {
-                                    cameraPositionState.animate(
-                                        CameraUpdateFactory.newLatLngZoom(location, 15f)
-                                    )
-                                }
-                            } ?: run {
-                                coroutineScope.launch {
-                                    snackbarHostState.showSnackbar("No hay ubicación disponible")
-                                }
-                            }
-                        }
-                        2 -> showBottomSheet = true
-                        3 -> viewModel.clearRoute()
-                        4 -> {
-                            // Ver todas las rutas (para implementación futura)
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar("Función en desarrollo")
-                            }
-                        }
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Si hay una ruta seleccionada pero no iniciada, mostrar botón de inicio
+                if (selectedRoute != null && !isRouteStarted) {
+                    FloatingActionButton(
+                        onClick = { showStartRouteConfirmation = true },
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        elevation = FloatingActionButtonDefaults.elevation()
+                    ) {
+                        Icon(Icons.Default.PlayArrow, contentDescription = "Iniciar ruta")
                     }
                 }
-            )
 
-            // Bottom sheet para planificación de ruta
-            if (showBottomSheet) {
-                ModalBottomSheet(
-                    onDismissRequest = { showBottomSheet = false },
-                    sheetState = modalBottomSheetState,
-                ) {
-                    RouteMenuBottomSheetContent(
-                        viewModel = viewModel,
-                        onDismiss = { showBottomSheet = false }
-                    )
-                }
-            }
-
-            // Diálogo de permisos
-            if (showPermissionDialog) {
-                AlertDialog(
-                    onDismissRequest = { showPermissionDialog = false },
-                    title = { Text("Permisos requeridos") },
-                    text = {
-                        Text("La ubicación es necesaria para mostrar tu posición en el mapa y calcular rutas. Por favor, habilita los permisos de ubicación.")
-                    },
-                    confirmButton = {
-                        TextButton(onClick = {
-                            showPermissionDialog = false
-                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                data = Uri.fromParts("package", context.packageName, null)
+                // Menú flotante original
+                FloatingMenu(
+                    onOptionSelected = { option ->
+                        when (option) {
+                            1 -> {
+                                // Centrar en ubicación actual
+                                currentLocation?.let { location ->
+                                    coroutineScope.launch {
+                                        cameraPositionState.animate(
+                                            CameraUpdateFactory.newLatLngZoom(location, 15f)
+                                        )
+                                    }
+                                } ?: run {
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar("No hay ubicación disponible")
+                                    }
+                                }
                             }
-                            context.startActivity(intent)
-                        }) {
-                            Text("Abrir configuración")
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { showPermissionDialog = false }) {
-                            Text("Cancelar")
+                            2 -> showBottomSheet = true
+                            3 -> viewModel.clearRoute()
+                            4 -> onNavigateToSavedRoutes()
+
+
                         }
                     }
                 )
             }
         }
-
+    }
 }
 
 @Composable
@@ -466,9 +551,12 @@ fun RouteMenuBottomSheetContent(
     viewModel: RouteScreenViewModel,
     onDismiss: () -> Unit
 ) {
-    val searchQuery = remember { mutableStateOf("") }
-    val searchResults = remember { mutableStateListOf<PlaceResult>() }
     val coroutineScope = rememberCoroutineScope()
+
+    // Estados para la sección de niños
+    val childrenSearchQuery = viewModel.searchQuery.collectAsStateWithLifecycle()
+    val filteredChildren = viewModel.filteredChildren.collectAsStateWithLifecycle()
+    val selectedChildIds = viewModel.selectedChildIds.collectAsStateWithLifecycle()
 
     Column(
         modifier = Modifier
@@ -494,83 +582,206 @@ fun RouteMenuBottomSheetContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Barra de búsqueda
+        // Sección de niños
+        Text(
+            text = "Niños disponibles:",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        // Buscador de niños
         OutlinedTextField(
-            value = searchQuery.value,
-            onValueChange = { searchQuery.value = it },
+            value = childrenSearchQuery.value,
+            onValueChange = { viewModel.updateSearchQuery(it) },
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("Buscar lugares...") },
+            placeholder = { Text("Buscar niños...") },
             leadingIcon = { Icon(Icons.Default.Search, null) },
             trailingIcon = {
-                if (searchQuery.value.isNotEmpty()) {
-                    IconButton(onClick = { searchQuery.value = "" }) {
+                if (childrenSearchQuery.value.isNotEmpty()) {
+                    IconButton(onClick = { viewModel.updateSearchQuery("") }) {
                         Icon(Icons.Default.Close, "Limpiar")
                     }
                 }
             },
             singleLine = true,
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            keyboardActions = KeyboardActions(
-                onSearch = {
-                    if (searchQuery.value.isNotEmpty()) {
-                        coroutineScope.launch {
-                            searchResults.clear()
-                            val results = viewModel.searchPlaces(searchQuery.value)
-                            searchResults.addAll(results)
-                        }
-                    }
-                }
-            )
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search)
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Lista de niños filtrados
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(300.dp), // Altura fija en lugar de heightIn para evitar recomposiciones
+            userScrollEnabled = true
+        ) {
+            items(filteredChildren.value) { child ->
+                ChildSelectionCard(
+                    child = child,
+                    isSelected = selectedChildIds.value.contains(child.id),
+                    onToggleSelection = {
+                        // Al seleccionar un niño, automáticamente añadimos sus paradas
+                        val isAlreadySelected = selectedChildIds.value.contains(child.id)
+                        viewModel.toggleChildSelection(child.id)
+
+                        // Si se está seleccionando (no deseleccionando)
+                        if (!isAlreadySelected) {
+                            // Añadir sus paradas, pero sin calcular la ruta
+                            viewModel.addChildStopsToRoute(child.id, false)
+                        } else {
+                            // Si se deselecciona, limpiar sus paradas
+                            viewModel.removeChildStops(child.id)
+                        }
+                    }
+                )
+            }
+        }
 
         // Lista de puntos seleccionados
         if (viewModel.routePoints.isNotEmpty()) {
-            Text(
-                text = "Puntos de la ruta:",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
 
-            // Mostrar información de la ruta si está seleccionada
-            viewModel.selectedRoute?.let { route ->
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp)
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
+            // Resumen de puntos seleccionados
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "Puntos seleccionados: ${viewModel.routePoints.size}",
+                    style = MaterialTheme.typography.titleMedium
+                )
+
+                // Badge con el número de niños seleccionados
+                if (selectedChildIds.value.isNotEmpty()) {
+                    Badge(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    ) {
                         Text(
-                            text = "Ruta calculada",
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Text(
-                            text = "Distancia: ${(route.distanceMeters / 1000.0).format(1)} km",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        Text(
-                            text = "Duración estimada: ${route.duration}",
-                            style = MaterialTheme.typography.bodyMedium
+                            text = "${selectedChildIds.value.size} ${if (selectedChildIds.value.size == 1) "niño" else "niños"} seleccionado${if (selectedChildIds.value.size != 1) "s" else ""}",
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                         )
                     }
                 }
             }
 
-            LazyColumn(
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Lista de puntos añadidos a la ruta (limitada a los primeros 5)
+            val displayPoints = if (viewModel.routePoints.size > 5) {
+                viewModel.routePoints.take(5) + RoutePoint(LatLng(0.0, 0.0), "... y ${viewModel.routePoints.size - 5} puntos más")
+            } else {
+                viewModel.routePoints
+            }
+
+            // Tarjeta con los puntos de la ruta
+            Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 200.dp)
+                    .padding(bottom = 12.dp)
             ) {
-                itemsIndexed(viewModel.routePoints) { index, point ->
-                    RoutePointItem(
-                        point = point,
-                        onRemove = { viewModel.removeRoutePoint(point.location) }
-                    )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp)
+                ) {
+                    displayPoints.forEach { point ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.LocationOn,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+
+                            Spacer(modifier = Modifier.width(8.dp))
+
+                            Text(
+                                text = if (point.name.isNotEmpty()) point.name else "Punto sin nombre",
+                                style = MaterialTheme.typography.bodyMedium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            // Mostrar información de la ruta si está calculada
+            viewModel.selectedRoute?.let { route ->
+                Text(
+                    text = "Información de la ruta calculada:",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f)
+                    )
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "Ruta optimizada",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Timeline,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+
+                            Spacer(modifier = Modifier.width(8.dp))
+
+                            Text(
+                                text = "Distancia: ${(route.distanceMeters / 1000.0).format(1)} km",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AccessTime,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+
+                            Spacer(modifier = Modifier.width(8.dp))
+
+                            Text(
+                                text = "Tiempo estimado: ${route.duration}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                    }
+                }
+            }
 
             Button(
                 onClick = {
@@ -585,49 +796,6 @@ fun RouteMenuBottomSheetContent(
 
             Spacer(modifier = Modifier.height(8.dp))
         }
-
-        // Resultados de búsqueda
-        if (searchResults.isNotEmpty()) {
-            Text(
-                text = "Resultados:",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
-
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 300.dp)
-            ) {
-                itemsIndexed(searchResults) { index, place ->
-                    SearchResultItem(
-                        place = place,
-                        onClick = {
-                            viewModel.addRoutePoint(
-                                LatLng(
-                                    place.geometry.location.lat,
-                                    place.geometry.location.lng
-                                ),
-                                place.name
-                            )
-                            searchQuery.value = ""
-                            searchResults.clear()
-                        }
-                    )
-                }
-            }
-        } else if (searchQuery.value.isNotEmpty() && searchResults.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(100.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("No se encontraron resultados")
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 

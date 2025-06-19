@@ -1,10 +1,10 @@
 package com.VaSeguro.data.model.Stop
 
+import com.VaSeguro.data.model.User.UserData
+
 data class StopData (
-    val id: String,
+    val id: Int,
     val name: String,
-    val latitude: String,
-    val longitude: String,
-    val stopType: StopType,
-    val driver: String
+    val latitude: Double,
+    val longitude: Double,
 )

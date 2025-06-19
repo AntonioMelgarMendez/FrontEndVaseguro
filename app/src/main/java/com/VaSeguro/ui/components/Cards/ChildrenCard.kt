@@ -192,7 +192,7 @@ fun ChildrenCard(
 @Composable
 fun ChildrenCardPreview() {
   val child = Child(
-    id = "1",
+    id = 1,
     fullName = "Jonh Doe",
     surnames = "Doe",
     forenames = "Jonh",

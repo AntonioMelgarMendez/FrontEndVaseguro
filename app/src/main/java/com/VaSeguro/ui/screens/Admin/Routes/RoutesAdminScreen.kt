@@ -29,8 +29,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.VaSeguro.data.model.Routes.RouteStatus
-import com.VaSeguro.data.model.Routes.RouteType
 import com.VaSeguro.ui.components.Container.ConfirmationDialog
 import com.VaSeguro.ui.components.Container.DropDownSelector
 import com.VaSeguro.ui.theme.PrimaryColor
@@ -46,8 +44,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
+import com.VaSeguro.data.model.Route.RouteStatus
+import com.VaSeguro.data.model.Route.RouteType
 import com.VaSeguro.data.model.Routes.RoutesData
+import com.VaSeguro.data.model.Vehicle.Vehicle
 import com.VaSeguro.ui.components.CustomizableOutlinedTextField
+import com.VaSeguro.ui.screens.Parents.Bus.driver
 import java.util.UUID
 
 
@@ -142,7 +144,7 @@ fun RoutesAdminScreen(
                         details = listOf(
                             "Start Date" to route.start_date,
                             "End Date" to route.end_date,
-                            "Vehicle ID" to route.vehicule_id
+                            "Vehicle ID" to route.vehicle_id.id.toString()
                         ),
                         isExpanded = expandedMap[route.id] ?: false,
                         isChecked = checkedMap[route.id] ?: false,
@@ -160,12 +162,12 @@ fun RoutesAdminScreen(
         }
     }
 
-        if (showDialog) {
-            AddRouteDialog(
-                onDismiss = { showDialog = false },
-                onSave = { showDialog = false }
-            )
-        }
+    if (showDialog) {
+        AddRouteDialog(
+            onDismiss = { showDialog = false },
+            onSave = { showDialog = false }
+        )
+    }
 
     if (showDeleteDialog && selectedIdToDelete != null) {
         ConfirmationDialog(
@@ -252,15 +254,30 @@ fun AddRouteDialog(
                         return@Button
                     }
 
+                    val burnedVehicle = Vehicle(
+                        id = "VEH-002",
+                        plate = "P987654",
+                        model = "Toyota Hiace 2020",
+                        driver_id = driver.id,
+                        year = "2020",
+                        color = "White",
+                        capacity = "20",
+                        updated_at = "2025-06-16T09:00:00",
+                        carPic = "https://example.com/toyota_hiace_2020.jpg",
+                        created_at = "2025-06-16T09:00:00",
+                        brand = "Toyota",
+                    )
+
                     if (routeType != null && routeStatus != null) {
                         val route = RoutesData(
                             id = UUID.randomUUID().toString(),
                             name = name.text,
                             start_date = startDate.text,
-                            vehicule_id = vehiculeId.text,
+                            vehicle_id = burnedVehicle,
                             status_id = routeStatus!!,
                             type_id = routeType!!,
-                            end_date = endDate.text
+                            end_date = endDate.text,
+                            stopRoute = emptyList()
                         )
                         viewModel.addRoute(route)
                         onSave()

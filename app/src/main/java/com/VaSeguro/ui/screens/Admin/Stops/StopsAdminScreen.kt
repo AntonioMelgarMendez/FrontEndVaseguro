@@ -146,23 +146,23 @@ fun StopsAdminScreen(
                     }
 
                     AdminCardItem(
-                        id = stop.id,
+                        id = stop.id.toString(),
                         title = stop.name,
-                        subtitle = "Type: ${stop.stopType.type} | Driver: ${stop.driver}",
+                        subtitle = "",
                         details = listOf(
-                            "Latitude" to stop.latitude,
-                            "Longitude" to stop.longitude
+                            "Latitude" to stop.latitude.toString(),
+                            "Longitude" to stop.longitude.toString()
                         ),
-                        isExpanded = expandedMap[stop.id] ?: false,
-                        isChecked = checkedMap[stop.id] ?: false,
+                        isExpanded = expandedMap[stop.id.toString()] ?: false,
+                        isChecked = checkedMap[stop.id.toString()] ?: false,
                         shape = shape,
-                        onCheckedChange = { viewModel.setChecked(stop.id, it) },
+                        onCheckedChange = { viewModel.setChecked(stop.id.toString(), it) },
                         onEditClick = { println("Editar ${stop.name}") },
                         onDeleteClick = {
-                            selectedIdToDelete = stop.id
+                            selectedIdToDelete = stop.id.toString()
                             showDeleteDialog = true
                         },
-                        onToggleExpand = { viewModel.toggleExpand(stop.id) }
+                        onToggleExpand = { viewModel.toggleExpand(stop.id.toString()) }
                     )
                 }
             }
@@ -208,12 +208,6 @@ fun AddStopDialog(
     var stopType by remember { mutableStateOf<StopType?>(null) }
     var driver by remember { mutableStateOf<String?>(null) }
 
-    val stopTypes = listOf(
-        StopType("1", "School"),
-        StopType("2", "House"),
-        StopType("3", "Another")
-    )
-
     val drivers = listOf("Juan Mendoza", "Pedro Torres")
 
     fun resetForm() {
@@ -233,9 +227,9 @@ fun AddStopDialog(
                 CustomizableOutlinedTextField(value = latitude, onValueChange = { latitude = it }, label = "Latitude")
                 CustomizableOutlinedTextField(value = longitude, onValueChange = { longitude = it }, label = "Longitude")
 
-                DropDownSelector("Stop Type", stopTypes.map { it.type }, stopType?.type) { selectedType ->
-                    stopType = stopTypes.find { it.type == selectedType }
-                }
+//                DropDownSelector("Stop Type", stopTypes.map { it.type }, stopType?.type) { selectedType ->
+//                    stopType = stopTypes.find { it.type == selectedType }
+//                }
                 DropDownSelector("Driver", drivers, driver) { driver = it }
             }
         },
@@ -255,12 +249,12 @@ fun AddStopDialog(
 
                     if (stopType != null && driver != null) {
                         val newStop = StopData(
-                            id = (1000..9999).random().toString(),
+                            id = (1000..9999).random(),
                             name = name.text,
-                            latitude = latitude.text,
-                            longitude = longitude.text,
-                            stopType = stopType!!,
-                            driver = driver!!
+                            latitude = latitude.text.toDouble(),
+                            longitude = longitude.text.toDouble(),
+//                            stopType = stopType!!,
+//                            driver = driver!!
                         )
                         viewModel.addStop(newStop)
                         resetForm()

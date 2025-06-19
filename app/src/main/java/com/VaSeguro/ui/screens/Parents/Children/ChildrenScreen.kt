@@ -75,13 +75,13 @@ fun ChildrenScreen(
                         items(children) { child ->
                             ChildrenCard(
                                 child = child,
-                                isExpanded = expandedMap[child.id] ?: false,
-                                onToggleExpand = { viewModel.toggleExpand(child.id) },
+                                isExpanded = expandedMap[child.id.toString()] ?: false,
+                                onToggleExpand = { viewModel.toggleExpand(child.id.toString()) },
                                 onEditClick = {
                                     editingChild = child
                                     showDialog = true
                                 },
-                                onDeleteClick = { viewModel.deleteChild(child.id) },
+                                onDeleteClick = { viewModel.deleteChild(child.id.toString()) },
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                         }

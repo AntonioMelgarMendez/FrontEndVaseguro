@@ -25,7 +25,9 @@ import com.VaSeguro.ui.screens.Start.SplashScren.SplashScreen
 import com.VaSeguro.ui.theme.VaSeguroTheme
 import com.google.accompanist.navigation.animation.AnimatedNavHost
 import androidx.core.graphics.toColorInt
+import androidx.core.view.WindowInsetsControllerCompat
 import com.VaSeguro.ui.Aux.ContentScreen
+import com.VaSeguro.ui.navigations.MainNavigation
 import com.VaSeguro.ui.screens.Start.CreateAccountDriver.CreateAccountDriverScreen
 import com.VaSeguro.ui.screens.Start.CreateAccountDriver.RegisterBus.RegisterBusScreen
 
@@ -36,7 +38,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         WindowCompat.setDecorFitsSystemWindows(window, false)
         WindowCompat.getInsetsController(window, window.decorView)?.apply {
-            systemBarsBehavior = BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
         window.statusBarColor = "#FEF7FF".toColorInt()
         WindowCompat.getInsetsController(window, window.decorView)?.isAppearanceLightStatusBars = true
@@ -47,57 +49,65 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val navController = rememberNavController()
+                    MainNavigation(navController = navController, false)
 
-                    AnimatedNavHost(
-                        navController = navController,
-                        startDestination = "splash",
-                        enterTransition = { slideInHorizontally() + fadeIn() },
-                        exitTransition = { slideOutHorizontally() + fadeOut() },
-                        popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }) + fadeIn() },
-                        popExitTransition = { slideOutHorizontally(targetOffsetX = { it }) + fadeOut() }
-                    ) {
-                        composable("splash") {
-                            SplashScreen(navController)
-                        }
-                        composable("home") {
-                            GeneralScaffold(navController)
-                        }
-                        composable("starting") {
-                            StartingScreen(navController)
-                        }
-                        composable("login") {
-                            LoginScreen(navController)
-                        }
-                        composable("signup") {
-                            SignUpScreen(navController)
-                        }
-                        composable("driver_registration"){
-                            CreateAccountDriverScreen(navController)
-                        }
-                        composable("code") { }
-                        composable(
-                            route = "content/{message}/{description}/{imageRes}/{buttonText}/{destination}",
-                        ) { backStackEntry ->
-                            val message = backStackEntry.arguments?.getString("message") ?: ""
-                            val description = backStackEntry.arguments?.getString("description") ?: ""
-                            val imageRes = backStackEntry.arguments?.getString("imageRes")?.toIntOrNull() ?: R.drawable.ic_launcher_foreground
-                            val buttonText = backStackEntry.arguments?.getString("buttonText") ?: "Continue"
-                            val destination = backStackEntry.arguments?.getString("destination") ?: "home"
-                            ContentScreen(
-                                message = message,
-                                description = description,
-                                imageRes = imageRes,
-                                buttonText = buttonText,
-                                navController = navController,
-                                destination = destination
-                            )
-                        }
-                        composable("save_bus") {
-                            RegisterBusScreen(navController,{})
-                        }
-                    }
+//                    val navController = rememberNavController()
+//
+//                    AnimatedNavHost(
+//                        navController = navController,
+//                        startDestination = "splash",
+//                        enterTransition = { slideInHorizontally() + fadeIn() },
+//                        exitTransition = { slideOutHorizontally() + fadeOut() },
+//                        popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }) + fadeIn() },
+//                        popExitTransition = { slideOutHorizontally(targetOffsetX = { it }) + fadeOut() }
+//                    ) {
+//                        composable("splash") {
+//                            SplashScreen(navController)
+//                        }
+//                        composable("home") {
+//                            GeneralScaffold(navController)
+//                        }
+//                        composable("starting") {
+//                            StartingScreen(navController)
+//                        }
+//                        composable("login") {
+//                            LoginScreen(navController)
+//                        }
+//                        composable("signup") {
+//                            SignUpScreen(navController)
+//                        }
+//                        composable("driver_registration"){
+//                            CreateAccountDriverScreen(navController)
+//                        }
+//                        composable("code") { }
+//                        composable(
+//                            route = "content/{message}/{description}/{imageRes}/{buttonText}/{destination}",
+//                        ) { backStackEntry ->
+//                            val message = backStackEntry.arguments?.getString("message") ?: ""
+//                            val description = backStackEntry.arguments?.getString("description") ?: ""
+//                            val imageRes = backStackEntry.arguments?.getString("imageRes")?.toIntOrNull() ?: R.drawable.ic_launcher_foreground
+//                            val buttonText = backStackEntry.arguments?.getString("buttonText") ?: "Continue"
+//                            val destination = backStackEntry.arguments?.getString("destination") ?: "home"
+//                            ContentScreen(
+//                                message = message,
+//                                description = description,
+//                                imageRes = imageRes,
+//                                buttonText = buttonText,
+//                                navController = navController,
+//                                destination = destination
+//                            )
+//                        }
+//                        composable("save_bus") {
+//                            RegisterBusScreen(navController,{})
+//                        }
+//                    }
                 }
             }
         }
     }
 }
+
+//val navController = rememberNavController()
+//
+//// Usamos el sistema de navegación principal definido en MainNavigation
+//MainNavigation(navController = navController)

@@ -12,20 +12,16 @@ class StopsAdminScreenViewModel : ViewModel() {
     private val _stops = MutableStateFlow(
         listOf(
             StopData(
-                id = "S01",
+                id = 1,
                 name = "Parada El Centro",
-                latitude = "13.700",
-                longitude = "-89.210",
-                stopType = StopType("1", "School"),
-                driver = "Juan Mendoza"
+                latitude = 13.700,
+                longitude = -89.210
             ),
             StopData(
-                id = "S02",
+                id = 2,
                 name = "Parada Zona Norte",
-                latitude = "13.710",
-                longitude = "-89.220",
-                stopType = StopType("2", "House"),
-                driver = "Carlos López"
+                latitude = 13.710,
+                longitude = -89.220,
             )
         )
     )
@@ -54,7 +50,7 @@ class StopsAdminScreenViewModel : ViewModel() {
     }
 
     fun deleteStop(stopId: String) {
-        _stops.update { it.filterNot { stop -> stop.id == stopId } }
+        _stops.update { it.filterNot { stop -> stop.id.toString() == stopId } }
         _expandedMap.update { it - stopId }
         _checkedMap.update { it - stopId }
     }

@@ -2,12 +2,15 @@ package com.VaSeguro.ui.screens.Parents.Bus
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -15,6 +18,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.DirectionsCar
+import androidx.compose.material.icons.filled.Groups3
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material3.CircularProgressIndicator
@@ -33,29 +37,57 @@ import coil3.compose.AsyncImage
 import coil3.compose.AsyncImagePainter
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import com.VaSeguro.data.model.Route.RouteStatus
+import com.VaSeguro.data.model.Route.RouteType
 import com.VaSeguro.data.model.Routes.RoutesData
-import com.VaSeguro.data.model.Routes.RouteStatus
-import com.VaSeguro.data.model.Routes.RouteType
+import com.VaSeguro.data.model.User.UserData
+import com.VaSeguro.data.model.User.UserRole
+import com.VaSeguro.data.model.Vehicle.Vehicle
 import com.VaSeguro.ui.components.Misc.InfoBox
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+val driverRole = UserRole(
+    id = 1,
+    role_name = "Driver"
+)
+
+val driver = UserData(
+    id = "USR-001",
+    forename = "Carlos",
+    surname = "Ramírez",
+    email = "carlos.ramirez@example.com",
+    phoneNumber = "+50312345678",
+    profilePic = null,
+    role_id = driverRole,
+    gender = "Male"
+)
+
+
+val burnedVehicle = Vehicle(
+    id = "VEH-002",
+    plate = "P987654",
+    model = "Toyota Hiace 2020",
+    driver_id = driver.id,
+    year = "2020",
+    color = "White",
+    capacity = "20",
+    updated_at = "2025-06-16T09:00:00",
+    carPic = "https://example.com/toyota_hiace_2020.jpg",
+    created_at = "2025-06-16T09:00:00",
+    brand = "Toyota",
+)
 
 val routeList = listOf(
     RoutesData(
         id = "1",
         name = "Route 1",
         start_date = "2023-10-01",
-        vehicule_id = "1",
-        status_id = RouteStatus(
-            id = "1",
-            status = "Active",
-        ),
-        type_id = RouteType(
-            id = "1",
-            type = "Regular",
-        ),
+        vehicle_id = burnedVehicle,
+        status_id = RouteStatus.FINISHED,
+        type_id = RouteType.OUTBOUND,
         end_date = "2023-10-31",
+        stopRoute = emptyList()
     )
 )
 
@@ -69,6 +101,7 @@ fun String.toAmPmFormat(): String {
         this
     }
 }
+
 
 @Composable
 fun BusScreen() {
@@ -87,7 +120,7 @@ fun BusScreen() {
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = microBus.vehicule_id,
+                text = microBus.vehicle_id.toString(),
                 fontWeight = FontWeight.Light,
                 fontSize = 20.sp,
             )
@@ -123,13 +156,13 @@ fun BusScreen() {
             InfoBox(
                 icon = Icons.Default.Person,
                 title = "Driver:",
-                data = microBus.vehicule_id,
+                data = microBus.vehicle_id.toString(),
             )
             Spacer(modifier = Modifier.height(10.dp))
             InfoBox(
                 icon = Icons.Default.DirectionsCar,
                 title = "Plaque:",
-                data = microBus.vehicule_id,
+                data = microBus.vehicle_id.toString(),
             )
             /*
             Spacer(modifier = Modifier.height(10.dp))
@@ -143,7 +176,7 @@ fun BusScreen() {
             InfoBox(
                 icon = Icons.Default.Phone,
                 title = "Phone number:",
-                data = microBus.vehicule_id,
+                data = microBus.vehicle_id.toString(),
             )
             Spacer(modifier = Modifier.height(10.dp))
             InfoBox(

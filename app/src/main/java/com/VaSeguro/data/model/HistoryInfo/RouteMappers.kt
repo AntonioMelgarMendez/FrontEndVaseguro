@@ -17,7 +17,7 @@ fun RoutesData.toTripInfo(
         pickupTime = start_date.substringAfter(" "),
         arrivalTime = end_date.substringAfter(" "),
         driver = driverName,
-        bus = vehicule_id,
+        bus = "",
         distance = distanceKm,
         mapImageRes = mapImage
     )

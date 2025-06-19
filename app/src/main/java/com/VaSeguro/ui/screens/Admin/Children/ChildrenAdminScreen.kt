@@ -71,6 +71,7 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
+import kotlin.collections.lastIndex
 
 
 @Composable
@@ -81,7 +82,7 @@ fun ChildrenAdminScreen(viewModel: ChildrenAdminScreenViewModel = viewModel()) {
     val checkedMap = viewModel.checkedMap.collectAsState().value
     var showDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
-    var selectedIdToDelete by remember { mutableStateOf<String?>(null) }
+    var selectedIdToDelete by remember { mutableStateOf<Int?>(null) }
 
 
     Box(
@@ -157,7 +158,7 @@ fun ChildrenAdminScreen(viewModel: ChildrenAdminScreenViewModel = viewModel()) {
                     }
 
                     AdminCardItem(
-                        id = child.id,
+                        id = child.id.toString(),
                         title = child.fullName,
                         subtitle = "Age: ${child.age} | Parent: ${child.parent}",
                         details = listOf(
@@ -168,16 +169,16 @@ fun ChildrenAdminScreen(viewModel: ChildrenAdminScreenViewModel = viewModel()) {
                             "Driver" to child.driver,
                             "Created" to child.createdAt
                         ),
-                        isExpanded = expandedMap[child.id] ?: false,
-                        isChecked = checkedMap[child.id] ?: false,
+                        isExpanded = expandedMap[child.id.toString()] ?: false,
+                        isChecked = checkedMap[child.id.toString()] ?: false,
                         shape = shape,
-                        onCheckedChange = { viewModel.setChecked(child.id, it) },
+                        onCheckedChange = { viewModel.setChecked(child.id.toString(), it) },
                         onEditClick = { println("Editar ${child.fullName}") },
                         onDeleteClick = {
                             selectedIdToDelete = child.id
                             showDeleteDialog = true
                         },
-                        onToggleExpand = { viewModel.toggleExpand(child.id) }
+                        onToggleExpand = { viewModel.toggleExpand(child.id.toString()) }
                     )
                 }
             }
@@ -300,7 +301,7 @@ fun AddChildDialog(
                     val createdAt = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date())
 
                     val child = Child(
-                        id = id,
+                        id = 0,
                         fullName = fullName,
                         forenames = forenames.text,
                         surnames = surnames.text,
