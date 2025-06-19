@@ -42,6 +42,8 @@ class MainActivity : ComponentActivity() {
         }
         window.statusBarColor = "#FEF7FF".toColorInt()
         WindowCompat.getInsetsController(window, window.decorView)?.isAppearanceLightStatusBars = true
+        window.navigationBarColor = "#FFFFFF".toColorInt()
+        WindowCompat.getInsetsController(window, window.decorView)?.isAppearanceLightNavigationBars = true
         setContent {
             VaSeguroTheme(darkTheme = false) {
                 Surface(
@@ -49,58 +51,55 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val navController = rememberNavController()
-                    MainNavigation(navController = navController, false)
 
-//                    val navController = rememberNavController()
-//
-//                    AnimatedNavHost(
-//                        navController = navController,
-//                        startDestination = "splash",
-//                        enterTransition = { slideInHorizontally() + fadeIn() },
-//                        exitTransition = { slideOutHorizontally() + fadeOut() },
-//                        popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }) + fadeIn() },
-//                        popExitTransition = { slideOutHorizontally(targetOffsetX = { it }) + fadeOut() }
-//                    ) {
-//                        composable("splash") {
-//                            SplashScreen(navController)
-//                        }
-//                        composable("home") {
-//                            GeneralScaffold(navController)
-//                        }
-//                        composable("starting") {
-//                            StartingScreen(navController)
-//                        }
-//                        composable("login") {
-//                            LoginScreen(navController)
-//                        }
-//                        composable("signup") {
-//                            SignUpScreen(navController)
-//                        }
-//                        composable("driver_registration"){
-//                            CreateAccountDriverScreen(navController)
-//                        }
-//                        composable("code") { }
-//                        composable(
-//                            route = "content/{message}/{description}/{imageRes}/{buttonText}/{destination}",
-//                        ) { backStackEntry ->
-//                            val message = backStackEntry.arguments?.getString("message") ?: ""
-//                            val description = backStackEntry.arguments?.getString("description") ?: ""
-//                            val imageRes = backStackEntry.arguments?.getString("imageRes")?.toIntOrNull() ?: R.drawable.ic_launcher_foreground
-//                            val buttonText = backStackEntry.arguments?.getString("buttonText") ?: "Continue"
-//                            val destination = backStackEntry.arguments?.getString("destination") ?: "home"
-//                            ContentScreen(
-//                                message = message,
-//                                description = description,
-//                                imageRes = imageRes,
-//                                buttonText = buttonText,
-//                                navController = navController,
-//                                destination = destination
-//                            )
-//                        }
-//                        composable("save_bus") {
-//                            RegisterBusScreen(navController,{})
-//                        }
-//                    }
+                    AnimatedNavHost(
+                        navController = navController,
+                        startDestination = "splash",
+                        enterTransition = { slideInHorizontally() + fadeIn() },
+                        exitTransition = { slideOutHorizontally() + fadeOut() },
+                        popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }) + fadeIn() },
+                        popExitTransition = { slideOutHorizontally(targetOffsetX = { it }) + fadeOut() }
+                    ) {
+                        composable("splash") {
+                            SplashScreen(navController)
+                        }
+                        composable("home") {
+                            GeneralScaffold(navController)
+                        }
+                        composable("starting") {
+                            StartingScreen(navController)
+                        }
+                        composable("login") {
+                            LoginScreen(navController)
+                        }
+                        composable("signup") {
+                            SignUpScreen(navController)
+                        }
+                        composable("driver_registration"){
+                            CreateAccountDriverScreen(navController)
+                        }
+                        composable("code") { }
+                        composable(
+                            route = "content/{message}/{description}/{imageRes}/{buttonText}/{destination}",
+                        ) { backStackEntry ->
+                            val message = backStackEntry.arguments?.getString("message") ?: ""
+                            val description = backStackEntry.arguments?.getString("description") ?: ""
+                            val imageRes = backStackEntry.arguments?.getString("imageRes")?.toIntOrNull() ?: R.drawable.ic_launcher_foreground
+                            val buttonText = backStackEntry.arguments?.getString("buttonText") ?: "Continue"
+                            val destination = backStackEntry.arguments?.getString("destination") ?: "home"
+                            ContentScreen(
+                                message = message,
+                                description = description,
+                                imageRes = imageRes,
+                                buttonText = buttonText,
+                                navController = navController,
+                                destination = destination
+                            )
+                        }
+                        composable("save_bus") {
+                            RegisterBusScreen(navController,{})
+                        }
+                    }
                 }
             }
         }

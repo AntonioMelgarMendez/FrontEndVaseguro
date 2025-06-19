@@ -107,7 +107,7 @@ fun GeneralScaffold(navControllerx: NavController) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding) // 👈 Esto respeta top/bottom bars
+                    .padding(innerPadding)
             ) {
                 MainNavigation(navController = navController, isAdmin = isAdmin)
             }

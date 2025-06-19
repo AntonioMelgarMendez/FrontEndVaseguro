@@ -133,7 +133,7 @@ fun BusScreen() {
             ) {
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
-                        .data("")
+                        .data(microBus.vehicle_id.carPic)
                         .crossfade(true)
                         .build(),
                     contentDescription = microBus.name,
@@ -156,13 +156,13 @@ fun BusScreen() {
             InfoBox(
                 icon = Icons.Default.Person,
                 title = "Driver:",
-                data = microBus.vehicle_id.toString(),
+                data = microBus.vehicle_id.driver_id, // or use driver name if available
             )
             Spacer(modifier = Modifier.height(10.dp))
             InfoBox(
                 icon = Icons.Default.DirectionsCar,
                 title = "Plaque:",
-                data = microBus.vehicle_id.toString(),
+                data = microBus.vehicle_id.plate,
             )
             /*
             Spacer(modifier = Modifier.height(10.dp))
@@ -176,7 +176,7 @@ fun BusScreen() {
             InfoBox(
                 icon = Icons.Default.Phone,
                 title = "Phone number:",
-                data = microBus.vehicle_id.toString(),
+                data = driver.phoneNumber, // if you want the driver's phone
             )
             Spacer(modifier = Modifier.height(10.dp))
             InfoBox(

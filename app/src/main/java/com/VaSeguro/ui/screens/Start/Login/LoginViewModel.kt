@@ -60,6 +60,12 @@ class LoginViewModel(
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
+            if (_email.value.isBlank() || _password.value.isBlank()) {
+                _error.value = "empty_fields"
+                onError("empty_fields")
+                _isLoading.value = false
+                return@launch
+            }
 
             try {
                 val response = authRepository.login(_email.value, _password.value)
@@ -103,5 +109,10 @@ class LoginViewModel(
     }
     fun setError(errorCode: String?) {
         _error.value = errorCode
+    }
+    fun clearFields() {
+        _email.value = ""
+        _password.value = ""
+        _error.value = null
     }
 }

@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import java.io.IOException
+import kotlin.text.clear
 
 class UserPreferencesRepositoryImpl(
     private val dataStore: DataStore<Preferences>
@@ -129,16 +130,7 @@ class UserPreferencesRepositoryImpl(
 
     override suspend fun clearUserData() {
         dataStore.edit { preferences ->
-            preferences.remove(AUTH_TOKEN)
-            preferences.remove(USER_EMAIL)
-            preferences.remove(USER_ID)
-            preferences.remove(USER_FORENAMES)
-            preferences.remove(USER_SURNAMES)
-            preferences.remove(USER_PHONE)
-            preferences.remove(USER_GENDER)
-            preferences.remove(USER_ROLE)
-            preferences.remove(USER_PROFILE_PIC)
-            preferences.remove(USER_CREATED_AT)
+            preferences.clear()
         }
     }
 }

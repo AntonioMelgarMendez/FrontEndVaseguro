@@ -132,7 +132,6 @@ fun TopBar(
                         ConfigOption("Cerrar Sesion", Icons.Filled.ExitToApp) {
                             viewModel.closeConfigDialog()
                             viewModel.logout(context) {
-                                // Navigate to login screen
                                 navController.navigate("login") {
                                     popUpTo(0) { inclusive = true }
                                 }

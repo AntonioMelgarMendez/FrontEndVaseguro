@@ -47,7 +47,9 @@ fun LoginScreen(navController: NavController) {
             }
         }
     )
-
+    LaunchedEffect(Unit) {
+        viewModel.clearFields()
+    }
     val email by viewModel.email.collectAsState()
     val password by viewModel.password.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
