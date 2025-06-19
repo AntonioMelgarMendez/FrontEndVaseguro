@@ -1,17 +1,13 @@
 package com.VaSeguro.ui.screens.Driver.Route
 
 import android.Manifest
-import android.content.Intent
-import android.net.Uri
 import android.os.Looper
-import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -30,14 +26,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.VaSeguro.data.model.Child.Child
-import com.VaSeguro.data.repository.SavedRoutesRepository
+import com.VaSeguro.map.repository.SavedRoutesRepository
 import com.VaSeguro.map.data.PlaceResult
 import com.VaSeguro.map.data.RoutePoint
 import com.VaSeguro.map.decodePolyline
 import com.VaSeguro.ui.components.Map.FloatingMenu
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.accompanist.permissions.shouldShowRationale
 import com.google.android.gms.location.LocationCallback
@@ -62,7 +56,6 @@ import kotlinx.coroutines.launch
 fun RouteScreen(
     viewModel: RouteScreenViewModel = viewModel(factory = RouteScreenViewModel.Factory),
     routeId: String? = null,  // Parámetro para recibir el ID de la ruta
-    savedRoutesRepository: SavedRoutesRepository? = null,  // Repositorio compartido
     onNavigateToSavedRoutes: () -> Unit = {} // Navegación a pantalla de rutas guardadas
 ) {
     // Estados principales
@@ -91,16 +84,16 @@ fun RouteScreen(
     var isRouteStarted by remember { mutableStateOf(false) }
 
     // Efecto para cargar la ruta especificada por ID cuando se inicia la pantalla
-    LaunchedEffect(routeId, currentLocation) {
-        if (routeId != null && savedRoutesRepository != null && currentLocation != null) {
-            // Obtenemos la ruta del repositorio y la cargamos si está disponible
-            savedRoutesRepository.getRoute(routeId).collect { route ->
-                route?.let {
-                    viewModel.loadSavedRoute(it)
-                }
-            }
-        }
-    }
+//    LaunchedEffect(routeId, currentLocation) {
+//        if (routeId != null  && currentLocation != null) {
+//            // Obtenemos la ruta del repositorio y la cargamos si está disponible
+//            savedRoutesRepository.getRoute(routeId).collect { route ->
+//                route?.let {
+//                    viewModel.loadSavedRoute(it)
+//                }
+//            }
+//        }
+//    }
 
     // Estados de UI
     val cameraPositionState = rememberCameraPositionState()

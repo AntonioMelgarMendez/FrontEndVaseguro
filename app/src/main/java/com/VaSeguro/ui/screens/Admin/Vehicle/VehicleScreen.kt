@@ -39,9 +39,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.RectangleShape
 import com.VaSeguro.ui.components.AddVehicleDialog
 import com.VaSeguro.ui.components.AdminCardItem
+import com.VaSeguro.ui.screens.Driver.Route.RouteScreenViewModel
 
 @Composable
-fun VehicleScreen(viewModel: VehicleViewModel = viewModel()) {
+fun VehicleScreen(viewModel: VehicleViewModel = viewModel(factory = VehicleViewModel.Factory)) {
   val vehicles = viewModel.vehicles.collectAsState().value
   val drivers = viewModel.drivers.collectAsState().value
   val expandedMap = viewModel.expandedMap.collectAsState().value

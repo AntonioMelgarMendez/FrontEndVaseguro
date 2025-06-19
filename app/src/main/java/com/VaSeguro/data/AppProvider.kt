@@ -9,13 +9,14 @@ import com.VaSeguro.data.remote.RetrofitInstance
 import com.VaSeguro.data.repository.AuthRepository.AuthRepositoryImpl
 import com.VaSeguro.data.repository.RequestRepository.RequestRepositoryImpl
 import com.VaSeguro.data.repository.Children.ChildrenRepositoryImpl
-import com.VaSeguro.data.repository.SavedRoutesRepository
-import com.VaSeguro.data.repository.StopPassengerRepository
+import com.VaSeguro.map.repository.SavedRoutesRepository
+import com.VaSeguro.map.repository.StopPassengerRepository
 import com.VaSeguro.data.repository.UserPreferenceRepository.UserPreferencesRepositoryImpl
 import com.VaSeguro.data.repository.VehicleRepository.VehicleRepositoryImpl
 import com.VaSeguro.map.repository.MapsApiRepositoryImpl
-import com.VaSeguro.map.repository.RoutesApiRepository
 import com.VaSeguro.map.repository.RoutesApiRepositoryImpl
+import com.VaSeguro.map.repository.SavedRoutesRepositoryImpl
+import com.VaSeguro.map.repository.StopPassengerRepositoryImpl
 
 private const val USER_PREFERENCE_NAME = "user_preferences"
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = USER_PREFERENCE_NAME)
@@ -31,8 +32,8 @@ class AppProvider(context: Context) {
     private val routesApiRepository = RoutesApiRepositoryImpl(routesApiService)
     private val vehicleRespository = VehicleRepositoryImpl(RetrofitInstance.vehicleService)
     private val childrenRespository = ChildrenRepositoryImpl(RetrofitInstance.childrenService)
-    private val stopPassengerRepository = StopPassengerRepository()
-    private val savedRoutesRepository = SavedRoutesRepository()
+    private val stopPassengerRepository = StopPassengerRepositoryImpl()
+    private val savedRoutesRepository = SavedRoutesRepositoryImpl()
 
     fun provideUserPreferences() = userPreferencesRepository
     fun provideAuthRepository() = authRepository

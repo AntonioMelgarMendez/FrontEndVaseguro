@@ -1,11 +1,9 @@
 package com.VaSeguro.map.repository
 
 import com.VaSeguro.map.data.ApiPlaceResult
-import com.VaSeguro.map.data.Destination
 import com.VaSeguro.map.data.Geometry
 import com.VaSeguro.map.data.Location
 import com.VaSeguro.map.data.LocationAddress
-import com.VaSeguro.map.data.Origin
 import com.VaSeguro.map.data.PlaceResult
 import com.VaSeguro.map.data.Route
 import com.VaSeguro.map.data.Waypoint

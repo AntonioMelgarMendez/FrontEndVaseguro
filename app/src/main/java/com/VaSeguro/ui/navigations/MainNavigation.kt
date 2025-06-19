@@ -7,8 +7,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.VaSeguro.data.repository.SavedRoutesRepository
-import com.VaSeguro.ui.navigations.RouteScreenNavigation
+import com.VaSeguro.map.repository.SavedRoutesRepository
+import com.VaSeguro.map.repository.SavedRoutesRepositoryImpl
 import com.VaSeguro.ui.screens.Admin.Account.AccountAdminScreen
 import com.VaSeguro.ui.screens.Admin.Children.ChildrenAdminScreen
 import com.VaSeguro.ui.screens.Admin.Home.HomeAdminScreen
@@ -24,13 +24,12 @@ import com.VaSeguro.ui.screens.Parents.Bus.BusScreen
 import com.VaSeguro.ui.screens.Parents.Children.ChildrenScreen
 import com.VaSeguro.ui.screens.Parents.Configuration.ConfigurationScreen
 import com.VaSeguro.ui.screens.Parents.History.HistoryScreen
-import com.VaSeguro.ui.screens.Parents.Map.MapScreen
 
 @Composable
 fun MainNavigation(navController: NavHostController, isAdmin: Boolean) {
     val startDestination = if (isAdmin) HomeAdminScreenNavigation else MapScreenNavigation
     // Creamos un repositorio compartido para las rutas guardadas
-    val savedRoutesRepository = remember { SavedRoutesRepository() }
+    val savedRoutesRepository = remember { SavedRoutesRepositoryImpl() }
 
     // Compartimos un ViewModel para la pantalla principal de Rutas
     val routeViewModel: RouteScreenViewModel = viewModel(factory = RouteScreenViewModel.Factory)
@@ -57,7 +56,7 @@ fun MainNavigation(navController: NavHostController, isAdmin: Boolean) {
         navController.navigate(RouteScreenNavigation(routeId))
     }
 
-    NavHost(navController = navController, startDestination = RouteScreenNavigation()) {
+    NavHost(navController = navController, startDestination = startDestination) {
         composable<MapScreenNavigation> { RouteScreen() }
         composable<HistoryScreenNavigation> { HistoryScreen() }
         composable<BusScreenNavigation> { BusScreen() }
@@ -80,7 +79,6 @@ fun MainNavigation(navController: NavHostController, isAdmin: Boolean) {
             RouteScreen(
                 viewModel = routeViewModel,
                 routeId = routeId,
-                savedRoutesRepository = savedRoutesRepository,
                 onNavigateToSavedRoutes = onNavigateToSavedRoutes
             )
         }
