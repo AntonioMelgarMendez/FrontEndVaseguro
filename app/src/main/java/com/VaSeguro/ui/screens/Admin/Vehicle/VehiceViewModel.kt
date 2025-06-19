@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.update
 import com.VaSeguro.data.model.Vehicle.Vehicle
 import com.VaSeguro.data.model.User.UserData
 import com.VaSeguro.data.model.User.UserRole
+import com.VaSeguro.data.model.Vehicle
 import com.VaSeguro.data.remote.Vehicle.toDomain
 import com.VaSeguro.data.repository.VehicleRepository.VehicleRepository
 import com.VaSeguro.helpers.Resource

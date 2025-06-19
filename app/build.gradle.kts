@@ -22,6 +22,7 @@ android {
     namespace = "com.VaSeguro"
     compileSdk = 35
 
+
     defaultConfig {
         applicationId = "com.VaSeguro"
         minSdk = 26
@@ -34,6 +35,7 @@ android {
         // Agrega la API key a BuildConfig
         buildConfigField("String", "MAPS_API_KEY", "\"$mapsApiKey\"")
     }
+
 
     buildTypes {
         release {
