@@ -12,7 +12,7 @@ import com.VaSeguro.MyApplication
 import com.VaSeguro.data.model.Child.Child
 import com.VaSeguro.data.model.Routes.RoutesData
 import com.VaSeguro.data.model.StopPassenger.StopPassenger
-import com.VaSeguro.data.repository.StopPassengerRepository
+import com.VaSeguro.map.repository.StopPassengerRepository
 import com.VaSeguro.map.calculateDistance
 import com.VaSeguro.map.data.PlaceResult
 import com.VaSeguro.map.data.Polyline
@@ -23,6 +23,7 @@ import com.VaSeguro.map.decodePolyline
 import com.VaSeguro.map.isPointNearPolyline
 import com.VaSeguro.map.repository.MapsApiRepository
 import com.VaSeguro.map.repository.RoutesApiRepository
+import com.VaSeguro.map.repository.SavedRoutesRepository
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -40,7 +41,8 @@ import kotlinx.coroutines.launch
 class RouteScreenViewModel(
     private val mapsApiRepository: MapsApiRepository,
     private val routesApiRepository: RoutesApiRepository,
-    private val stopPassengerRepository: StopPassengerRepository
+    private val stopPassengerRepository: StopPassengerRepository,
+    private val savedRoutesRepository: SavedRoutesRepository
 ) : ViewModel() {
 
     // Estados para niños y paradas
@@ -973,7 +975,8 @@ class RouteScreenViewModel(
                 RouteScreenViewModel(
                     mapsApiRepository = application.appProvider.provideMapsApiRepository(),
                     routesApiRepository = application.appProvider.provideRoutesApiRepository(),
-                    stopPassengerRepository = application.appProvider.provideStopPassengerRepository()
+                    stopPassengerRepository = application.appProvider.provideStopPassengerRepository(),
+                    savedRoutesRepository = application.appProvider.provideSavedRoutesRepository()
                 )
             }
         }

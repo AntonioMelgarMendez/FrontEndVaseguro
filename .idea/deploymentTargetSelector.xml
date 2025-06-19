@@ -4,10 +4,10 @@
     <selectionStates>
       <SelectionState runConfigName="VaSeguro.app">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2025-06-10T20:11:23.750045100Z">
+        <DropdownSelection timestamp="2025-06-19T16:25:57.526971Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\Jefry\.android\avd\Medium_Phone.avd" />
+              <DeviceId pluginId="PhysicalDevice" identifier="serial=FLCH100019112656" />
             </handle>
           </Target>
         </DropdownSelection>

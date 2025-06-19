@@ -8,22 +8,18 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.VaSeguro.MyApplication
 import com.VaSeguro.data.model.Routes.RoutesData
-import com.VaSeguro.data.repository.SavedRoutesRepository
-import com.VaSeguro.map.data.Route
-import com.VaSeguro.map.data.RoutePoint
-import com.VaSeguro.ui.screens.Driver.Route.RouteScreenViewModel
-import com.google.android.gms.maps.model.LatLng
+import com.VaSeguro.map.repository.SavedRoutesRepository
+import com.VaSeguro.map.repository.SavedRoutesRepositoryImpl
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 class SavedRoutesViewModel(
-    private val savedRoutesRepository: SavedRoutesRepository
+    private val savedRoutesRepository: SavedRoutesRepositoryImpl
 ) : ViewModel() {
 
     private val _savedRoutes = MutableStateFlow<List<RoutesData>>(emptyList())

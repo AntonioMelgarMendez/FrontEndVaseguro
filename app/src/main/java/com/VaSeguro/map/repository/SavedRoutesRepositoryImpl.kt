@@ -1,4 +1,4 @@
-package com.VaSeguro.data.repository
+package com.VaSeguro.map.repository
 
 import com.VaSeguro.data.model.Route.RouteStatus
 import com.VaSeguro.data.model.Route.RouteType
@@ -19,9 +19,9 @@ import java.util.Date
 import java.util.Locale
 import java.util.UUID
 
-class SavedRoutesRepository {
+class SavedRoutesRepositoryImpl: SavedRoutesRepository {
     // Utilizar el repositorio de StopPassenger para obtener los datos consistentes
-    private val stopPassengerRepository = StopPassengerRepository()
+    private val stopPassengerRepository = StopPassengerRepositoryImpl()
 
     private val _savedRoutes = MutableStateFlow<List<RoutesData>>(emptyList())
     val savedRoutes: Flow<List<RoutesData>> = _savedRoutes
@@ -33,13 +33,13 @@ class SavedRoutesRepository {
         }
     }
 
-    fun addRoute(route: RoutesData) {
+    override fun addRoute(route: RoutesData) {
         _savedRoutes.update { currentList ->
             currentList + route
         }
     }
 
-    fun updateRoute(route: RoutesData) {
+    override fun updateRoute(route: RoutesData) {
         _savedRoutes.update { currentList ->
             currentList.map {
                 if (it.id == route.id) route else it
@@ -47,19 +47,19 @@ class SavedRoutesRepository {
         }
     }
 
-    fun deleteRoute(routeId: String) {
+    override fun deleteRoute(routeId: String) {
         _savedRoutes.update { currentList ->
             currentList.filter { it.id != routeId }
         }
     }
 
-    fun getRoute(routeId: String): Flow<RoutesData?> {
+    override fun getRoute(routeId: String): Flow<RoutesData?> {
         return _savedRoutes.map { routes ->
             routes.find { it.id == routeId }
         }
     }
 
-    private suspend fun createMockRoutes(): List<RoutesData> {
+    override suspend fun createMockRoutes(): List<RoutesData> {
         val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
         val now = Date()
 
@@ -166,7 +166,7 @@ class SavedRoutesRepository {
     }
 
     // Función helper para encontrar un StopPassenger por tipo y lista de stops de un niño
-    private fun findStopByTypeAndChild(type: String, childStops: List<StopPassenger>): StopPassenger {
+    override fun findStopByTypeAndChild(type: String, childStops: List<StopPassenger>): StopPassenger {
         return childStops.firstOrNull { it.stopType.name == type }
             ?: throw IllegalStateException("No se encontró parada de tipo $type para el niño")
     }

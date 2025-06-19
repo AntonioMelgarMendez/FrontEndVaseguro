@@ -20,11 +20,6 @@ data class LatLng2D(
     constructor(latLng: LatLng) : this(latLng.latitude, latLng.longitude)
 }
 
-data class WaypointWithModifiers(
-    val waypoint: MatrixWaypoint,
-    val routeModifiers: RouteModifiers? = null
-)
-
 data class RouteModifiers(
     val avoidFerries: Boolean? = null,
     val avoidHighways: Boolean? = null,

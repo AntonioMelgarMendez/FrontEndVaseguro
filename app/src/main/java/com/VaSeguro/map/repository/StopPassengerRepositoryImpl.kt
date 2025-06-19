@@ -1,4 +1,4 @@
-package com.VaSeguro.data.repository
+package com.VaSeguro.map.repository
 
 import com.VaSeguro.data.model.Child.Child
 import com.VaSeguro.data.model.Driver.Driver
@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.flow
  * Repositorio para obtener datos de StopPassenger
  * Por el momento utiliza datos quemados
  */
-class StopPassengerRepository {
+class StopPassengerRepositoryImpl: StopPassengerRepository {
 
     // Driver quemado para las rutas
     private val driver = Driver(
@@ -201,33 +201,33 @@ class StopPassengerRepository {
     /**
      * Obtiene todos los StopPassenger disponibles
      */
-    fun getAllStopPassengers(): Flow<List<StopPassenger>> = flow {
+    override fun getAllStopPassengers(): Flow<List<StopPassenger>> = flow {
         emit(mockStopPassengerList)
     }
 
     /**
-     * Obtiene StopPassenger filtrados por tipo (HOME o INSTITUTION)
+     * Obtiene StopPassenger filtrados por tipo
      */
-    fun getStopPassengersByType(type: StopType): Flow<List<StopPassenger>> = flow {
+    override fun getStopPassengersByType(type: StopType): Flow<List<StopPassenger>> = flow {
         emit(mockStopPassengerList.filter { it.stopType == type })
     }
 
     /**
      * Obtiene StopPassenger para un niño específico
      */
-    fun getStopPassengersByChild(childId: Int): Flow<List<StopPassenger>> = flow {
+    override fun getStopPassengersByChild(childId: Int): Flow<List<StopPassenger>> = flow {
         emit(mockStopPassengerList.filter { it.child.id == childId })
     }
 
     /**
      * Convierte un StopPassenger a LatLng para usar en el mapa
      */
-    fun stopPassengerToLatLng(stopPassenger: StopPassenger): LatLng {
+    override fun stopPassengerToLatLng(stopPassenger: StopPassenger): LatLng {
         return LatLng(stopPassenger.stop.latitude, stopPassenger.stop.longitude)
     }
 
     /**
      * Obtiene el driver asignado
      */
-    fun getDriver(): Driver = driver
+    override fun getDriver(): Driver = driver
 }

@@ -68,20 +68,6 @@ data class RouteSegment(
 )
 
 /**
- * Punto de origen para una solicitud de ruta
- */
-data class Origin(
-    val location: LocationAddress
-)
-
-/**
- * Punto de destino para una solicitud de ruta
- */
-data class Destination(
-    val location: LocationAddress
-)
-
-/**
  * Punto intermedio para una solicitud de ruta
  */
 data class Waypoint(
@@ -97,28 +83,6 @@ data class LocationAddress(
     companion object {
         fun fromLatLng(latLng: LatLng): LocationAddress {
             return LocationAddress(latLng)
-        }
-    }
-}
-
-/**
- * Representa la duración de un segmento de ruta
- */
-data class Duration(
-    val seconds: Long,
-    val nanos: Int = 0
-) {
-    /**
-     * Convierte la duración a un formato legible
-     */
-    fun toReadableFormat(): String {
-        val hours = seconds / 3600
-        val minutes = (seconds % 3600) / 60
-
-        return when {
-            hours > 0 -> "$hours h $minutes min"
-            minutes > 0 -> "$minutes min"
-            else -> "${seconds % 60} seg"
         }
     }
 }
