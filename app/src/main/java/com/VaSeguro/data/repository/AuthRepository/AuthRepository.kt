@@ -34,4 +34,20 @@ interface AuthRepository {
     suspend fun getAllUsers(token: String): List<UserResponse>
 
     suspend fun getAllUsersWithCodes(token: String): List<UserResponse>
+    suspend fun updateUser(
+        userId: Int,
+        forenames: String,
+        surnames: String,
+        email: String,
+        phone_number: String,
+        gender: String,
+        profile_pic: MultipartBody.Part?,
+        token: String
+    ): UserResponse
+    suspend fun  changePassword(
+        userId: Int,
+        oldPassword: String,
+        newPassword: String,
+        token: String
+    ): Boolean
 }

@@ -1,6 +1,9 @@
 package com.VaSeguro.ui.components.Container.TopBarContainer
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.AccountCircle
@@ -8,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -17,6 +21,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import coil3.compose.rememberAsyncImagePainter
 import com.VaSeguro.data.AppProvider
 import com.VaSeguro.ui.navigations.ConfigurationScreenNavigation
 import com.VaSeguro.ui.navigations.MapScreenNavigation
@@ -68,11 +73,25 @@ fun TopBar(
                         contentDescription = "Notificaciones"
                     )
                 }
-                IconButton(onClick = {}) {
-                    Icon(
-                        imageVector = Icons.Outlined.AccountCircle,
-                        contentDescription = "Perfil"
-                    )
+                IconButton(onClick = { navControllerx.navigate(ConfigurationScreenNavigation) }) {
+                    val profilePic = viewModel.userProfilePic
+                    if (!profilePic.isNullOrBlank()) {
+                        Image(
+                            painter = rememberAsyncImagePainter(profilePic),
+                            contentDescription = "Perfil",
+                            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .border(1.dp, Color.Gray, CircleShape)
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Outlined.AccountCircle,
+                            contentDescription = "Perfil",
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
                 }
             }
         },

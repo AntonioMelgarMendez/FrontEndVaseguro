@@ -39,6 +39,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.VaSeguro.data.model.Security.SecurityFormState
 import com.VaSeguro.ui.components.Container.ConfirmationDialog
+import com.VaSeguro.ui.components.Forms.SegmentedTabRow
 import com.VaSeguro.ui.components.Forms.ValidationChecklist
 import com.VaSeguro.ui.theme.PrimaryColor
 import com.VaSeguro.ui.theme.SecondaryColor
@@ -50,7 +51,9 @@ fun SecurityFormSection(
     original: SecurityFormState,
     onValueChange: ((SecurityFormState) -> SecurityFormState) -> Unit,
     onUpdate: () -> Unit,
-    onCancel: () -> Unit
+    onCancel: () -> Unit,
+    selectedTabIndex: Int,
+    onTabSelected: (Int) -> Unit
 ) {
     var showOld by remember { mutableStateOf(false) }
     var showNew by remember { mutableStateOf(false) }
@@ -71,79 +74,74 @@ fun SecurityFormSection(
         )
     }
 
-    Surface(
-        shape = RoundedCornerShape(20.dp),
-        color = Color.White,
-        tonalElevation = 2.dp,
+    Column(
         modifier = Modifier
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp)
+            .verticalScroll(scrollState),
+        horizontalAlignment = Alignment.Start
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp)
-                .verticalScroll(scrollState),
-            horizontalAlignment = Alignment.Start
-        ) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Text("Password", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(16.dp))
+        // Tab segment at the top
+        SegmentedTabRow(
+            selectedIndex = selectedTabIndex,
+            onTabSelected = onTabSelected
+        )
+        Spacer(modifier = Modifier.height(16.dp))
 
-            PasswordFieldWithLabel(
-                label = "Old password",
-                value = state.oldPassword,
-                show = showOld,
-                toggleVisibility = { showOld = !showOld }
-            ) { newValue ->
-                onValueChange { it.copy(oldPassword = newValue) }
-            }
-
-            PasswordFieldWithLabel(
-                label = "New password",
-                value = state.newPassword,
-                show = showNew,
-                toggleVisibility = { showNew = !showNew }
-            ) { newValue ->
-                onValueChange { it.copy(newPassword = newValue) }
-            }
-
-            PasswordFieldWithLabel(
-                label = "Confirm new password",
-                value = state.confirmPassword,
-                show = showConfirm,
-                toggleVisibility = { showConfirm = !showConfirm }
-            ) { newValue ->
-                onValueChange { it.copy(confirmPassword = newValue) }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            ValidationChecklist(
-                minLength = state.isMinLengthValid,
-                case = state.isCaseValid,
-                special = state.isSpecialCharValid
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth()) {
-                Button(
-                    onClick = {
-                        if (hasChanges) showDialog = true
-                        else onUpdate()
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryColor),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("Update")
-                }
-                TextButton(onClick = onCancel, modifier = Modifier.weight(1f)) {
-                    Text("Cancel", color = SecondaryColor)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
+        PasswordFieldWithLabel(
+            label = "Old password",
+            value = state.oldPassword,
+            show = showOld,
+            toggleVisibility = { showOld = !showOld }
+        ) { newValue ->
+            onValueChange { it.copy(oldPassword = newValue) }
         }
+
+        PasswordFieldWithLabel(
+            label = "New password",
+            value = state.newPassword,
+            show = showNew,
+            toggleVisibility = { showNew = !showNew }
+        ) { newValue ->
+            onValueChange { it.copy(newPassword = newValue) }
+        }
+
+        PasswordFieldWithLabel(
+            label = "Confirm new password",
+            value = state.confirmPassword,
+            show = showConfirm,
+            toggleVisibility = { showConfirm = !showConfirm }
+        ) { newValue ->
+            onValueChange { it.copy(confirmPassword = newValue) }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        ValidationChecklist(
+            minLength = state.isMinLengthValid,
+            case = state.isCaseValid,
+            special = state.isSpecialCharValid
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth()) {
+            Button(
+                onClick = {
+                    if (hasChanges) showDialog = true
+                    else onUpdate()
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = PrimaryColor),
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("Update")
+            }
+            TextButton(onClick = onCancel, modifier = Modifier.weight(1f)) {
+                Text("Cancel", color = SecondaryColor)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 

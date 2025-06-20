@@ -1,3 +1,4 @@
+
 package com.VaSeguro.ui.screens.Admin.Account
 
 import androidx.compose.foundation.background
@@ -34,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import com.VaSeguro.data.model.User.UserData
 import com.VaSeguro.ui.components.Container.ConfirmationDialog
 import com.VaSeguro.ui.components.Forms.CustomOutlinedTextField
+import com.VaSeguro.ui.components.Forms.SegmentedTabRow
 import com.VaSeguro.ui.theme.PrimaryColor
 import com.VaSeguro.ui.theme.SecondaryColor
 
@@ -43,7 +45,9 @@ fun AccountFormSection(
     original: UserData,
     onValueChange: ((UserData) -> UserData) -> Unit,
     onUpdate: () -> Unit,
-    onCancel: () -> Unit
+    onCancel: () -> Unit,
+    selectedTabIndex: Int,
+    onTabSelected: (Int) -> Unit
 ) {
     val scrollState = rememberScrollState()
     var showDialog by remember { mutableStateOf(false) }
@@ -55,91 +59,89 @@ fun AccountFormSection(
             message = "Are you sure you want to update this information?",
             onConfirm = {
                 showDialog = false
-                onUpdate() // Llama a la lógica real de actualización
+                onUpdate()
             },
             onDismiss = { showDialog = false }
         )
     }
 
-    Surface(
-        shape = RoundedCornerShape(20.dp),
-        color = Color.White,
-        tonalElevation = 2.dp,
+    Column(
         modifier = Modifier
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp)
+            .verticalScroll(scrollState),
+        horizontalAlignment = Alignment.Start
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp)
-                .verticalScroll(scrollState),
-            horizontalAlignment = Alignment.Start
-        ) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Text("Information", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(16.dp))
+        // Tab segment at the top
+        SegmentedTabRow(
+            selectedIndex = selectedTabIndex,
+            onTabSelected = onTabSelected
+        )
+        Spacer(modifier = Modifier.height(16.dp))
 
+        // Avatar
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(),
+            contentAlignment = Alignment.Center
+        ) {
             Box(
                 modifier = Modifier
-                    .fillMaxWidth(),
+                    .size(72.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary),
                 contentAlignment = Alignment.Center
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(72.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = state.forename.take(1) + (state.surname.takeIf { it.isNotEmpty() }?.take(1) ?: ""),
-                        color = Color.White
-                    )
-                }
+                Text(
+                    text = state.forename.take(1) + (state.surname.takeIf { it.isNotEmpty() }?.take(1) ?: ""),
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = MaterialTheme.typography.headlineMedium.fontSize
+                )
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            FormField(label = "Forenames", value = state.forename) { newValue ->
-                onValueChange { it.copy(forename = newValue) }
-            }
-
-            FormField("Surnames", state.surname) { newValue ->
-                onValueChange { it.copy(surname = newValue) }
-            }
-
-            FormField("Email", state.email) { newValue ->
-                onValueChange { it.copy(email = newValue) }
-            }
-
-            FormField("Gender", state.gender ?: "") { newValue ->
-                onValueChange { it.copy(gender = newValue) }
-            }
-
-            FormField("Phone", state.phoneNumber) { newValue ->
-                onValueChange { it.copy(phoneNumber = newValue) }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth()) {
-                Button(
-                    onClick = {
-                        if (hasChanges) showDialog = true
-                        else onUpdate()
-                              },
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryColor),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("Update")
-                }
-                TextButton(onClick = onCancel, modifier = Modifier.weight(1f)) {
-                    Text("Cancel", color = SecondaryColor)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
         }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        FormField(label = "Forenames", value = state.forename) { newValue ->
+            onValueChange { it.copy(forename = newValue) }
+        }
+
+        FormField("Surnames", state.surname) { newValue ->
+            onValueChange { it.copy(surname = newValue) }
+        }
+
+        FormField("Email", state.email) { newValue ->
+            onValueChange { it.copy(email = newValue) }
+        }
+
+        FormField("Gender", state.gender ?: "") { newValue ->
+            onValueChange { it.copy(gender = newValue) }
+        }
+
+        FormField("Phone", state.phoneNumber) { newValue ->
+            onValueChange { it.copy(phoneNumber = newValue) }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth()) {
+            Button(
+                onClick = {
+                    if (hasChanges) showDialog = true
+                    else onUpdate()
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = PrimaryColor),
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("Actualizar ")
+            }
+            TextButton(onClick = onCancel, modifier = Modifier.weight(1f)) {
+                Text("Cancel", color = SecondaryColor)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 

@@ -27,6 +27,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 
 import kotlinx.coroutines.launch
+import kotlin.comparisons.then
 
 @Composable
 fun GeneralScaffold(navControllerx: NavController) {

@@ -16,5 +16,6 @@ interface UserPreferencesRepository {
     suspend fun getUserEmail(): String?
     suspend fun saveUserData(user: UserResponse)
     suspend fun getUserData(): UserResponse?
+    suspend fun userDataFlow(): Flow<UserResponse?>
     suspend fun clearUserData()
 }

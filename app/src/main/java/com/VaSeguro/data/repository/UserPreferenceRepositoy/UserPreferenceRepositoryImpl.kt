@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import java.io.IOException
 import kotlin.text.clear
+import kotlin.text.get
 
 class UserPreferencesRepositoryImpl(
     private val dataStore: DataStore<Preferences>
@@ -128,9 +129,33 @@ class UserPreferencesRepositoryImpl(
         }.firstOrNull()
     }
 
+    override suspend fun userDataFlow(): Flow<UserResponse?> {
+        return dataStore.data
+            .catch { emit(emptyPreferences()) }
+            .map { preferences ->
+                try {
+                    UserResponse(
+                        id = preferences[USER_ID] ?: return@map null,
+                        forenames = preferences[USER_FORENAMES] ?: return@map null,
+                        surnames = preferences[USER_SURNAMES] ?: return@map null,
+                        email = preferences[USER_EMAIL] ?: return@map null,
+                        password = "",
+                        phone_number = preferences[USER_PHONE],
+                        gender = preferences[USER_GENDER],
+                        role_id = preferences[USER_ROLE] ?: 0,
+                        profile_pic = preferences[USER_PROFILE_PIC],
+                        created_at = preferences[USER_CREATED_AT] ?: ""
+                    )
+                } catch (e: Exception) {
+                    null
+                }
+            }
+    }
+
     override suspend fun clearUserData() {
         dataStore.edit { preferences ->
             preferences.clear()
         }
     }
+
 }

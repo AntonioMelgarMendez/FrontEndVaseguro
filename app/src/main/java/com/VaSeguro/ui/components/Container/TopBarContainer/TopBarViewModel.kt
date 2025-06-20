@@ -7,7 +7,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.VaSeguro.data.repository.UserPreferenceRepository.UserPreferencesRepository
-import com.VaSeguro.data.repository.UserPreferenceRepository.UserPreferencesRepositoryImpl
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 class TopBarViewModel(
@@ -15,6 +15,16 @@ class TopBarViewModel(
 ) : ViewModel() {
     var isConfigDialogOpen by mutableStateOf(false)
         private set
+    var userProfilePic by mutableStateOf<String?>(null)
+        private set
+
+    init {
+        viewModelScope.launch {
+            userPreferencesRepository.userDataFlow().collectLatest { user ->
+                userProfilePic = user?.profile_pic?.takeIf { it.isNotBlank() }
+            }
+        }
+    }
 
     fun openConfigDialog() {
         isConfigDialogOpen = true
