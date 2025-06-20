@@ -7,6 +7,7 @@ import com.VaSeguro.data.remote.Auth.Register.RegisterRequest
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.Multipart
@@ -57,6 +58,12 @@ interface AuthService {
     suspend fun changePassword(
         @Path("id") userId: Int,
         @Body body: Map<String, String>,
+        @Header("Authorization") authHeader: String
+    ): retrofit2.Response<okhttp3.ResponseBody>
+
+    @DELETE("users/{id}")
+    suspend fun deleteAccount(
+        @Path("id") userId: Int,
         @Header("Authorization") authHeader: String
     ): retrofit2.Response<okhttp3.ResponseBody>
 }

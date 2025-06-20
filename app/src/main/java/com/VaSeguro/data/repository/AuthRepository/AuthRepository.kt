@@ -50,4 +50,8 @@ interface AuthRepository {
         newPassword: String,
         token: String
     ): Boolean
+    suspend fun  deleteAccount(
+        userId: Int,
+        token: String
+    ): Boolean
 }

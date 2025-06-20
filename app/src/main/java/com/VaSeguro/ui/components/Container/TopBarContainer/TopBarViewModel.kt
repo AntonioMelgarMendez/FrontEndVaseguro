@@ -6,17 +6,20 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.VaSeguro.data.repository.AuthRepository.AuthRepository
 import com.VaSeguro.data.repository.UserPreferenceRepository.UserPreferencesRepository
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 class TopBarViewModel(
-    private val userPreferencesRepository: UserPreferencesRepository
+    private val userPreferencesRepository: UserPreferencesRepository,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
     var isConfigDialogOpen by mutableStateOf(false)
         private set
     var userProfilePic by mutableStateOf<String?>(null)
         private set
+
 
     init {
         viewModelScope.launch {
@@ -24,6 +27,8 @@ class TopBarViewModel(
                 userProfilePic = user?.profile_pic?.takeIf { it.isNotBlank() }
             }
         }
+
+
     }
 
     fun openConfigDialog() {
@@ -38,6 +43,17 @@ class TopBarViewModel(
         viewModelScope.launch {
             userPreferencesRepository.clearUserData()
             onLogout()
+        }
+    }
+    fun deleteAccount( context: Context, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val userId = userPreferencesRepository.getUserData()!!.id
+            val token = userPreferencesRepository.getAuthToken() ?: ""
+            val success = authRepository.deleteAccount(userId, token)
+            if (success) {
+                userPreferencesRepository.clearUserData()
+            }
+            onResult(success)
         }
     }
 }

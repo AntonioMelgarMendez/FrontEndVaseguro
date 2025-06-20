@@ -120,5 +120,16 @@ class AuthRepositoryImpl(
         }
     }
 
+    override suspend fun deleteAccount(userId: Int,token: String): Boolean {
+        return try {
+            val response = authService.deleteAccount(
+                userId = userId,
+                authHeader = "Bearer $token"
+            )
+            response.isSuccessful
+        } catch (e: Exception) {
+            false
+        }
+    }
 
 }
