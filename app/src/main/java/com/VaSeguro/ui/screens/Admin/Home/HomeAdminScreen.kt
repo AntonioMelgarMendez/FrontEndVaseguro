@@ -48,6 +48,8 @@ fun HomeAdminScreen() {
             }
         }
     )
+    var showIcons by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { showIcons = true }
     LaunchedEffect(Unit) {
         viewModel.fetchUsers()
         viewModel.fetchUsersWithCodes()
@@ -81,10 +83,6 @@ fun HomeAdminScreen() {
         InfoCardData(Icons.Filled.Person, "Hijos", animatedTotalHijos, Color(0xFFFFF9C4)),
         InfoCardData(Icons.Filled.Person, "Padres", animatedTotalPadres, Color(0xFFFFCCBC))
     )
-
-    var showIcons by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { showIcons = true }
-
     Box(
         modifier = Modifier
             .fillMaxSize()

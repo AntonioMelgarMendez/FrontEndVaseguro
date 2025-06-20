@@ -50,12 +50,12 @@ fun BottomBar(
                                 "Mapa", "Map" -> Icons.Filled.Map
                                 "Historial", "History" -> Icons.Filled.History
                                 "Bus", "Mi Bus" -> Icons.Filled.DirectionsBus
-                                "Hijo", "Clientes" -> Icons.Filled.Face
+                                "Hijo","Hijos","Clientes" -> Icons.Filled.Face
                                 "Inicio" -> Icons.Filled.Home
                                 "Rutas", "Mis Rutas" -> Icons.Filled.Route
                                 "Paradas" -> Icons.Filled.Place
                                 "Usuarios" -> Icons.Filled.People
-                                "Vehiculos" -> Icons.Filled.DirectionsCar
+                                "Buses","Bus","Vehiculos" -> Icons.Filled.DirectionsCar
                                 else -> Icons.Filled.Star
                             },
                             contentDescription = item
