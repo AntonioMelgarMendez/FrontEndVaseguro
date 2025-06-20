@@ -1,5 +1,6 @@
 package com.VaSeguro.ui.screens.Start.Code
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -44,6 +45,7 @@ fun CodeScreen(navController: NavController) {
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .background(Color.White)
             .padding(16.dp),
         contentAlignment = Alignment.Center
     ) {

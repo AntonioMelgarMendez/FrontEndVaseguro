@@ -139,7 +139,8 @@ fun TopBar(
                         }
                     }
                 }
-            }
+            },
+            containerColor = Color.White,
         )
     }
 }

@@ -1,5 +1,6 @@
 package com.VaSeguro.ui.screens.Start.SignUp
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -62,6 +63,7 @@ fun SignUpScreen(navController: NavController) {
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .background(Color.White)
             .padding(16.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -99,6 +101,7 @@ fun SignUpScreen(navController: NavController) {
                         unfocusedContainerColor = Color(0xFFE3E3E3),
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
+                        focusedTextColor = Color.Black,
 
                     )
                 )

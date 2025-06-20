@@ -40,7 +40,7 @@ class MainActivity : ComponentActivity() {
         WindowCompat.getInsetsController(window, window.decorView)?.apply {
             systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
-        window.statusBarColor = "#FEF7FF".toColorInt()
+        window.statusBarColor = "#FFFFFF".toColorInt()
         WindowCompat.getInsetsController(window, window.decorView)?.isAppearanceLightStatusBars = true
         window.navigationBarColor = "#FFFFFF".toColorInt()
         WindowCompat.getInsetsController(window, window.decorView)?.isAppearanceLightNavigationBars = true

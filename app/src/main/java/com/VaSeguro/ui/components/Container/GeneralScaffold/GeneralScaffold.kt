@@ -24,6 +24,7 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
+import androidx.compose.ui.graphics.Color
 
 import kotlinx.coroutines.launch
 
@@ -86,6 +87,7 @@ fun GeneralScaffold(navControllerx: NavController) {
     }
 
     Scaffold(
+        containerColor = Color.White,
         topBar = {
             TopBar(
                 title = title,

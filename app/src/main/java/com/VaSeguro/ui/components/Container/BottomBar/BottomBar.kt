@@ -50,7 +50,7 @@ fun BottomBar(
                                 "Mapa", "Map" -> Icons.Filled.Map
                                 "Historial", "History" -> Icons.Filled.History
                                 "Bus", "Mi Bus" -> Icons.Filled.DirectionsBus
-                                "Hijos", "Clientes" -> Icons.Filled.Face
+                                "Hijo", "Clientes" -> Icons.Filled.Face
                                 "Inicio" -> Icons.Filled.Home
                                 "Rutas", "Mis Rutas" -> Icons.Filled.Route
                                 "Paradas" -> Icons.Filled.Place
