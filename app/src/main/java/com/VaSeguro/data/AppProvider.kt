@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import com.VaSeguro.data.remote.RetrofitInstance
 import com.VaSeguro.data.repository.AuthRepository.AuthRepositoryImpl
+import com.VaSeguro.data.repository.ChatRepository.ChatRepositoryImpl
 import com.VaSeguro.data.repository.RequestRepository.RequestRepositoryImpl
 import com.VaSeguro.data.repository.Children.ChildrenRepositoryImpl
 import com.VaSeguro.map.repository.SavedRoutesRepository
@@ -32,6 +33,7 @@ class AppProvider(context: Context) {
     private val routesApiRepository = RoutesApiRepositoryImpl(routesApiService)
     private val vehicleRespository = VehicleRepositoryImpl(RetrofitInstance.vehicleService)
     private val childrenRespository = ChildrenRepositoryImpl(RetrofitInstance.childrenService)
+    private val chatRepository = ChatRepositoryImpl(RetrofitInstance.chatService)
     private val stopPassengerRepository = StopPassengerRepositoryImpl()
     private val savedRoutesRepository = SavedRoutesRepositoryImpl()
 
@@ -44,5 +46,6 @@ class AppProvider(context: Context) {
     fun provideRequestRepository() = requestRepository
     fun provideVehicleRepository() = vehicleRespository
     fun provideChildrenRepository() = childrenRespository
+    fun provideChatRepository() = chatRepository
 
 }
