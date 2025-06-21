@@ -9,4 +9,8 @@ interface RequestRepository {
         token: String,
         userId: Int
     ): Result<Unit>
+    suspend fun  getCode(
+        token: String,
+        userId: Int
+    ): Result<String>
 }

@@ -1,5 +1,6 @@
 package com.VaSeguro.ui.components.Container.TopBarContainer
 
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -18,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
@@ -36,10 +38,11 @@ import androidx.navigation.NavController
 import coil3.compose.rememberAsyncImagePainter
 import com.VaSeguro.R
 import com.VaSeguro.data.AppProvider
+import com.VaSeguro.ui.Aux.generateQRCode
 import com.VaSeguro.ui.navigations.ConfigurationScreenNavigation
 
 enum class InfoDialogType {
-    NONE, TERMS, NOTIFICATIONS, SUPPORT, ABOUT
+    NONE, TERMS, NOTIFICATIONS, SUPPORT, ABOUT,QR
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -60,12 +63,13 @@ fun TopBar(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 val appProvider = AppProvider(context.applicationContext)
-                return TopBarViewModel(appProvider.provideUserPreferences(), appProvider.provideAuthRepository()) as T
+                return TopBarViewModel(appProvider.provideUserPreferences(), appProvider.provideAuthRepository(), appProvider.provideRequestRepository()) as T
             }
         }
     )
     val confirmationPhrase = "BORRAR"
     var infoDialog by remember { mutableStateOf(InfoDialogType.NONE) }
+
 
     TopAppBar(
         title = {},
@@ -164,6 +168,7 @@ fun TopBar(
                                     bottom = 16.dp
                                 )
                             )
+
                         }else {
                             Box(
                                 modifier = Modifier
@@ -203,6 +208,15 @@ fun TopBar(
                                 navControllerx.navigate(ConfigurationScreenNavigation)
                             }
                             Spacer(modifier = Modifier.height(8.dp))
+                            if (viewModel.userRoleId == 4) {
+                                Log.d("TopBar", "User is admin, showing QR option"+
+                                        " with role ID: ${viewModel.userRoleId}")
+                                ConfigOption("Mostrar QR", Icons.Filled.QrCode) {
+                                    infoDialog=InfoDialogType.QR
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
+
                             ConfigOption("Terminos y condiciones", Icons.Filled.Book) {
                                 infoDialog = InfoDialogType.TERMS
                             }
@@ -349,6 +363,58 @@ fun TopBar(
                                     fontSize = 16.sp,
                                     lineHeight = 22.sp
                                 )
+                                InfoDialogType.QR -> {
+                                    LaunchedEffect(Unit) {
+                                        viewModel.fetchDriverCode()
+                                    }
+                                    val code = viewModel.driverCode ?: "Cargando..."
+                                    val qrBitmap = remember(code) {
+                                        if (code != "Cargando...") generateQRCode(code) else null
+                                    }
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 16.dp)
+                                    ) {
+                                        Text(
+                                            "Escanea el código QR",
+                                            fontSize = 20.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.Black,
+                                            textAlign = TextAlign.Center,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 4.dp)
+                                        )
+                                        if (qrBitmap != null) {
+                                            Image(
+                                                bitmap = qrBitmap.asImageBitmap(),
+                                                contentDescription = "Código QR",
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .height(300.dp)
+                                                    .padding(4.dp)
+                                            )
+                                        } else {
+                                            Text("Generando QR...", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+                                        }
+                                        Text(
+                                            "Código: $code",
+                                            fontSize = 20.sp,
+                                            color = Color.Black,
+                                            fontWeight = FontWeight.Bold,
+                                            textAlign = TextAlign.Center,
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+                                        Text(
+                                            "Comparte este codigo QR con tus clientes para que puedan escanearlo y acceder a tu perfil.",
+                                            fontSize = 14.sp,
+                                            color = Color.Gray,
+                                            textAlign = TextAlign.Center,
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+                                    }
+                                }
                                 InfoDialogType.NOTIFICATIONS -> {
                                     var emergencyAlerts by remember { mutableStateOf(true) }
                                     var appUpdates by remember { mutableStateOf(false) }

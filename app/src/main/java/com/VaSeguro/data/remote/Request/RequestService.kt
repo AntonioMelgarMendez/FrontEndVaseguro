@@ -5,6 +5,7 @@ import retrofit2.http.Body
 import retrofit2.http.Header
 import retrofit2.http.PATCH
 import retrofit2.http.DELETE
+import retrofit2.http.GET
 import retrofit2.http.Path
 
 interface RequestService {
@@ -20,4 +21,10 @@ interface RequestService {
         @Header("Authorization") token: String,
         @Path("id") userId: Int
     ): Response<Unit>
+
+    @GET("register-codes/{id}")
+    suspend fun getRequestById(
+        @Header("Authorization") token: String,
+        @Path("id") userId: Int
+    ): String
 }

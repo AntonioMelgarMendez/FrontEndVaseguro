@@ -23,4 +23,13 @@ class RequestRepositoryImpl(
         )
         return if (response.isSuccessful) Result.success(Unit) else Result.failure(Exception("Error"))
     }
+
+    override suspend fun getCode(token: String, userId: Int): Result<String> {
+        return try {
+            val code = requestService.getRequestById("Bearer $token", userId)
+            Result.success(code)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }
