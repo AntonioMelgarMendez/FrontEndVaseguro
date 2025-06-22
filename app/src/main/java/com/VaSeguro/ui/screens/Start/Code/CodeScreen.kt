@@ -101,14 +101,9 @@ fun CodeScreen(navController: NavController) {
                         Log.e("Image", "Driver: ${viewModel.driverProfilePic}")
                         viewModel.verifyCode(
                             onSuccess = {
-                                val title = "Este es tu conductor"
-                                val description = "Vamos a seguir rellenado información para que puedas comenzar tu viaje."
-                                val imageRes = viewModel.driverProfilePic
-                                val buttonText = "Continuar"
-                                val destination = "home"
-                                navController.navigate(
-                                    "content/$title/$description/${Uri.encode(imageRes)}/$buttonText/$destination"
-                                )
+                                val id = viewModel.driverId?.toString() ?: ""
+                                val pic = Uri.encode(viewModel.driverProfilePic ?: "")
+                                navController.navigate("add_children/$id/$pic")
                             },
                             onError = {}
                         )
