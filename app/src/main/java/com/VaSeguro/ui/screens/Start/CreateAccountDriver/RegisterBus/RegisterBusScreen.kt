@@ -80,7 +80,7 @@ fun RegisterBusScreen(
         ) {
             Text(
                 text = "Registra tu vehículo",
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(bottom = 8.dp),
                 fontWeight = FontWeight.Bold,
             )
@@ -177,7 +177,7 @@ fun RegisterBusScreen(
                             year = year,
                             color = color,
                             capacity = capacity,
-                            carPicFile = null,
+                            carPicUrl = imageUrl,
                             onSuccess = {
                                 onRegisterSuccess()
                                 navController.navigate(

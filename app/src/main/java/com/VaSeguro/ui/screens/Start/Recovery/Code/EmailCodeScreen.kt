@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -75,7 +76,7 @@ fun EmailCodeScreen(
             verticalArrangement = Arrangement.Center
         ) {
             Image(
-                painter = painterResource(id = R.drawable.family_title),
+                painter = painterResource(id = R.drawable.password),
                 contentDescription = "Recovery",
                 modifier = Modifier.size(300.dp)
             )
@@ -84,19 +85,30 @@ fun EmailCodeScreen(
             when (viewModel.step) {
                 0 -> {
                     Text(
-                        "Enter your email",
+                        "Introduce tu correo electronico",
                         fontWeight = FontWeight.Bold,
-                        fontSize = 36.sp,
+                        fontSize = 28.sp,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth()
+
                     )
                     Spacer(Modifier.height(16.dp))
-                    OutlinedTextField(
+                    TextField(
                         value = viewModel.email,
                         onValueChange = { viewModel.email = it },
                         label = { Text("Email") },
+                        trailingIcon = {
+                            Icon(Icons.Outlined.Email, contentDescription = "Email icon", tint = Color.Gray)
+                        },
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color(0xFFE3E3E3),
+                            unfocusedContainerColor = Color(0xFFE3E3E3),
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent,
+                        )
                     )
                     Spacer(Modifier.height(16.dp))
                     Button(

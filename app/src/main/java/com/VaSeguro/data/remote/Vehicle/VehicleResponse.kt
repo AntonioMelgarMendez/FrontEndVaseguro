@@ -1,6 +1,8 @@
+
 package com.VaSeguro.data.remote.Vehicle
 
 import com.VaSeguro.data.model.Vehicle.Vehicle
+import com.google.gson.annotations.SerializedName
 
 data class VehicleResponse(
     val id: Int,
@@ -10,26 +12,26 @@ data class VehicleResponse(
     val year: String,
     val color: String,
     val capacity: String,
+    @SerializedName("driver_id")
     val driverId: Int,
-    val carPicUrl: String?,
-    val updated_at: String,
-    val created_at: String,
-    val driver_id: Int,
-    val carPic: String? = null
+    @SerializedName("car_pic")
+    val carPic: String?,
+    val update_at: String,
+    val created_at: String
 )
 
 fun VehicleResponse.toDomain(): Vehicle {
     return Vehicle(
         id = id.toString(),
         plate = plate,
-        driver_id = driver_id.toString(),
+        driver_id = driverId.toString(),
         model = model,
         brand = brand,
         year = year,
         color = color,
         capacity = capacity,
-        updated_at = updated_at,
+        updated_at = update_at,
         created_at = created_at,
-        carPic = carPic.toString()
+        carPic = carPic ?: ""
     )
 }

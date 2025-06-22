@@ -70,4 +70,9 @@ interface AuthService {
     suspend fun recoverPassword(@Body body: Map<String, String>)
     @POST("users/verify-reset-code")
     suspend fun verifyResetCode(@Body body: Map<String, String>)
+    @GET("users/{id}")
+    suspend fun getUserById(
+        @Path("id") userId: Int,
+        @Header("Authorization") authHeader: String
+    ): UserResponse
 }

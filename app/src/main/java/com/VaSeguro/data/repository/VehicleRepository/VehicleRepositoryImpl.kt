@@ -23,10 +23,10 @@ class VehicleRepositoryImpl(
             emit(Resource.Error(e.message ?: "Error al obtener vehículos"))
         }
     }
-    override suspend fun getVehicleById(id: Int): Flow<Resource<VehicleResponse>> = flow {
+    override suspend fun getVehicleById(id: Int, token: String): Flow<Resource<VehicleResponse>> = flow {
         emit(Resource.Loading)
         try {
-            val vehicle = vehicleService.getVehicleById(id)
+            val vehicle = vehicleService.getVehicleById(id, "Bearer $token")
             emit(Resource.Success(vehicle))
         } catch (e: Exception) {
             emit(Resource.Error(e.message ?: "Error al obtener vehículo"))
@@ -41,18 +41,18 @@ class VehicleRepositoryImpl(
         color: String,
         capacity: String,
         driver_id: Int,
-        carPic: MultipartBody.Part?
+        carPic: String?
     ): Flow<Resource<VehicleResponse>> = flow {
         emit(Resource.Loading)
         try {
             val vehicle = vehicleService.createVehicle(
-                plate.toRequestBody("text/plain".toMediaTypeOrNull()),
-                model.toRequestBody("text/plain".toMediaTypeOrNull()),
-                brand.toRequestBody("text/plain".toMediaTypeOrNull()),
-                year.toRequestBody("text/plain".toMediaTypeOrNull()),
-                color.toRequestBody("text/plain".toMediaTypeOrNull()),
-                capacity.toRequestBody("text/plain".toMediaTypeOrNull()),
-                driver_id.toString().toRequestBody("text/plain".toMediaTypeOrNull()),
+                plate,
+                model,
+                brand,
+                year,
+                color,
+                capacity,
+                driver_id,
                 carPic
             )
             emit(Resource.Success(vehicle))
@@ -60,7 +60,6 @@ class VehicleRepositoryImpl(
             emit(Resource.Error(e.message ?: "Error al crear vehículo"))
         }
     }
-
     override suspend fun updateVehicle(
         id: Int,
         plate: String,

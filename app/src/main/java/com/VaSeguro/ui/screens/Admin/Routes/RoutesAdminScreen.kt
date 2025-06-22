@@ -49,7 +49,7 @@ import com.VaSeguro.data.model.Route.RouteType
 import com.VaSeguro.data.model.Routes.RoutesData
 import com.VaSeguro.data.model.Vehicle.Vehicle
 import com.VaSeguro.ui.components.CustomizableOutlinedTextField
-import com.VaSeguro.ui.screens.Parents.Bus.driver
+
 import java.util.UUID
 
 
@@ -258,7 +258,7 @@ fun AddRouteDialog(
                         id = "VEH-002",
                         plate = "P987654",
                         model = "Toyota Hiace 2020",
-                        driver_id = driver.id,
+                        driver_id = 1.toString(),
                         year = "2020",
                         color = "White",
                         capacity = "20",

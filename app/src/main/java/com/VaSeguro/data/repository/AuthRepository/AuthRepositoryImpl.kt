@@ -150,5 +150,14 @@ class AuthRepositoryImpl(
         }
     }
 
+   override suspend fun getUserById(
+        userId: Int,
+        token: String
+    ): UserResponse {
+        return authService.getUserById(
+            userId = userId,
+            authHeader = "Bearer $token")
+   }
+
 
 }

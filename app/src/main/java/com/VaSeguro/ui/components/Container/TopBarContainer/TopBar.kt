@@ -111,11 +111,20 @@ fun TopBar(
                                 .border(1.dp, Color.Gray, CircleShape)
                         )
                     } else {
-                        Icon(
-                            imageVector = Icons.Outlined.AccountCircle,
-                            contentDescription = "Perfil",
-                            modifier = Modifier.size(32.dp)
-                        )
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = (viewModel.userForename?.take(1) ?: "") +
+                                        (viewModel.userSurname?.takeIf { it.isNotEmpty() }?.take(1) ?: ""),
+                                color = Color.White,
+                                style = MaterialTheme.typography.bodyLarge,
+                            )
+                        }
                     }
                 }
             }
@@ -137,7 +146,7 @@ fun TopBar(
                 Box(
                     modifier = Modifier
                         .width(320.dp)
-                        .height(570.dp)
+                        .height(582.dp)
                 ) {
                     IconButton(
                         onClick = {
@@ -250,14 +259,14 @@ fun TopBar(
                             if (showDeleteDialog) {
                                 AlertDialog(
                                     onDismissRequest = { showDeleteDialog = false },
-                                    title = { Text("Confirm Delete Account") },
+                                    title = { Text("Borrar cuenta") },
                                     text = {
                                         Column {
-                                            Text("Type \"$confirmationPhrase\" to confirm account deletion.")
+                                            Text("Escribe \"$confirmationPhrase\" para eliminar la cuenta")
                                             OutlinedTextField(
                                                 value = password,
                                                 onValueChange = { password = it },
-                                                label = { Text("Type confirmation") },
+                                                label = { Text("Escribe la confirmacion") },
                                                 singleLine = true
                                             )
                                             errorMessage?.let { Text(it, color = Color.Red) }
@@ -282,10 +291,10 @@ fun TopBar(
                                                 }
                                             },
                                             enabled = !isLoading && password == confirmationPhrase
-                                        ) { Text("Delete") }
+                                        ) { Text("Borrar") }
                                     },
                                     dismissButton = {
-                                        TextButton(onClick = { showDeleteDialog = false }) { Text("Cancel") }
+                                        TextButton(onClick = { showDeleteDialog = false }) { Text("Cancelar") }
                                     }
                                 )
                             }
@@ -425,17 +434,6 @@ fun TopBar(
                                             .fillMaxWidth()
                                             .padding(horizontal = 16.dp)
                                     ) {
-                                        Text(
-                                            "Notification Settings",
-                                            fontSize = 20.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color.Black,
-                                            textAlign = TextAlign.Center,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(vertical = 12.dp)
-                                        )
-
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()

@@ -56,4 +56,9 @@ interface AuthRepository {
     ): Boolean
     suspend fun recoverPassword(email: String): Result<Unit>
     suspend fun verifyResetCode(email: String, code: String, newPassword: String): Result<Unit>
+   suspend fun getUserById(
+        userId: Int,
+        token: String
+    ): UserResponse
+
 }

@@ -103,30 +103,23 @@ class RegisterBusViewModel(private val vehicleRepository: VehicleRepository,  pr
         year: String,
         color: String,
         capacity: String,
-        carPicFile: File?,
+        carPicUrl: String?,
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
         viewModelScope.launch {
             _isRegisterLoading.value = true
             try {
-                val carPicPart = carPicFile?.let {
-                    val requestFile = it.asRequestBody("image/*".toMediaTypeOrNull())
-                    MultipartBody.Part.createFormData("car_pic", it.name, requestFile)
-                }
                 val driverId = userPreferencesRepository.getUserData()?.id ?: run {
                     onError("No se pudo obtener la información del conductor")
                     return@launch
                 }
 
                 vehicleRepository.createVehicle(
-                    plate, model, brand, year, color, capacity, driverId, carPicPart
+                    plate, model, brand, year, color, capacity, driverId, carPicUrl // Pass URL
                 ).collectLatest { resource ->
                     when (resource) {
-                        is Resource.Loading -> {
-                            // Opcional: puedes usar esto si quieres mostrar un loading en UI
-                            _isRegisterLoading.value = true
-                        }
+                        is Resource.Loading -> _isRegisterLoading.value = true
                         is Resource.Success -> {
                             val newVehicle = resource.data
                             if (newVehicle != null && newVehicle.id > 0) {

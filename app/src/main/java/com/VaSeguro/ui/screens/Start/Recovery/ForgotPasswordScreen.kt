@@ -72,6 +72,7 @@ fun ForgotPasswordScreen(navController: NavController) {
                 onValueChange = viewModel::onEmailChange,
                 label = { Text("Correo electrónico") },
                 modifier = Modifier.fillMaxWidth()
+
             )
             Spacer(Modifier.height(16.dp))
             Button(

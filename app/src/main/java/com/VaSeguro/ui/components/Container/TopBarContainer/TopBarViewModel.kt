@@ -25,16 +25,20 @@ class TopBarViewModel(
         private set
     var driverCode by mutableStateOf<String?>(null)
         private set
+    var userForename by mutableStateOf<String?>(null)
+        private set
+    var userSurname by mutableStateOf<String?>(null)
+        private set
 
     init {
         viewModelScope.launch {
             userPreferencesRepository.userDataFlow().collectLatest { user ->
                 userProfilePic = user?.profile_pic?.takeIf { it.isNotBlank() }
                 userRoleId = user?.role_id
+                userForename = user?.forenames
+                userSurname = user?.surnames
             }
         }
-
-
     }
 
     fun openConfigDialog() {
