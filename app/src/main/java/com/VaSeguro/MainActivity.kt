@@ -29,11 +29,13 @@ import androidx.core.graphics.toColorInt
 import androidx.core.view.WindowInsetsControllerCompat
 import com.VaSeguro.ui.Aux.ContentScreen
 import com.VaSeguro.ui.navigations.MainNavigation
+import com.VaSeguro.ui.screens.Driver.Children.ChildrenScreen
 import com.VaSeguro.ui.screens.Start.Code.CodeScreen
 import com.VaSeguro.ui.screens.Start.CreateAccountDriver.CreateAccountDriverScreen
 import com.VaSeguro.ui.screens.Start.CreateAccountDriver.RegisterBus.RegisterBusScreen
 import com.VaSeguro.ui.screens.Start.Recovery.Code.EmailCodeScreen
 import com.VaSeguro.ui.screens.Start.Recovery.ForgotPasswordScreen
+import com.VaSeguro.ui.screens.Start.SignUp.ChildrenScreen.RegisterChildrenScreen
 
 class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalAnimationApi::class)
@@ -108,6 +110,13 @@ class MainActivity : ComponentActivity() {
                         }
                         composable("forgot_password") {
                             EmailCodeScreen(navController)
+                        }
+                        composable(
+                            "add_children/{driverId}/{driverProfilePic}",
+                        ) { backStackEntry ->
+                            val driverId = backStackEntry.arguments?.getString("driverId") ?: ""
+                            val driverProfilePic = backStackEntry.arguments?.getString("driverProfilePic") ?: ""
+                            RegisterChildrenScreen(navController, driverId, driverProfilePic)
                         }
                     }
                 }
