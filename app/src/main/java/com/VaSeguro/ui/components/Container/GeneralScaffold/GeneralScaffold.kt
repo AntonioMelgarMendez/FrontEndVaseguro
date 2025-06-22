@@ -80,7 +80,7 @@ fun GeneralScaffold(navControllerx: NavController) {
             "Clientes" -> navController.navigate(ChildrenDriverScreenNavigation)
             "Inicio" -> navController.navigate(HomeAdminScreenNavigation)
             "Rutas" -> navController.navigate(RoutesAdminScreenNavigation)
-            "Mis Rutas" -> navController.navigate(RouteScreenNavigation)
+            "Mis Rutas" -> navController.navigate(HistoryScreenNavigation)
             "Paradas" -> navController.navigate(StopsAdminScreenNavigation)
             "Usuarios" -> navController.navigate(UsersAdminScreenNavigation)
             "Buses" -> navController.navigate(VehiclesAdminScreenNavigation)

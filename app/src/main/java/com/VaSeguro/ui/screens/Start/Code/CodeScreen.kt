@@ -174,7 +174,7 @@ fun CodeInput(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = code.getOrNull(i)?.toString()?.uppercase() ?: "",
+                        text = code.getOrNull(i)?.toString() ?: "",
                         fontSize = 24.sp,
                         color = Color.Black,
                         fontWeight = FontWeight.Bold
@@ -185,7 +185,7 @@ fun CodeInput(
         OutlinedTextField(
             value = code,
             onValueChange = {
-                val upper = it.uppercase()
+                val upper = it
                 if (upper.length <= length && upper.all { c -> c.isLetterOrDigit() }) onCodeChange(upper)
             },
             modifier = Modifier

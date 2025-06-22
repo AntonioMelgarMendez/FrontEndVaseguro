@@ -82,6 +82,9 @@ fun MainNavigation(navController: NavHostController, isAdmin: Boolean) {
                 onNavigateToSavedRoutes = onNavigateToSavedRoutes
             )
         }
+        composable<BusDriverScreenNavigation>{ BusScreen() }
+        composable<ChildrenDriverScreenNavigation>{ ChildrenScreen() }
+        composable<HistoryScreenNavigation>{ HistoryScreen() }
 
         composable<SavedRoutesScreenNavigation> {
             println("DEBUG: Mostrando pantalla de rutas guardadas")
