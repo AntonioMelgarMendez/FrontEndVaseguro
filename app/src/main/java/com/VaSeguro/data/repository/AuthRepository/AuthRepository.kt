@@ -55,4 +55,5 @@ interface AuthRepository {
         token: String
     ): Boolean
     suspend fun recoverPassword(email: String): Result<Unit>
+    suspend fun verifyResetCode(email: String, code: String, newPassword: String): Result<Unit>
 }

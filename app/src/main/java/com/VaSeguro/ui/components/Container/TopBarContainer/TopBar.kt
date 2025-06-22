@@ -233,6 +233,10 @@ fun TopBar(
                                 infoDialog = InfoDialogType.ABOUT
                             }
                             Spacer(modifier = Modifier.height(8.dp))
+                            ConfigOption("Borrar cuenta", Icons.Filled.Delete) {
+                                showDeleteDialog = true
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
                             ConfigOption("Cerrar Sesion", Icons.Filled.ExitToApp) {
                                 viewModel.closeConfigDialog()
                                 viewModel.logout(context) {
@@ -242,9 +246,6 @@ fun TopBar(
                                 }
                             }
                             Spacer(modifier = Modifier.height(8.dp))
-                            ConfigOption("Borrar cuenta", Icons.Filled.Delete) {
-                                showDeleteDialog = true
-                            }
 
                             if (showDeleteDialog) {
                                 AlertDialog(

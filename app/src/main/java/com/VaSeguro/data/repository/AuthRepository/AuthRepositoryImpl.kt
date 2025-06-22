@@ -139,6 +139,16 @@ class AuthRepositoryImpl(
             Result.failure(e)
         }
     }
+    override suspend fun verifyResetCode(email: String, code: String, newPassword: String): Result<Unit> {
+        return try {
+            authService.verifyResetCode(
+                mapOf("email" to email, "code" to code, "newPassword" to newPassword)
+            )
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 
 
 }

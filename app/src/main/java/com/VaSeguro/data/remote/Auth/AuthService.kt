@@ -68,4 +68,6 @@ interface AuthService {
     ): retrofit2.Response<okhttp3.ResponseBody>
     @POST("users/recover-password")
     suspend fun recoverPassword(@Body body: Map<String, String>)
+    @POST("users/verify-reset-code")
+    suspend fun verifyResetCode(@Body body: Map<String, String>)
 }

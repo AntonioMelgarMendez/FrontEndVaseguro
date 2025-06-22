@@ -32,6 +32,7 @@ import com.VaSeguro.ui.navigations.MainNavigation
 import com.VaSeguro.ui.screens.Start.Code.CodeScreen
 import com.VaSeguro.ui.screens.Start.CreateAccountDriver.CreateAccountDriverScreen
 import com.VaSeguro.ui.screens.Start.CreateAccountDriver.RegisterBus.RegisterBusScreen
+import com.VaSeguro.ui.screens.Start.Recovery.Code.EmailCodeScreen
 import com.VaSeguro.ui.screens.Start.Recovery.ForgotPasswordScreen
 
 class MainActivity : ComponentActivity() {
@@ -106,7 +107,7 @@ class MainActivity : ComponentActivity() {
                             RegisterBusScreen(navController,{})
                         }
                         composable("forgot_password") {
-                            ForgotPasswordScreen(navController)
+                            EmailCodeScreen(navController)
                         }
                     }
                 }
