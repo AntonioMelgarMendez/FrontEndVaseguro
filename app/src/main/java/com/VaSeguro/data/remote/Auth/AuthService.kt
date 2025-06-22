@@ -66,4 +66,6 @@ interface AuthService {
         @Path("id") userId: Int,
         @Header("Authorization") authHeader: String
     ): retrofit2.Response<okhttp3.ResponseBody>
+    @POST("users/recover-password")
+    suspend fun recoverPassword(@Body body: Map<String, String>)
 }

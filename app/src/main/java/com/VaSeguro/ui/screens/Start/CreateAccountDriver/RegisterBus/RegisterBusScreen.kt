@@ -168,7 +168,8 @@ fun RegisterBusScreen(
                     if (plate.isBlank() || model.isBlank() || brand.isBlank() ||
                         year.isBlank() || color.isBlank() || capacity.isBlank()) {
 
-                    } else {
+                    }
+                    else {
                         viewModel.registerBus(
                             plate = plate,
                             model = model,
@@ -183,7 +184,7 @@ fun RegisterBusScreen(
                                     "content/" +
                                             Uri.encode("¡Registro exitoso!") + "/" +
                                             Uri.encode("Tu cuenta ha sido creada correctamente. Debes esperar a que sea verificada por nuestro grupo de expertos. Se te enviara un correo de verificacion ") + "/" +
-                                            R.drawable.aprove + "/" +
+                                            R.drawable.aprove.toString() + "/" +
                                             Uri.encode("Continuar") + "/" +
                                             Uri.encode("login")
                                 )

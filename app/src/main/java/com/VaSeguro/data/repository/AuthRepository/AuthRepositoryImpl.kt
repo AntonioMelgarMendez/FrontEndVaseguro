@@ -131,5 +131,14 @@ class AuthRepositoryImpl(
             false
         }
     }
+    override suspend fun recoverPassword(email: String): Result<Unit> {
+        return try {
+            authService.recoverPassword(mapOf("email" to email))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
 
 }

@@ -1,5 +1,6 @@
 package com.VaSeguro
 
+import android.net.Uri
 import android.os.Bundle
 import android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
 import androidx.activity.ComponentActivity
@@ -28,8 +29,10 @@ import androidx.core.graphics.toColorInt
 import androidx.core.view.WindowInsetsControllerCompat
 import com.VaSeguro.ui.Aux.ContentScreen
 import com.VaSeguro.ui.navigations.MainNavigation
+import com.VaSeguro.ui.screens.Start.Code.CodeScreen
 import com.VaSeguro.ui.screens.Start.CreateAccountDriver.CreateAccountDriverScreen
 import com.VaSeguro.ui.screens.Start.CreateAccountDriver.RegisterBus.RegisterBusScreen
+import com.VaSeguro.ui.screens.Start.Recovery.ForgotPasswordScreen
 
 class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalAnimationApi::class)
@@ -78,19 +81,22 @@ class MainActivity : ComponentActivity() {
                         composable("driver_registration"){
                             CreateAccountDriverScreen(navController)
                         }
-                        composable("code") { }
+                        composable("code") {
+                            CodeScreen(navController)
+                        }
+
                         composable(
-                            route = "content/{message}/{description}/{imageRes}/{buttonText}/{destination}",
+                            route = "content/{message}/{description}/{imageArg}/{buttonText}/{destination}",
                         ) { backStackEntry ->
                             val message = backStackEntry.arguments?.getString("message") ?: ""
                             val description = backStackEntry.arguments?.getString("description") ?: ""
-                            val imageRes = backStackEntry.arguments?.getString("imageRes")?.toIntOrNull() ?: R.drawable.ic_launcher_foreground
+                            val imageArg = Uri.decode(backStackEntry.arguments?.getString("imageArg") ?: "")
                             val buttonText = backStackEntry.arguments?.getString("buttonText") ?: "Continue"
                             val destination = backStackEntry.arguments?.getString("destination") ?: "home"
                             ContentScreen(
                                 message = message,
                                 description = description,
-                                imageRes = imageRes,
+                                imageArg = imageArg,
                                 buttonText = buttonText,
                                 navController = navController,
                                 destination = destination
@@ -98,6 +104,9 @@ class MainActivity : ComponentActivity() {
                         }
                         composable("save_bus") {
                             RegisterBusScreen(navController,{})
+                        }
+                        composable("forgot_password") {
+                            ForgotPasswordScreen(navController)
                         }
                     }
                 }

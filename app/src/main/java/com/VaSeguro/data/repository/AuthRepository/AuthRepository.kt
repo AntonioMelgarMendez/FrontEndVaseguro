@@ -54,4 +54,5 @@ interface AuthRepository {
         userId: Int,
         token: String
     ): Boolean
+    suspend fun recoverPassword(email: String): Result<Unit>
 }

@@ -232,7 +232,7 @@ fun SignUpScreen(navController: NavController) {
                 Button(
                     onClick = {
                         viewModel.register(
-                            onSuccess = { navController.navigate("home") },
+                            onSuccess = { navController.navigate("code") },
                             onError = {  }
                         )
                     },

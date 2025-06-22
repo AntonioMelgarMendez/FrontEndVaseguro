@@ -103,4 +103,8 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation ("com.google.accompanist:accompanist-navigation-animation:0.34.0")
     ksp(libs.room.compiler)
+    implementation ("androidx.camera:camera-camera2:1.3.0")
+    implementation ("androidx.camera:camera-lifecycle:1.3.0")
+    implementation ("androidx.camera:camera-view:1.3.0")
+    implementation ("com.google.mlkit:barcode-scanning:17.2.0")
 }
