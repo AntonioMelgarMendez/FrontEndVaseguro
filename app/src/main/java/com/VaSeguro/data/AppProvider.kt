@@ -2,6 +2,10 @@
 package com.VaSeguro.data
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import androidx.annotation.DrawableRes
+import androidx.core.content.ContextCompat
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
@@ -17,10 +21,12 @@ import com.VaSeguro.map.repository.MapsApiRepositoryImpl
 import com.VaSeguro.map.repository.RoutesApiRepositoryImpl
 import com.VaSeguro.map.repository.SavedRoutesRepositoryImpl
 import com.VaSeguro.map.repository.StopPassengerRepositoryImpl
+import com.google.android.gms.maps.model.BitmapDescriptor
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import androidx.core.graphics.createBitmap
 
 private const val USER_PREFERENCE_NAME = "user_preferences"
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = USER_PREFERENCE_NAME)
-
 class AppProvider(context: Context) {
     // Inicialización directa (sin lazy)
     private val userPreferencesRepository = UserPreferencesRepositoryImpl(context.dataStore)

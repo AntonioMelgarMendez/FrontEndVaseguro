@@ -53,7 +53,7 @@ class SavedRoutesViewModel(
     fun deleteRoute(routeId: String) {
         viewModelScope.launch {
             try {
-                savedRoutesRepository.deleteRoute(routeId)
+                savedRoutesRepository.deleteRoute(routeId.toInt())
                 _errorMessage.value = "Ruta eliminada correctamente"
             } catch (e: Exception) {
                 _errorMessage.value = "Error al eliminar la ruta: ${e.message}"

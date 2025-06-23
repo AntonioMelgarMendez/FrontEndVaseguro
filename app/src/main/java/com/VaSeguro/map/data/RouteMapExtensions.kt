@@ -14,6 +14,7 @@ import com.VaSeguro.data.model.Vehicle.Vehicle
 import com.VaSeguro.ui.screens.Parents.Bus.driver
 import com.google.android.gms.maps.model.LatLng
 import java.util.UUID
+import kotlin.random.Random
 
 /**
  * Extensiones para convertir entre Route (mapa) y RoutesData (base de datos)
@@ -55,7 +56,7 @@ val burnedVehicle = Vehicle(
 )
 
 fun Route.toRoutesData(
-    id: String = UUID.randomUUID().toString(),
+    id: Int = Random.nextInt(1, 99999),
     name: String = this.getRouteName(),
     vehicleId: String = "",
     startDate: String = "",

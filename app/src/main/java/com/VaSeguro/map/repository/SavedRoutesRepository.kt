@@ -25,9 +25,9 @@ interface SavedRoutesRepository {
 
     fun updateRoute(route: RoutesData)
 
-    fun deleteRoute(routeId: String)
+    fun deleteRoute(routeId: Int)
 
-    fun getRoute(routeId: String): Flow<RoutesData?>
+    fun getRoute(routeId: Int): Flow<RoutesData?>
 
     suspend fun createMockRoutes(): List<RoutesData>
 
