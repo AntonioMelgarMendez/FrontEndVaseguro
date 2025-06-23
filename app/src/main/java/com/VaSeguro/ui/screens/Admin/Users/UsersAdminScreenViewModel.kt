@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import okhttp3.MultipartBody
 
 class UsersAdminScreenViewModel(
     private val authRepository: AuthRepository,
@@ -124,19 +125,30 @@ class UsersAdminScreenViewModel(
         forename: String,
         surname: String,
         email: String,
+        password: String,
         phoneNumber: String,
-        gender: String
+        gender: String,
+        roleId: Int = 1,
+        profilePic: MultipartBody.Part? = null
     ) {
-        val newUser = UserData(
-            id = (1000..9999).random().toString(),
-            forename = forename,
-            surname = surname,
-            email = email,
-            phoneNumber = phoneNumber,
-            profilePic = null,
-            role_id = UserRole(1, "User"),
-            gender = gender
-        )
-        _users.update { it + newUser }
+        viewModelScope.launch {
+            _loading.value = true
+            try {
+                authRepository.register(
+                    forenames = forename,
+                    surnames = surname,
+                    email = email,
+                    password = password,
+                    phone_number = phoneNumber,
+                    gender = gender,
+                    role_id = roleId,
+                    profile_pic = profilePic
+                )
+                fetchAllUsers()
+            } catch (e: Exception) {
+            } finally {
+                _loading.value = false
+            }
+        }
     }
 }

@@ -252,7 +252,6 @@ fun UsersAdminScreen() {
         )
     }
 }
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddUserDialog(
@@ -265,6 +264,7 @@ fun AddUserDialog(
     var surname by remember { mutableStateOf(TextFieldValue("")) }
     var email by remember { mutableStateOf(TextFieldValue("")) }
     var phone by remember { mutableStateOf(TextFieldValue("")) }
+    var password by remember { mutableStateOf(TextFieldValue("")) }
     val genderOptions = listOf("Male", "Female", "Other")
     var gender by remember { mutableStateOf<String?>(null) }
 
@@ -273,6 +273,7 @@ fun AddUserDialog(
         surname = TextFieldValue("")
         email = TextFieldValue("")
         phone = TextFieldValue("")
+        password = TextFieldValue("")
         gender = null
     }
 
@@ -288,6 +289,7 @@ fun AddUserDialog(
                 CustomizableOutlinedTextField(value = surname, onValueChange = { surname = it }, label = "Surname")
                 CustomizableOutlinedTextField(value = email, onValueChange = { email = it }, label = "Email")
                 CustomizableOutlinedTextField(value = phone, onValueChange = { phone = it }, label = "Phone Number")
+                CustomizableOutlinedTextField(value = password, onValueChange = { password = it }, label = "Password")
                 DropDownSelector(
                     label = "Gender",
                     options = genderOptions,
@@ -304,17 +306,21 @@ fun AddUserDialog(
                         surname.text.isBlank() ||
                         email.text.isBlank() ||
                         phone.text.isBlank() ||
+                        password.text.isBlank() ||
                         gender.isNullOrBlank()
                     ) {
                         Toast.makeText(context, "Por favor completa todos los campos.", Toast.LENGTH_SHORT).show()
                         return@Button
                     }
                     viewModel.addUser(
-                        forename.text,
-                        surname.text,
-                        email.text,
-                        phone.text,
-                        gender ?: "Not specified"
+                        forename = forename.text,
+                        surname = surname.text,
+                        email = email.text,
+                        password = password.text,
+                        phoneNumber = phone.text,
+                        gender = gender ?: "M",
+                        roleId = 3,
+                        profilePic = null
                     )
                     resetForm()
                     onSave()

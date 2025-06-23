@@ -6,7 +6,9 @@ import retrofit2.http.*
 
 interface VehicleService {
     @GET("vehicles/")
-    suspend fun getAllVehicles(): List<VehicleResponse>
+    suspend fun getAllVehicles(
+        @Header("Authorization") authHeader: String
+    ): List<VehicleResponse>
     @GET("vehicles/driver/{driver_id}")
     suspend fun getVehicleById(
         @Path("driver_id") id: Int,
@@ -40,5 +42,5 @@ interface VehicleService {
     ): VehicleResponse
 
     @DELETE("vehicles/{id}")
-    suspend fun deleteVehicle(@Path("id") id: Int)
+    suspend fun deleteVehicle( @Header("Authorization") authHeader: String ,@Path("id") id: Int)
 }

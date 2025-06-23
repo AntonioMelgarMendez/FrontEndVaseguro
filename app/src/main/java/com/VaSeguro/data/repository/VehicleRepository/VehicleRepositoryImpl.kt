@@ -14,10 +14,10 @@ class VehicleRepositoryImpl(
     private val vehicleService: VehicleService
 ) : VehicleRepository {
 
-    override suspend fun getAllVehicles(): Flow<Resource<List<VehicleResponse>>> = flow {
+    override suspend fun getAllVehicles(token: String): Flow<Resource<List<VehicleResponse>>> = flow {
         emit(Resource.Loading)
         try {
-            val vehicles = vehicleService.getAllVehicles()
+            val vehicles = vehicleService.getAllVehicles("Bearer $token")
             emit(Resource.Success(vehicles))
         } catch (e: Exception) {
             emit(Resource.Error(e.message ?: "Error al obtener vehículos"))
@@ -90,10 +90,10 @@ class VehicleRepositoryImpl(
         }
     }
 
-    override suspend fun deleteVehicle(id: Int): Flow<Resource<Boolean>> = flow {
+    override suspend fun deleteVehicle(id: Int, token: String): Flow<Resource<Boolean>> = flow {
         emit(Resource.Loading)
         try {
-            vehicleService.deleteVehicle(id)
+            vehicleService.deleteVehicle("Bearer $token", id)
             emit(Resource.Success(true))
         } catch (e: Exception) {
             emit(Resource.Error(e.message ?: "Error al eliminar vehículo"))
