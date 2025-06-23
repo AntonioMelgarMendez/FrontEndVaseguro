@@ -61,6 +61,7 @@ class VehicleRepositoryImpl(
         }
     }
     override suspend fun updateVehicle(
+        token: String,
         id: Int,
         plate: String,
         model: String,
@@ -68,12 +69,12 @@ class VehicleRepositoryImpl(
         year: String,
         color: String,
         capacity: String,
-        driverId: Int,
         carPic: MultipartBody.Part?
     ): Flow<Resource<VehicleResponse>> = flow {
         emit(Resource.Loading)
         try {
             val updated = vehicleService.updateVehicle(
+                "Bearer $token",
                 id,
                 plate.toRequestBody("text/plain".toMediaTypeOrNull()),
                 model.toRequestBody("text/plain".toMediaTypeOrNull()),
@@ -81,7 +82,6 @@ class VehicleRepositoryImpl(
                 year.toRequestBody("text/plain".toMediaTypeOrNull()),
                 color.toRequestBody("text/plain".toMediaTypeOrNull()),
                 capacity.toRequestBody("text/plain".toMediaTypeOrNull()),
-                driverId.toString().toRequestBody("text/plain".toMediaTypeOrNull()),
                 carPic
             )
             emit(Resource.Success(updated))

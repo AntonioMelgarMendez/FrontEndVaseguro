@@ -22,6 +22,7 @@ interface VehicleRepository
         carPic: String?
     ): Flow<Resource<VehicleResponse>>
     suspend fun updateVehicle(
+        token: String,
         id: Int,
         plate: String,
         model: String,
@@ -29,7 +30,6 @@ interface VehicleRepository
         year: String,
         color: String,
         capacity: String,
-        driverId: Int,
         carPic: MultipartBody.Part?
     ): Flow<Resource<VehicleResponse>>
     suspend fun deleteVehicle(id: Int,token: String): Flow<Resource<Boolean>>

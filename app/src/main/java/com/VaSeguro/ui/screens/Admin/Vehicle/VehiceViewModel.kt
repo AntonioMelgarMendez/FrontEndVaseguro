@@ -13,6 +13,7 @@ import com.VaSeguro.data.repository.UserPreferenceRepository.UserPreferencesRepo
 import com.VaSeguro.data.repository.VehicleRepository.VehicleRepository
 import com.VaSeguro.helpers.Resource
 import kotlinx.coroutines.launch
+import okhttp3.MultipartBody
 
 class VehicleViewModel(
   private val vehicleRepository: VehicleRepository,
@@ -91,6 +92,42 @@ class VehicleViewModel(
           }
           is Resource.Error -> {
             println("Error al eliminar vehículo: ${resource.message}")
+          }
+          Resource.Loading -> { }
+        }
+      }
+    }
+  }
+  fun updateVehicle(
+    id: Int,
+    plate: String,
+    model: String,
+    brand: String,
+    year: String,
+    color: String,
+    capacity: String,
+    carPic: MultipartBody.Part? = null,
+    onResult: (Boolean, String?) -> Unit = { _, _ -> }
+  ) {
+    viewModelScope.launch {
+      vehicleRepository.updateVehicle(
+        userPreferencesRepository.getAuthToken().toString(),
+        id = id,
+        plate = plate,
+        model = model,
+        brand = brand,
+        year = year,
+        color = color,
+        capacity = capacity,
+        carPic = carPic
+      ).collect { resource ->
+        when (resource) {
+          is Resource.Success -> {
+            loadVehicles()
+            onResult(true, null)
+          }
+          is Resource.Error -> {
+            onResult(false, resource.message)
           }
           Resource.Loading -> { }
         }

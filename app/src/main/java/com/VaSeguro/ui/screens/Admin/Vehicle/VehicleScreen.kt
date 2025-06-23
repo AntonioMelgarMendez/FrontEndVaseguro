@@ -26,8 +26,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.VaSeguro.data.AppProvider
+import com.VaSeguro.data.model.Vehicle.Vehicle
 import com.VaSeguro.ui.components.AdminCardItem
 import com.VaSeguro.ui.theme.PrimaryColor
+
 
 @Composable
 fun VehicleScreen() {
@@ -48,7 +50,8 @@ fun VehicleScreen() {
   val expandedMap by viewModel.expandedMap.collectAsState()
   val checkedMap by viewModel.checkedMap.collectAsState()
   val isLoading by viewModel.isLoading.collectAsState()
-
+  var showEditDialog by remember { mutableStateOf(false) }
+  var vehicleToEdit by remember { mutableStateOf<Vehicle?>(null) }
   // Filter dialog state
   var showFilterDialog by remember { mutableStateOf(false) }
   var filterText by remember { mutableStateOf(TextFieldValue("")) }
@@ -152,7 +155,10 @@ fun VehicleScreen() {
               isChecked = checkedMap[vehicle.id] ?: false,
               shape = cardShape,
               onCheckedChange = { viewModel.setChecked(vehicle.id, it) },
-              onEditClick = { /* TODO: lógica de edición */ },
+              onEditClick = {
+                vehicleToEdit = vehicle
+                showEditDialog = true
+              },
               onDeleteClick = { viewModel.deleteVehicle(vehicle.id) },
               onToggleExpand = { viewModel.toggleExpand(vehicle.id) }
             )
@@ -160,6 +166,27 @@ fun VehicleScreen() {
         }
       }
     }
+  }
+  if (showEditDialog && vehicleToEdit != null) {
+    EditVehicleDialog(
+      vehicle = vehicleToEdit!!,
+      onDismiss = { showEditDialog = false },
+      onSave = { updated ->
+        viewModel.updateVehicle(
+          id = updated.id.toInt(),
+          plate = updated.plate,
+          model = updated.model,
+          brand = updated.brand,
+          year = updated.year.toString(),
+          color = updated.color,
+          capacity = updated.capacity.toString(),
+          carPic = null // or your image part
+        ) { success, error ->
+          // Optionally show a message
+          showEditDialog = false
+        }
+      }
+    )
   }
 
   if (showFilterDialog) {
@@ -274,6 +301,84 @@ fun VehicleFilterDialog(
           )
         ) { Text("Cancel") }
       }
+    }
+  )
+}
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EditVehicleDialog(
+  vehicle: Vehicle,
+  onDismiss: () -> Unit,
+  onSave: (Vehicle) -> Unit
+) {
+  var plate by remember { mutableStateOf(vehicle.plate) }
+  var model by remember { mutableStateOf(vehicle.model) }
+  var brand by remember { mutableStateOf(vehicle.brand) }
+  var year by remember { mutableStateOf(vehicle.year.toString()) }
+  var color by remember { mutableStateOf(vehicle.color) }
+  var capacity by remember { mutableStateOf(vehicle.capacity.toString()) }
+
+  AlertDialog(
+    onDismissRequest = onDismiss,
+    title = { Text("Edit Vehicle") },
+    text = {
+      Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedTextField(
+          value = plate,
+          onValueChange = { plate = it },
+          label = { Text("Plate") },
+          singleLine = true
+        )
+        OutlinedTextField(
+          value = model,
+          onValueChange = { model = it },
+          label = { Text("Model") },
+          singleLine = true
+        )
+        OutlinedTextField(
+          value = brand,
+          onValueChange = { brand = it },
+          label = { Text("Brand") },
+          singleLine = true
+        )
+        OutlinedTextField(
+          value = year,
+          onValueChange = { year = it },
+          label = { Text("Year") },
+          singleLine = true
+        )
+        OutlinedTextField(
+          value = color,
+          onValueChange = { color = it },
+          label = { Text("Color") },
+          singleLine = true
+        )
+        OutlinedTextField(
+          value = capacity,
+          onValueChange = { capacity = it },
+          label = { Text("Capacity") },
+          singleLine = true
+        )
+      }
+    },
+    confirmButton = {
+      Button(
+        onClick = {
+          onSave(
+            vehicle.copy(
+              plate = plate,
+              model = model,
+              brand = brand,
+              year = (year.toIntOrNull() ?: vehicle.year).toString(),
+              color = color,
+              capacity = (capacity.toIntOrNull() ?: vehicle.capacity).toString()
+            )
+          )
+        }
+      ) { Text("Save") }
+    },
+    dismissButton = {
+      OutlinedButton(onClick = onDismiss) { Text("Cancel") }
     }
   )
 }

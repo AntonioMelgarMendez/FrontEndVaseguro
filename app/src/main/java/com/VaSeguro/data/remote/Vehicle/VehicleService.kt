@@ -30,6 +30,7 @@ interface VehicleService {
     @Multipart
     @PUT("vehicles/{id}")
     suspend fun updateVehicle(
+        @Header("Authorization") authHeader: String,
         @Path("id") id: Int,
         @Part("plate") plate: RequestBody,
         @Part("model") model: RequestBody,
@@ -37,7 +38,6 @@ interface VehicleService {
         @Part("year") year: RequestBody,
         @Part("color") color: RequestBody,
         @Part("capacity") capacity: RequestBody,
-        @Part("driverId") driverId: RequestBody,
         @Part car_pic: MultipartBody.Part?
     ): VehicleResponse
 
