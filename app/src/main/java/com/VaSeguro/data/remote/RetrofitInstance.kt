@@ -9,6 +9,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import com.VaSeguro.BuildConfig
+import com.VaSeguro.data.remote.Chat.ChatService
 import com.VaSeguro.data.remote.Request.RequestService
 import com.VaSeguro.map.services.RoutesApiService
 import com.agarcia.myfirstandroidapp.data.remote.interceptor.SmartAuthInterceptor
@@ -66,6 +67,11 @@ object RetrofitInstance {
     val childrenService: ChildrenService by lazy {
         retrofit.create(ChildrenService::class.java)
     }
+
+    val chatService: ChatService by lazy {
+        retrofit.create(ChatService::class.java)
+    }
+
     val requestService: RequestService by lazy {
         retrofit.create(RequestService::class.java)
     }

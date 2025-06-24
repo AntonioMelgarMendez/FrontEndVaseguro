@@ -70,6 +70,7 @@ fun RegisterBusScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .background(Color.White)
             .padding(16.dp)
     ) {
         Column(
@@ -79,7 +80,7 @@ fun RegisterBusScreen(
         ) {
             Text(
                 text = "Registra tu vehículo",
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(bottom = 8.dp),
                 fontWeight = FontWeight.Bold,
             )
@@ -167,7 +168,8 @@ fun RegisterBusScreen(
                     if (plate.isBlank() || model.isBlank() || brand.isBlank() ||
                         year.isBlank() || color.isBlank() || capacity.isBlank()) {
 
-                    } else {
+                    }
+                    else {
                         viewModel.registerBus(
                             plate = plate,
                             model = model,
@@ -175,14 +177,14 @@ fun RegisterBusScreen(
                             year = year,
                             color = color,
                             capacity = capacity,
-                            carPicFile = null,
+                            carPicUrl = imageUrl,
                             onSuccess = {
                                 onRegisterSuccess()
                                 navController.navigate(
                                     "content/" +
                                             Uri.encode("¡Registro exitoso!") + "/" +
                                             Uri.encode("Tu cuenta ha sido creada correctamente. Debes esperar a que sea verificada por nuestro grupo de expertos. Se te enviara un correo de verificacion ") + "/" +
-                                            R.drawable.aprove + "/" +
+                                            R.drawable.aprove.toString() + "/" +
                                             Uri.encode("Continuar") + "/" +
                                             Uri.encode("login")
                                 )

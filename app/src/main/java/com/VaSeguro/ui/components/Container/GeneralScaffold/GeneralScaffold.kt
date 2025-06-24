@@ -24,8 +24,10 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
+import androidx.compose.ui.graphics.Color
 
 import kotlinx.coroutines.launch
+import kotlin.comparisons.then
 
 @Composable
 fun GeneralScaffold(navControllerx: NavController) {
@@ -78,7 +80,7 @@ fun GeneralScaffold(navControllerx: NavController) {
             "Clientes" -> navController.navigate(ChildrenDriverScreenNavigation)
             "Inicio" -> navController.navigate(HomeAdminScreenNavigation)
             "Rutas" -> navController.navigate(RoutesAdminScreenNavigation)
-            "Mis Rutas" -> navController.navigate(RouteScreenNavigation)
+            "Mis Rutas" -> navController.navigate(HistoryScreenNavigation)
             "Paradas" -> navController.navigate(StopsAdminScreenNavigation)
             "Usuarios" -> navController.navigate(UsersAdminScreenNavigation)
             "Buses" -> navController.navigate(VehiclesAdminScreenNavigation)
@@ -86,6 +88,7 @@ fun GeneralScaffold(navControllerx: NavController) {
     }
 
     Scaffold(
+        containerColor = Color.White,
         topBar = {
             TopBar(
                 title = title,
@@ -107,7 +110,7 @@ fun GeneralScaffold(navControllerx: NavController) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding) // 👈 Esto respeta top/bottom bars
+                    .padding(innerPadding)
             ) {
                 MainNavigation(navController = navController, isAdmin = isAdmin)
             }

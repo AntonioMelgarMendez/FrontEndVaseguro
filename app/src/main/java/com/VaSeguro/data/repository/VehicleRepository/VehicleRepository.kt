@@ -9,8 +9,8 @@ import okhttp3.RequestBody.Companion.toRequestBody
 
 interface VehicleRepository
 {
-    suspend fun getAllVehicles(): Flow<Resource<List<VehicleResponse>>>
-    suspend fun getVehicleById(id: Int): Flow<Resource<VehicleResponse>>
+    suspend fun getAllVehicles(token: String): Flow<Resource<List<VehicleResponse>>>
+    suspend fun getVehicleById(id: Int, token: String): Flow<Resource<VehicleResponse>>
     suspend fun createVehicle(
         plate: String,
         model: String,
@@ -19,9 +19,10 @@ interface VehicleRepository
         color: String,
         capacity: String,
         driver_id: Int,
-        carPic: MultipartBody.Part?
+        carPic: String?
     ): Flow<Resource<VehicleResponse>>
     suspend fun updateVehicle(
+        token: String,
         id: Int,
         plate: String,
         model: String,
@@ -29,8 +30,7 @@ interface VehicleRepository
         year: String,
         color: String,
         capacity: String,
-        driverId: Int,
         carPic: MultipartBody.Part?
     ): Flow<Resource<VehicleResponse>>
-    suspend fun deleteVehicle(id: Int): Flow<Resource<Boolean>>
+    suspend fun deleteVehicle(id: Int,token: String): Flow<Resource<Boolean>>
 }

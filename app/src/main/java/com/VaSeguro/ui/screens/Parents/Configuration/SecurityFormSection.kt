@@ -1,35 +1,14 @@
 package com.VaSeguro.ui.screens.Parents.Configuration
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -38,12 +17,10 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.VaSeguro.data.model.Security.SecurityFormState
-import com.VaSeguro.data.model.User.UserData
 import com.VaSeguro.ui.components.Container.ConfirmationDialog
 import com.VaSeguro.ui.components.Forms.ValidationChecklist
 import com.VaSeguro.ui.theme.PrimaryColor
 import com.VaSeguro.ui.theme.SecondaryColor
-import com.VaSeguro.ui.theme.SecunrayColorDark
 
 @Composable
 fun SecurityFormSection(
@@ -51,7 +28,10 @@ fun SecurityFormSection(
     original: SecurityFormState,
     onValueChange: ((SecurityFormState) -> SecurityFormState) -> Unit,
     onUpdate: () -> Unit,
-    onCancel: () -> Unit
+    onCancel: () -> Unit,
+    isLoading: Boolean,
+    updateSuccess: Boolean?,
+    onDismissSuccess: () -> Unit
 ) {
     var showOld by remember { mutableStateOf(false) }
     var showNew by remember { mutableStateOf(false) }
@@ -72,6 +52,41 @@ fun SecurityFormSection(
         )
     }
 
+    if (isLoading) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(32.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+    }
+
+    if (updateSuccess == true) {
+        AlertDialog(
+            onDismissRequest = onDismissSuccess,
+            title = { Text("Hecho") },
+            text = { Text("Contraseña cambiada") },
+            confirmButton = {
+                TextButton(onClick = onDismissSuccess) {
+                    Text("OK")
+                }
+            }
+        )
+    } else if (updateSuccess == false) {
+        AlertDialog(
+            onDismissRequest = onDismissSuccess,
+            title = { Text("Error") },
+            text = { Text("Failed to update password. Please try again.") },
+            confirmButton = {
+                TextButton(onClick = onDismissSuccess) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+
     Surface(
         shape = RoundedCornerShape(20.dp),
         color = Color.White,
@@ -82,7 +97,7 @@ fun SecurityFormSection(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp)
+                .padding(horizontal = 10.dp)
                 .verticalScroll(scrollState),
             horizontalAlignment = Alignment.Start
         ) {
@@ -134,16 +149,17 @@ fun SecurityFormSection(
                         else onUpdate()
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryColor),
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    enabled = !isLoading
                 ) {
                     Text("Update")
                 }
-                TextButton(onClick = onCancel, modifier = Modifier.weight(1f)) {
+                TextButton(onClick = onCancel, modifier = Modifier.weight(1f), enabled = !isLoading) {
                     Text("Cancel", color = SecondaryColor)
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }
@@ -156,26 +172,39 @@ fun PasswordFieldWithLabel(
     toggleVisibility: () -> Unit,
     onValueChange: (String) -> Unit
 ) {
-    Text(label, style = MaterialTheme.typography.bodyMedium)
-    Spacer(modifier = Modifier.height(2.dp))
-    OutlinedTextField(
+    Text(
+        text = label,
+        color = Color.DarkGray,
+        style = MaterialTheme.typography.bodyMedium,
+        modifier = Modifier.padding(start = 4.dp, bottom = 2.dp)
+    )
+    TextField(
         value = value,
         onValueChange = onValueChange,
-        label = null,
+        placeholder = { Text(label, color = Color.Gray) },
         visualTransformation = if (show) VisualTransformation.None else PasswordVisualTransformation(),
         trailingIcon = {
             IconButton(onClick = toggleVisibility) {
-                Icon(if (show) Icons.Filled.Visibility else Icons.Filled.VisibilityOff, contentDescription = null)
+                Icon(
+                    if (show) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                    contentDescription = null
+                )
             }
         },
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(16.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp)
-            .border(BorderStroke(2.dp, SecunrayColorDark), RoundedCornerShape(20.dp)),
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = SecunrayColorDark,
-            unfocusedBorderColor = SecunrayColorDark
+            .heightIn(min = 60.dp)
+            .padding(vertical = 4.dp),
+        colors = TextFieldDefaults.colors(
+            focusedContainerColor = Color(0xFFE3E3E3),
+            unfocusedContainerColor = Color(0xFFE3E3E3),
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
+            focusedTextColor = Color.Black,
+            unfocusedTextColor = Color.Black,
+            cursorColor = Color.Black
         )
     )
+    Spacer(modifier = Modifier.height(16.dp))
 }

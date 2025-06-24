@@ -52,15 +52,17 @@ class AccountAdminScreenViewModel : ViewModel() {
 
     fun onUpdatePassword() {
         val state = _securityState.value
-        if (state.newPassword == state.confirmPassword &&
-            state.isMinLengthValid &&
-            state.isCaseValid &&
-            state.isSpecialCharValid
-        ) {
+        val isValid = state.newPassword == state.confirmPassword &&
+                state.isMinLengthValid &&
+                state.isCaseValid &&
+                state.isSpecialCharValid
+
+        if (isValid) {
             Log.d("ConfigurationVM", "Password updated successfully")
         } else {
             Log.d("ConfigurationVM", "Password validation failed")
         }
+        _securityState.value = SecurityFormState()
     }
 
     fun onCancelChanges() {

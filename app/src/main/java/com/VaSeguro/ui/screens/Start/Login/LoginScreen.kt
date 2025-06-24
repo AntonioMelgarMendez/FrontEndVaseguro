@@ -1,12 +1,15 @@
 package com.VaSeguro.ui.screens.Start.Login
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowRight
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.outlined.DesktopMac
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Lock
@@ -22,6 +25,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -47,16 +51,19 @@ fun LoginScreen(navController: NavController) {
             }
         }
     )
-
+    LaunchedEffect(Unit) {
+        viewModel.clearFields()
+    }
     val email by viewModel.email.collectAsState()
     val password by viewModel.password.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val rememberMe by viewModel.rememberMe.collectAsState()
-
+    var passwordVisible by remember { mutableStateOf(false) }
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .background(Color.White)
             .padding(16.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -112,10 +119,14 @@ fun LoginScreen(navController: NavController) {
                     onValueChange = viewModel::onPasswordChange,
                     label = { Text("Contraseña") },
                     trailingIcon = {
-                        Icon(Icons.Outlined.Lock, contentDescription = "Lock icon", tint = Color.Gray)
+                        val image = if (passwordVisible) Icons.Outlined.Lock else Icons.Outlined.Lock
+                        val description = if (passwordVisible) "Ocultar contraseña" else "Mostrar contraseña"
+                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            Icon(imageVector = image, contentDescription = description, tint = Color.Gray)
+                        }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    visualTransformation = PasswordVisualTransformation(),
+                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     shape = RoundedCornerShape(16.dp),
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = Color(0xFFE3E3E3),

@@ -1,5 +1,6 @@
 package com.VaSeguro
 
+import android.net.Uri
 import android.os.Bundle
 import android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
 import androidx.activity.ComponentActivity
@@ -28,8 +29,13 @@ import androidx.core.graphics.toColorInt
 import androidx.core.view.WindowInsetsControllerCompat
 import com.VaSeguro.ui.Aux.ContentScreen
 import com.VaSeguro.ui.navigations.MainNavigation
+import com.VaSeguro.ui.screens.Driver.Children.ChildrenScreen
+import com.VaSeguro.ui.screens.Start.Code.CodeScreen
 import com.VaSeguro.ui.screens.Start.CreateAccountDriver.CreateAccountDriverScreen
 import com.VaSeguro.ui.screens.Start.CreateAccountDriver.RegisterBus.RegisterBusScreen
+import com.VaSeguro.ui.screens.Start.Recovery.Code.EmailCodeScreen
+import com.VaSeguro.ui.screens.Start.Recovery.ForgotPasswordScreen
+import com.VaSeguro.ui.screens.Start.SignUp.ChildrenScreen.RegisterChildrenScreen
 
 class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalAnimationApi::class)
@@ -40,8 +46,10 @@ class MainActivity : ComponentActivity() {
         WindowCompat.getInsetsController(window, window.decorView)?.apply {
             systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
-        window.statusBarColor = "#FEF7FF".toColorInt()
+        window.statusBarColor = "#FFFFFF".toColorInt()
         WindowCompat.getInsetsController(window, window.decorView)?.isAppearanceLightStatusBars = true
+        window.navigationBarColor = "#FFFFFF".toColorInt()
+        WindowCompat.getInsetsController(window, window.decorView)?.isAppearanceLightNavigationBars = true
         setContent {
             VaSeguroTheme(darkTheme = false) {
                 Surface(

@@ -107,6 +107,7 @@ fun CreateAccountDriverScreen(navController: NavController) {
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .background(Color.White)
             .padding(16.dp)
     ) {
         Column(
@@ -188,14 +189,17 @@ fun CreateAccountDriverScreen(navController: NavController) {
                                     permissionLauncher.launch(Manifest.permission.CAMERA)
                                 }
                                 showDialog = false
-                            }) { Text("Tomar foto") }
+                            }) { Text("Tomar foto", color=Color.Gray) }
                         },
                         dismissButton = {
                             TextButton(onClick = {
                                 galleryLauncher.launch("image/*")
                                 showDialog = false
-                            }) { Text("Elegir de galería") }
-                        }
+                            }) { Text("Elegir de galería" ,color = Color.Gray) }
+                        },
+                        containerColor = Color.White,
+                        titleContentColor = Color.Black,
+                        textContentColor = Color.Black
                     )
                 }
 
