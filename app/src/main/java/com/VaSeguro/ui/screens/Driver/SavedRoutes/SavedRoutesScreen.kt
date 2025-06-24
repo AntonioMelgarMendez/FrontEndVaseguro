@@ -24,8 +24,7 @@ import com.VaSeguro.data.model.Routes.RoutesData
 fun SavedRoutesScreen(
     navController: NavController,
     viewModel: SavedRoutesViewModel = viewModel(factory = SavedRoutesViewModel.Factory),
-    onRunRoute: (Int) -> Unit,
-    onEditRoute: (Int) -> Unit
+    onRunRoute: (Int) -> Unit
 ) {
     // Estados de la UI
     val savedRoutes by viewModel.savedRoutes.collectAsStateWithLifecycle()
@@ -113,7 +112,6 @@ fun SavedRoutesScreen(
                             route = route,
                             duration = viewModel.calculateRouteDuration(route),
                             onRunClick = { onRunRoute(route.id.toInt()) },
-                            onEditClick = { onEditRoute(route.id.toInt()) },
                             onDeleteClick = { routeToDelete = route }
                         )
                         Spacer(modifier = Modifier.height(8.dp))
@@ -132,7 +130,7 @@ fun SavedRoutesScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        viewModel.deleteRoute(routeToDelete!!.id)
+                        viewModel.deleteRoute(routeToDelete!!.id.toString())
                         routeToDelete = null
                     }
                 ) {
@@ -154,7 +152,6 @@ fun SavedRouteCard(
     route: RoutesData,
     duration: String,
     onRunClick: () -> Unit,
-    onEditClick: () -> Unit,
     onDeleteClick: () -> Unit
 ) {
     Card(
@@ -298,22 +295,7 @@ fun SavedRouteCard(
 
                 Spacer(modifier = Modifier.width(8.dp))
 
-                // Botón para editar la ruta
-                OutlinedButton(
-                    onClick = onEditClick,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Editar"
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Editar")
-                    }
-                }
 
-                Spacer(modifier = Modifier.width(8.dp))
 
                 // Botón para eliminar la ruta
                 IconButton(

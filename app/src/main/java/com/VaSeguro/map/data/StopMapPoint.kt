@@ -1,5 +1,6 @@
 package com.VaSeguro.map.data
 
+import com.VaSeguro.data.model.Stop.StopType
 import com.google.android.gms.maps.model.LatLng
 
 /**
@@ -8,13 +9,15 @@ import com.google.android.gms.maps.model.LatLng
 data class RoutePoint(
     val location: LatLng,
     val name: String = "",
+    val stopType: StopType? = null,
     val isWaypoint: Boolean = false
 ) {
     /**
      * Convierte un punto de ruta a formato de string para API
      */
-    fun toApiString(): String = "${location.latitude},${location.longitude}"
-
+    fun toApiString(): String {
+        return "${location.latitude},${location.longitude}"
+    }
     /**
      * Convierte el punto a objeto Location
      */

@@ -27,7 +27,7 @@ class RoutesAdminScreenViewModel : ViewModel(){
     private val _routes = MutableStateFlow(
         listOf(
             RoutesData(
-                id = "R001",
+                id = 1,
                 name = "Ruta A",
                 start_date = "2025-06-01",
                 vehicle_id = burnedVehicle,
@@ -37,7 +37,7 @@ class RoutesAdminScreenViewModel : ViewModel(){
                 stopRoute = emptyList()
             ),
             RoutesData(
-                id = "R002",
+                id = 2,
                 name = "Ruta B",
                 start_date = "2025-06-10",
                 vehicle_id = burnedVehicle,
@@ -50,13 +50,13 @@ class RoutesAdminScreenViewModel : ViewModel(){
     )
     val routes: StateFlow<List<RoutesData>> = _routes
 
-    private val _expandedMap = MutableStateFlow<Map<String, Boolean>>(emptyMap())
-    val expandedMap: StateFlow<Map<String, Boolean>> = _expandedMap
+    private val _expandedMap = MutableStateFlow<Map<Int, Boolean>>(emptyMap())
+    val expandedMap: StateFlow<Map<Int, Boolean>> = _expandedMap
 
-    private val _checkedMap = MutableStateFlow<Map<String, Boolean>>(emptyMap())
-    val checkedMap: StateFlow<Map<String, Boolean>> = _checkedMap
+    private val _checkedMap = MutableStateFlow<Map<Int, Boolean>>(emptyMap())
+    val checkedMap: StateFlow<Map<Int, Boolean>> = _checkedMap
 
-    fun toggleExpand(routeId: String) {
+    fun toggleExpand(routeId: Int) {
         _expandedMap.update { map ->
             map.toMutableMap().apply {
                 this[routeId] = !(this[routeId] ?: false)
@@ -64,7 +64,7 @@ class RoutesAdminScreenViewModel : ViewModel(){
         }
     }
 
-    fun setChecked(routeId: String, checked: Boolean) {
+    fun setChecked(routeId: Int, checked: Boolean) {
         _checkedMap.update { map ->
             map.toMutableMap().apply {
                 this[routeId] = checked
@@ -72,7 +72,7 @@ class RoutesAdminScreenViewModel : ViewModel(){
         }
     }
 
-    fun deleteRoute(routeId: String) {
+    fun deleteRoute(routeId: Int) {
         _routes.update { it.filterNot { route -> route.id == routeId } }
         _expandedMap.update { it - routeId }
         _checkedMap.update { it - routeId }

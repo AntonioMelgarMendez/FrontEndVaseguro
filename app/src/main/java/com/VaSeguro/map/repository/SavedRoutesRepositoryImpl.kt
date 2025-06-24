@@ -18,6 +18,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
+import kotlin.random.Random
 
 class SavedRoutesRepositoryImpl: SavedRoutesRepository {
     // Utilizar el repositorio de StopPassenger para obtener los datos consistentes
@@ -47,13 +48,13 @@ class SavedRoutesRepositoryImpl: SavedRoutesRepository {
         }
     }
 
-    override fun deleteRoute(routeId: String) {
+    override fun deleteRoute(routeId: Int) {
         _savedRoutes.update { currentList ->
             currentList.filter { it.id != routeId }
         }
     }
 
-    override fun getRoute(routeId: String): Flow<RoutesData?> {
+    override fun getRoute(routeId: Int): Flow<RoutesData?> {
         return _savedRoutes.map { routes ->
             routes.find { it.id == routeId }
         }
@@ -105,7 +106,7 @@ class SavedRoutesRepositoryImpl: SavedRoutesRepository {
         return listOf(
             // Ruta 1: Mañana - Recogida de niños para llevarlos a la escuela
             RoutesData(
-                id = UUID.randomUUID().toString(),
+                id = Random.nextInt(1, 9999),
                 name = "Ruta Escolar Mañana",
                 start_date = dateFormat.format(Date(now.time - 24 * 60 * 60 * 1000)), // ayer
                 vehicle_id = burnedVehicle,
@@ -126,7 +127,7 @@ class SavedRoutesRepositoryImpl: SavedRoutesRepository {
 
             // Ruta 2: Tarde - Recoger niños de la escuela y llevarlos a casa
             RoutesData(
-                id = UUID.randomUUID().toString(),
+                id = Random.nextInt(1, 9999),
                 name = "Ruta Escolar Tarde",
                 start_date = dateFormat.format(now), // hoy
                 vehicle_id = burnedVehicle,
@@ -147,7 +148,7 @@ class SavedRoutesRepositoryImpl: SavedRoutesRepository {
 
             // Ruta 3: Especial - Solo para el niño 1 y 2
             RoutesData(
-                id = UUID.randomUUID().toString(),
+                id = Random.nextInt(1, 9999),
                 name = "Ruta Especial Centro",
                 start_date = dateFormat.format(Date(now.time + 24 * 60 * 60 * 1000)), // mañana
                 vehicle_id = burnedVehicle,

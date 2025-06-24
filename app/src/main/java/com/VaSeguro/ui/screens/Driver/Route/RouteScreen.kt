@@ -14,10 +14,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -26,10 +28,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.VaSeguro.R
+import com.VaSeguro.data.model.Stop.StopType
+import com.VaSeguro.helpers.bitmapDescriptorFromVector
 import com.VaSeguro.map.repository.SavedRoutesRepository
 import com.VaSeguro.map.data.PlaceResult
 import com.VaSeguro.map.data.RoutePoint
 import com.VaSeguro.map.decodePolyline
+import com.VaSeguro.ui.components.Dialogs.ConfirmationDialog
 import com.VaSeguro.ui.components.Map.FloatingMenu
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
@@ -40,6 +46,7 @@ import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
@@ -55,7 +62,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun RouteScreen(
     viewModel: RouteScreenViewModel = viewModel(factory = RouteScreenViewModel.Factory),
-    routeId: String? = null,  // Parámetro para recibir el ID de la ruta
+    routeId: Int? = null,  // Parámetro para recibir el ID de la ruta
     onNavigateToSavedRoutes: () -> Unit = {} // Navegación a pantalla de rutas guardadas
 ) {
     // Estados principales
@@ -69,7 +76,6 @@ fun RouteScreen(
     val currentPointName by viewModel.currentPointName.collectAsStateWithLifecycle()
 
     // Estados para controlar la navegación y el estado de la ruta
-    val isCurrentRouteSaved by viewModel.isCurrentRouteSaved.collectAsStateWithLifecycle()
     val currentRouteId by viewModel.currentRouteId.collectAsStateWithLifecycle()
 
     // Nuevos estados para la información dinámica
@@ -80,20 +86,28 @@ fun RouteScreen(
 
     // Estados para control de ruta
     var showStartRouteConfirmation by remember { mutableStateOf(false) }
-    // Estado para controlar si la ruta ya fue iniciada
-    var isRouteStarted by remember { mutableStateOf(false) }
+    // Estado para controlar si la ruta ya fue iniciada. Usamos rememberSaveable para que
+    // sobreviva a cambios de configuración (como rotar la pantalla).
+    var isRouteStarted by rememberSaveable { mutableStateOf(false) }
 
-    // Efecto para cargar la ruta especificada por ID cuando se inicia la pantalla
-//    LaunchedEffect(routeId, currentLocation) {
-//        if (routeId != null  && currentLocation != null) {
-//            // Obtenemos la ruta del repositorio y la cargamos si está disponible
-//            savedRoutesRepository.getRoute(routeId).collect { route ->
-//                route?.let {
-//                    viewModel.loadSavedRoute(it)
-//                }
-//            }
-//        }
-//    }
+    // Este estado sobrevive a cambios de configuración y a estar en el backstack.
+    // Se reinicia a `false` si el `routeId` cambia.
+    var hasBeenClearedOnThisRoute by rememberSaveable(routeId) { mutableStateOf(false) }
+
+    // Efecto para cargar la ruta, asegurando que solo se ejecute una vez por ruta válida.
+    LaunchedEffect(routeId, currentRouteId, hasBeenClearedOnThisRoute, currentLocation) {
+        val shouldLoad = routeId != null && routeId > 0 && routeId != currentRouteId && !hasBeenClearedOnThisRoute
+
+        if (shouldLoad) {
+            if (currentLocation != null) {
+                // Tenemos todo para cargar la ruta.
+                viewModel.loadSavedRoute(routeId)
+                isRouteStarted = false
+            }
+            // Si la ubicación no está disponible, el efecto se volverá a ejecutar cuando
+            // `currentLocation` se actualice, y la carga se intentará de nuevo.
+        }
+    }
 
     // Estados de UI
     val cameraPositionState = rememberCameraPositionState()
@@ -161,13 +175,14 @@ fun RouteScreen(
                     val currentLatLng = LatLng(location.latitude, location.longitude)
                     viewModel.updateCurrentLocation(currentLatLng)
 
-                    // Solo mover la cámara automáticamente si:
-                    // 1. No hay ruta activa, o
-                    // 2. Es la primera ubicación que recibimos
-                    if (selectedRoute == null || currentLocation == null) {
-                        cameraPositionState.move(
-                            CameraUpdateFactory.newLatLngZoom(currentLatLng, 15f)
-                        )
+                    // Mover la cámara automáticamente si la ruta está iniciada,
+                    // o si no hay ninguna ruta seleccionada (para seguir al usuario al abrir la pantalla).
+                    if (isRouteStarted || selectedRoute == null) {
+                        coroutineScope.launch {
+                            cameraPositionState.animate(
+                                CameraUpdateFactory.newLatLngZoom(currentLatLng, 15f)
+                            )
+                        }
                     }
                 }
             }
@@ -277,38 +292,27 @@ fun RouteScreen(
     }
 
     // Diálogo de confirmación para iniciar la ruta
-    if (showStartRouteConfirmation) {
-        AlertDialog(
-            onDismissRequest = { showStartRouteConfirmation = false },
-            title = { Text("Iniciar ruta") },
-            text = { Text("¿Estás seguro de iniciar esta ruta? Una vez iniciada, se comenzará a monitorear tu progreso.") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        // Aquí es donde realmente inicia la ruta
-                        isRouteStarted = true
-                        // Si el progreso es 0, lo inicializamos con un valor pequeño para mostrar que ha comenzado
-                        if (viewModel.routeProgress.value == 0f) {
-                            viewModel.updateRouteProgress(0.001f)
-                        }
-                        showStartRouteConfirmation = false
-
-                        // Mostrar mensaje de confirmación
-                        coroutineScope.launch {
-                            snackbarHostState.showSnackbar("Ruta iniciada correctamente")
-                        }
-                    }
-                ) {
-                    Text("Iniciar")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showStartRouteConfirmation = false }) {
-                    Text("Cancelar")
-                }
+    ConfirmationDialog(
+        isVisible = showStartRouteConfirmation,
+        title = "Iniciar ruta",
+        message = "¿Estás seguro de iniciar esta ruta? Una vez iniciada, se comenzará a monitorear tu progreso.",
+        confirmButtonText = "Iniciar",
+        onConfirm = {
+            // Aquí es donde realmente inicia la ruta
+            isRouteStarted = true
+            // Si el progreso es 0, lo inicializamos con un valor pequeño para mostrar que ha comenzado
+            if (viewModel.routeProgress.value == 0f) {
+                viewModel.updateRouteProgress(0.001f)
             }
-        )
-    }
+            showStartRouteConfirmation = false
+
+            // Mostrar mensaje de confirmación
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar("Ruta iniciada correctamente")
+            }
+        },
+        onDismiss = { showStartRouteConfirmation = false }
+    )
 
     // Scaffold para organizar la UI con Snackbar
     Scaffold(
@@ -325,9 +329,9 @@ fun RouteScreen(
                     modifier = Modifier.fillMaxSize(),
                     cameraPositionState = cameraPositionState,
                     properties = MapProperties(
-                        isMyLocationEnabled = true,
+                        isMyLocationEnabled = false,
                         mapType = MapType.NORMAL,
-                        isTrafficEnabled = true,
+                        isTrafficEnabled = false,
                         isBuildingEnabled = false
                     ),
                     uiSettings = MapUiSettings(
@@ -346,12 +350,29 @@ fun RouteScreen(
                         }
                     }
                 ) {
+
+                    currentLocation?.let { location ->
+                        Marker(
+                            state = MarkerState(LatLng(location.latitude, location.longitude)),
+                            icon = context.bitmapDescriptorFromVector(R.drawable.bus_map, heightDp = 40),
+                            title = "Tu ubicación"
+                        )
+                    }
+
                     // Mostrar marcadores para los puntos de ruta
                     routePoints.forEach { point ->
-                        Marker(
-                            state = MarkerState(position = point.location),
-                            title = point.name.ifEmpty { "Punto de ruta" }
-                        )
+                        // No mostrar el marcador si no tiene un tipo de parada (ubicación actual)
+                        if (point.stopType != null) {
+                            Marker(
+                                state = MarkerState(position = point.location),
+                                title = point.name.ifEmpty { "Punto de ruta" },
+                                icon = if (point.stopType == StopType.HOME) {
+                                    context.bitmapDescriptorFromVector(R.drawable.user, heightDp = 40)
+                                } else {
+                                    context.bitmapDescriptorFromVector(R.drawable.school,heightDp= 40)
+                                }
+                            )
+                        }
                     }
 
                     // Mostrar polyline de la ruta si existe
@@ -488,6 +509,143 @@ fun RouteScreen(
                 }
             }
 
+            // Menú de estados del viaje (solo visible cuando la ruta está iniciada)
+            if (isRouteStarted && selectedRoute != null) {
+                // Estado de la ruta
+                var currentRouteStatus by remember { mutableStateOf("En proceso") }
+                // Estado para el diálogo de confirmación para borrar la ruta
+                var showDeleteConfirmation by remember { mutableStateOf(false) }
+                // Estado para el diálogo de confirmación para pausar la ruta
+                var showPauseConfirmation by remember { mutableStateOf(false) }
+
+                Card(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 20.dp) // Añadir espacio para no solapar con el menú flotante
+                        .fillMaxWidth(0.9f),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f)
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp)
+                    ) {
+                        Text(
+                            text = "Estado del viaje: $currentRouteStatus",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier
+                                .align(Alignment.CenterHorizontally)
+                                .padding(bottom = 8.dp)
+                        )
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            // Botón "En proceso"
+                            val isProcessActive = currentRouteStatus == "En proceso"
+                            RouteStatusButton(
+                                text = "En proceso",
+                                icon = Icons.Default.DirectionsCar,
+                                isActive = isProcessActive,
+                                activeColor = Color(0xFF4CAF50), // Verde
+                                onClick = {
+                                    if(!isRouteStarted) isRouteStarted = true
+                                    currentRouteStatus = "En proceso"
+                                    viewModel.updateRouteStatus("1") // ID para "En proceso"
+                                }
+                            )
+
+                            // Botón "Pausado"
+                            val isPausedActive = currentRouteStatus == "Pausado"
+                            RouteStatusButton(
+                                text = "Pausado",
+                                icon = Icons.Default.Pause,
+                                isActive = isPausedActive,
+                                activeColor = Color(0xFFFFA000), // Ámbar
+                                onClick = {
+                                    // Mostrar diálogo de confirmación para pausar
+                                    showPauseConfirmation = true
+                                }
+                            )
+                        }
+
+                        Row (
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ){
+                            // Botón "Problemas"
+                            val isIssueActive = currentRouteStatus == "Problemas"
+                            RouteStatusButton(
+                                text = "Problemas",
+                                icon = Icons.Default.Warning,
+                                isActive = isIssueActive,
+                                activeColor = Color(0xFFF44336), // Rojo
+                                onClick = {
+                                    currentRouteStatus = "Problemas"
+                                    viewModel.updateRouteStatus("4") // ID para "Problemas"
+                                }
+                            )
+
+                            // Botón "Borrar ruta"
+                            RouteStatusButton(
+                                text = "Borrar ruta",
+                                icon = Icons.Default.Delete,
+                                isActive = false,
+                                activeColor = Color(0xFF9C27B0), // Morado
+                                onClick = {
+                                    showDeleteConfirmation = true
+                                }
+                            )
+                        }
+                    }
+                }
+
+                // Diálogo de confirmación para borrar la ruta
+                ConfirmationDialog(
+                    isVisible = showDeleteConfirmation,
+                    title = "Borrar ruta",
+                    message = "¿Estás seguro de borrar esta ruta? Esta acción no se puede deshacer.",
+                    confirmButtonText = "Borrar",
+                    onConfirm = {
+                        viewModel.clearRoute()
+                        isRouteStarted = false
+                        hasBeenClearedOnThisRoute = true
+                        showDeleteConfirmation = false
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar("Ruta borrada correctamente")
+                        }
+                    },
+                    onDismiss = { showDeleteConfirmation = false }
+                )
+
+                // Diálogo de confirmación para pausar la ruta
+                ConfirmationDialog(
+                    isVisible = showPauseConfirmation,
+                    title = "Pausar ruta",
+                    message = "¿Estás seguro de pausar esta ruta? Se detendrá temporalmente el seguimiento.",
+                    confirmButtonText = "Pausar",
+                    onConfirm = {
+                        isRouteStarted = false // pausar la ruta
+                        currentRouteStatus = "Pausado"
+                        viewModel.updateRouteStatus("3") // ID para "Pausado"
+                        showPauseConfirmation = false
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar("Ruta pausada correctamente")
+                        }
+                    },
+                    onDismiss = { showPauseConfirmation = false }
+                )
+            }
+
             // Menú flotante extendido con opción para rutas guardadas
             Column(
                 modifier = Modifier
@@ -507,33 +665,39 @@ fun RouteScreen(
                         Icon(Icons.Default.PlayArrow, contentDescription = "Iniciar ruta")
                     }
                 }
-
-                // Menú flotante original
-                FloatingMenu(
-                    onOptionSelected = { option ->
-                        when (option) {
-                            1 -> {
-                                // Centrar en ubicación actual
-                                currentLocation?.let { location ->
-                                    coroutineScope.launch {
-                                        cameraPositionState.animate(
-                                            CameraUpdateFactory.newLatLngZoom(location, 15f)
-                                        )
-                                    }
-                                } ?: run {
-                                    coroutineScope.launch {
-                                        snackbarHostState.showSnackbar("No hay ubicación disponible")
+                if (!isRouteStarted){
+                    FloatingMenu(
+                        onOptionSelected = { option ->
+                            when (option) {
+                                1 -> {
+                                    // Centrar en ubicación actual
+                                    currentLocation?.let { location ->
+                                        coroutineScope.launch {
+                                            cameraPositionState.animate(
+                                                CameraUpdateFactory.newLatLngZoom(location, 15f)
+                                            )
+                                        }
+                                    } ?: run {
+                                        coroutineScope.launch {
+                                            snackbarHostState.showSnackbar("No hay ubicación disponible")
+                                        }
                                     }
                                 }
+                                2 -> showBottomSheet = true
+                                3 -> {
+                                    viewModel.clearRoute()
+                                    hasBeenClearedOnThisRoute = true // Marcamos que esta ruta ha sido borrada.
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar("Ruta limpiada correctamente")
+                                    }
+                                }
+                                4 -> onNavigateToSavedRoutes()
                             }
-                            2 -> showBottomSheet = true
-                            3 -> viewModel.clearRoute()
-                            4 -> onNavigateToSavedRoutes()
-
-
                         }
-                    }
-                )
+                    )
+                }
+
+
             }
         }
     }
@@ -544,12 +708,26 @@ fun RouteMenuBottomSheetContent(
     viewModel: RouteScreenViewModel,
     onDismiss: () -> Unit
 ) {
-    val coroutineScope = rememberCoroutineScope()
-
     // Estados para la sección de niños
     val childrenSearchQuery = viewModel.searchQuery.collectAsStateWithLifecycle()
     val filteredChildren = viewModel.filteredChildren.collectAsStateWithLifecycle()
     val selectedChildIds = viewModel.selectedChildIds.collectAsStateWithLifecycle()
+    val currentRouteId = viewModel.currentRouteId.collectAsStateWithLifecycle()
+
+    // Obtenemos el estado de la ruta seleccionada
+    val selectedRoute = viewModel.selectedRoute
+
+    // Estado local para forzar actualizaciones de la UI
+    var selectionUpdateTrigger by remember { mutableStateOf(0) }
+
+    // Verificar si hay una ruta activa (cargada desde guardadas O planificada)
+    val hasActiveRoute = currentRouteId.value != null || selectedRoute != null
+
+    // Estado para mostrar advertencia
+    var showDisabledSelectionInfo by remember { mutableStateOf(false) }
+
+    // Coroutine scope para mostrar snackbar
+    val coroutineScope = rememberCoroutineScope()
 
     Column(
         modifier = Modifier
@@ -573,14 +751,59 @@ fun RouteMenuBottomSheetContent(
             }
         }
 
+        // Indicador de ruta cargada
+        if (hasActiveRoute) {
+            Surface(
+                color = MaterialTheme.colorScheme.primaryContainer,
+                shape = MaterialTheme.shapes.small,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = "Información",
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Hay una ruta activa. Para modificar los niños, primero debes borrar la ruta actual.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
+        }
+
         Spacer(modifier = Modifier.height(16.dp))
 
         // Sección de niños
-        Text(
-            text = "Niños disponibles:",
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "Niños disponibles:",
+                style = MaterialTheme.typography.titleMedium
+            )
+
+            if (hasActiveRoute) {
+                IconButton(onClick = { showDisabledSelectionInfo = true }) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = "Información",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
 
         // Buscador de niños
         OutlinedTextField(
@@ -588,16 +811,17 @@ fun RouteMenuBottomSheetContent(
             onValueChange = { viewModel.updateSearchQuery(it) },
             modifier = Modifier.fillMaxWidth(),
             placeholder = { Text("Buscar niños...") },
-            leadingIcon = { Icon(Icons.Default.Search, null) },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
             trailingIcon = {
                 if (childrenSearchQuery.value.isNotEmpty()) {
                     IconButton(onClick = { viewModel.updateSearchQuery("") }) {
-                        Icon(Icons.Default.Close, "Limpiar")
+                        Icon(Icons.Default.Close, contentDescription = "Limpiar")
                     }
                 }
             },
             singleLine = true,
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search)
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            enabled = !hasActiveRoute
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -606,34 +830,56 @@ fun RouteMenuBottomSheetContent(
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(300.dp), // Altura fija en lugar de heightIn para evitar recomposiciones
+                .height(300.dp),
             userScrollEnabled = true
         ) {
-            items(filteredChildren.value) { child ->
+            items(
+                items = filteredChildren.value,
+                key = { child -> child.id }  // Usamos ID como clave estable
+            ) { child ->
+                val isChildSelected = selectedChildIds.value.contains(child.id)
+
+                // La modificación del trigger aquí asegura que el componente se recomponga cuando cambie
+                val currentTrigger by remember { derivedStateOf { selectionUpdateTrigger } }
+
+                // Forzamos la recomposición al detectar cambios en el trigger
+                LaunchedEffect(currentTrigger) {
+                    // Este efecto solo se usa para forzar recomposiciones
+                }
+
                 ChildSelectionCard(
                     child = child,
-                    isSelected = selectedChildIds.value.contains(child.id),
+                    isSelected = isChildSelected,
                     onToggleSelection = {
-                        // Al seleccionar un niño, automáticamente añadimos sus paradas
-                        val isAlreadySelected = selectedChildIds.value.contains(child.id)
-                        viewModel.toggleChildSelection(child.id)
+                        if (!hasActiveRoute) {
+                            // Primero actualizamos el estado de selección en el viewModel
+                            viewModel.toggleChildSelection(child.id)
 
-                        // Si se está seleccionando (no deseleccionando)
-                        if (!isAlreadySelected) {
-                            // Añadir sus paradas, pero sin calcular la ruta
-                            viewModel.addChildStopsToRoute(child.id, false)
+                            // Determinamos si estamos seleccionando o deseleccionando
+                            val willBeSelected = !isChildSelected
+
+                            if (willBeSelected) {
+                                // Añadir paradas, sin calcular ruta automáticamente
+                                viewModel.addChildStopsToRoute(child.id, false)
+                            } else {
+                                // Si se deselecciona, limpiar sus paradas
+                                viewModel.removeChildStops(child.id)
+                            }
+
+                            // Forzamos una actualización de la UI
+                            selectionUpdateTrigger++
                         } else {
-                            // Si se deselecciona, limpiar sus paradas
-                            viewModel.removeChildStops(child.id)
+                            // Si hay una ruta cargada, mostrar recordatorio
+                            showDisabledSelectionInfo = true
                         }
-                    }
+                    },
+                    isEnabled = !hasActiveRoute
                 )
             }
         }
 
         // Lista de puntos seleccionados
         if (viewModel.routePoints.isNotEmpty()) {
-
             // Resumen de puntos seleccionados
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -790,6 +1036,17 @@ fun RouteMenuBottomSheetContent(
             Spacer(modifier = Modifier.height(8.dp))
         }
     }
+
+    // Diálogo de información sobre selección deshabilitada
+    ConfirmationDialog(
+        isVisible = showDisabledSelectionInfo,
+        title = "Selección deshabilitada",
+        message = "Para modificar la selección de niños, primero debes borrar la ruta actual usando el botón 'Limpiar ruta' en el menú principal.",
+        confirmButtonText = "Entendido",
+        dismissButtonText = "", // Sin botón de cancelar
+        onConfirm = { showDisabledSelectionInfo = false },
+        onDismiss = { showDisabledSelectionInfo = false }
+    )
 }
 
 @Composable
@@ -871,3 +1128,25 @@ fun SearchResultItem(
 // Extensión para formatear números double
 fun Double.format(digits: Int): String = "%.${digits}f".format(this)
 
+@Composable
+fun RouteStatusButton(
+    text: String,
+    icon: ImageVector,
+    isActive: Boolean,
+    activeColor: Color,
+    onClick: () -> Unit
+) {
+    Button(
+        onClick = onClick,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = if (isActive) activeColor else MaterialTheme.colorScheme.surface,
+            contentColor = if (isActive) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+        ),
+        modifier = Modifier
+            .padding(horizontal = 4.dp)
+    ) {
+        Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp))
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(text, style = MaterialTheme.typography.bodySmall)
+    }
+}

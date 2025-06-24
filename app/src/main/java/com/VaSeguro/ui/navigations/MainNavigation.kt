@@ -28,17 +28,6 @@ import com.VaSeguro.ui.screens.Parents.History.HistoryScreen
 @Composable
 fun MainNavigation(navController: NavHostController, isAdmin: Boolean) {
     val startDestination = if (isAdmin) HomeAdminScreenNavigation else MapScreenNavigation
-    // Creamos un repositorio compartido para las rutas guardadas
-    val savedRoutesRepository = remember { SavedRoutesRepositoryImpl() }
-
-    // Compartimos un ViewModel para la pantalla principal de Rutas
-    val routeViewModel: RouteScreenViewModel = viewModel(factory = RouteScreenViewModel.Factory)
-
-    // Compartimos el ViewModel para la pantalla de rutas guardadas
-    val savedRoutesViewModel: SavedRoutesViewModel = viewModel(
-        factory = SavedRoutesViewModel.Factory
-    )
-
 
     // Definimos las acciones de navegación
     val onNavigateToSavedRoutes = {
@@ -51,12 +40,8 @@ fun MainNavigation(navController: NavHostController, isAdmin: Boolean) {
         navController.navigate(RouteScreenNavigation(routeId))
     }
 
-    val onEditRoute = { routeId: Int ->
-        println("DEBUG: Editando ruta $routeId")
-        navController.navigate(RouteScreenNavigation(routeId))
-    }
 
-    NavHost(navController = navController, startDestination = startDestination) {
+    NavHost(navController = navController, startDestination = RouteScreenNavigation()) {
         composable<MapScreenNavigation> { RouteScreen() }
         composable<HistoryScreenNavigation> { HistoryScreen() }
         composable<BusScreenNavigation> { BusScreen() }
@@ -74,10 +59,9 @@ fun MainNavigation(navController: NavHostController, isAdmin: Boolean) {
         //DRIVER SCREENS
         composable<RouteScreenNavigation> { backStackEntry ->
             // Obtenemos el parámetro routeId si existe
-            val routeId = backStackEntry.arguments?.getString("routeId")
+            val routeId = backStackEntry.arguments?.getInt("routeId")
 
             RouteScreen(
-                viewModel = routeViewModel,
                 routeId = routeId,
                 onNavigateToSavedRoutes = onNavigateToSavedRoutes
             )
@@ -90,9 +74,7 @@ fun MainNavigation(navController: NavHostController, isAdmin: Boolean) {
             println("DEBUG: Mostrando pantalla de rutas guardadas")
             SavedRoutesScreen(
                 navController = navController,
-                viewModel = savedRoutesViewModel,
                 onRunRoute = onRunRoute,
-                onEditRoute = onEditRoute
             )
         }
     }

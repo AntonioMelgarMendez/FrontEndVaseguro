@@ -6,7 +6,7 @@ import com.VaSeguro.data.model.Stop.StopRoute
 import com.VaSeguro.data.model.Vehicle.Vehicle
 
 data class RoutesData (
-    val id: String,
+    val id: Int,
     val name: String,
     val start_date: String,
     val vehicle_id: Vehicle,

@@ -22,7 +22,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -35,11 +34,9 @@ import com.VaSeguro.ui.theme.PrimaryColor
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.filled.FilterList
-import androidx.compose.material3.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.RectangleShape
@@ -49,8 +46,10 @@ import com.VaSeguro.data.model.Route.RouteType
 import com.VaSeguro.data.model.Routes.RoutesData
 import com.VaSeguro.data.model.Vehicle.Vehicle
 import com.VaSeguro.ui.components.CustomizableOutlinedTextField
-
+import com.VaSeguro.ui.screens.Parents.Bus.driver
+import kotlin.random.Random
 import java.util.UUID
+
 
 
 @Composable
@@ -63,7 +62,7 @@ fun RoutesAdminScreen(
     var showDialog by remember { mutableStateOf(false) }
 
     var showDeleteDialog by remember { mutableStateOf(false) }
-    var selectedIdToDelete by remember { mutableStateOf<String?>(null) }
+    var selectedIdToDelete by remember { mutableStateOf<Int?>(null) }
 
     Box(
         modifier = Modifier
@@ -138,7 +137,7 @@ fun RoutesAdminScreen(
                     }
 
                     AdminCardItem(
-                        id = route.id,
+                        id = route.id.toString(),
                         title = route.name,
                         subtitle = "Type: ${route.type_id.type} | Status: ${route.status_id.status}",
                         details = listOf(
@@ -270,7 +269,7 @@ fun AddRouteDialog(
 
                     if (routeType != null && routeStatus != null) {
                         val route = RoutesData(
-                            id = UUID.randomUUID().toString(),
+                            id = Random.nextInt(1, 9999),
                             name = name.text,
                             start_date = startDate.text,
                             vehicle_id = burnedVehicle,
