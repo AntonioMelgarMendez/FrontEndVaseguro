@@ -46,7 +46,6 @@ import com.VaSeguro.data.model.Route.RouteType
 import com.VaSeguro.data.model.Routes.RoutesData
 import com.VaSeguro.data.model.Vehicle.Vehicle
 import com.VaSeguro.ui.components.CustomizableOutlinedTextField
-import com.VaSeguro.ui.screens.Parents.Bus.driver
 import kotlin.random.Random
 import java.util.UUID
 

@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.lazy.items
 import android.net.Uri
@@ -44,8 +43,12 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.VaSeguro.R
 import com.VaSeguro.data.AppProvider
+import com.VaSeguro.data.model.Route.RouteStatus
+import com.VaSeguro.data.model.Route.RouteType
+import com.VaSeguro.data.model.Routes.RoutesData
 import com.VaSeguro.data.model.Vehicle.Vehicle
 import com.VaSeguro.helpers.Resource
+import com.VaSeguro.map.data.burnedVehicle
 import com.VaSeguro.ui.components.Misc.InfoBox
 
 @Composable
