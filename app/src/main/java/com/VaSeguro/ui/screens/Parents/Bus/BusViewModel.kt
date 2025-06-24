@@ -19,7 +19,7 @@ import kotlinx.coroutines.launch
 class BusViewModel(
     private val userPreferencesRepository: UserPreferencesRepository,
     private val vehicleRepository: VehicleRepository,
-    private val authRepository: AuthRepository, // Inject this
+    private val authRepository: AuthRepository,
     private val context: Context
 ) : ViewModel() {
     private val _resolvedImageUrl = MutableStateFlow<String?>(null)
@@ -33,6 +33,9 @@ class BusViewModel(
 
     private val _driverPhoneNumber = MutableStateFlow<String?>(null)
     val driverPhoneNumber: StateFlow<String?> = _driverPhoneNumber
+
+    private val _isDriverLoading = MutableStateFlow(false)
+    val isDriverLoading: StateFlow<Boolean> = _isDriverLoading
 
     fun resolveVehicleImage(rawUrl: String?) {
         viewModelScope.launch {
@@ -66,6 +69,7 @@ class BusViewModel(
 
     private fun fetchDriverData(driverId: Int, token: String) {
         viewModelScope.launch {
+            _isDriverLoading.value = true
             try {
                 val user: UserResponse = authRepository.getUserById(driverId, token)
                 _driverFullName.value = "${user.forenames} ${user.surnames}"
@@ -73,6 +77,8 @@ class BusViewModel(
             } catch (e: Exception) {
                 _driverFullName.value = null
                 _driverPhoneNumber.value = null
+            } finally {
+                _isDriverLoading.value = false
             }
         }
     }

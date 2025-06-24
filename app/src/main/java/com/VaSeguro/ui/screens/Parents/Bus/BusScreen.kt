@@ -1,29 +1,9 @@
 package com.VaSeguro.ui.screens.Parents.Bus
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.lazy.items
-import android.net.Uri
-import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccessTime
-import androidx.compose.material.icons.filled.Build
-import androidx.compose.material.icons.filled.DirectionsCar
-import androidx.compose.material.icons.filled.Event
-import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.People
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -34,13 +14,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
 import coil3.compose.AsyncImagePainter
-import coil3.request.ImageRequest
-import coil3.request.crossfade
 import com.VaSeguro.R
 import com.VaSeguro.data.AppProvider
 import com.VaSeguro.data.model.Route.RouteStatus
@@ -56,7 +33,7 @@ fun BusScreen() {
     val context = LocalContext.current
     val viewModel: BusViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
                 val appProvider = AppProvider(context.applicationContext)
                 return BusViewModel(
                     appProvider.provideUserPreferences(),
@@ -72,42 +49,26 @@ fun BusScreen() {
     val resolvedImageUrl by viewModel.resolvedImageUrl.collectAsState()
     val driverFullName by viewModel.driverFullName.collectAsState()
     val driverPhoneNumber by viewModel.driverPhoneNumber.collectAsState()
-
-val routeList = listOf(
-    RoutesData(
-        id = 1,
-        name = "Route 1",
-        start_date = "2023-10-01",
-        vehicle_id = burnedVehicle,
-        status_id = RouteStatus.FINISHED,
-        type_id = RouteType.OUTBOUND,
-        end_date = "2023-10-31",
-        stopRoute = emptyList()
-    )
-)
-
+    val isDriverLoading by viewModel.isDriverLoading.collectAsState()
+    val vehicleResource by viewModel.vehicle.collectAsState()
 
     LaunchedEffect(Unit) {
         viewModel.loadVehicle()
     }
 
-    val vehicleResource by viewModel.vehicle.collectAsState()
-
-    when (vehicleResource) {
-        is Resource.Loading -> {
+    when {
+        vehicleResource is Resource.Loading || isDriverLoading -> {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
         }
-        is Resource.Error -> {
+        vehicleResource is Resource.Error -> {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text("Error: ${(vehicleResource as Resource.Error).message}")
             }
         }
-        is Resource.Success -> {
+        vehicleResource is Resource.Success -> {
             val vehicleResponse = (vehicleResource as Resource.Success).data
-            Log.d("BusScreen", "Vehicle data: $vehicleResponse")
-            // Convert to domain model if needed
             val vehicle = Vehicle(
                 id = vehicleResponse.id.toString(),
                 plate = vehicleResponse.plate,
@@ -149,7 +110,7 @@ val routeList = listOf(
                             model = resolvedImageUrl ?: R.drawable.default_bus,
                             contentDescription = vehicle.model,
                             contentScale = ContentScale.Crop,
-                            modifier = Modifier.matchParentSize(),
+                            modifier = Modifier.matchParentSize().padding(5.dp),
                             onState = {
                                 isLoadingImage = when (it) {
                                     is AsyncImagePainter.State.Loading -> true
@@ -199,7 +160,6 @@ val routeList = listOf(
                         title = "Capacity:",
                         data = vehicle.capacity
                     )
-
                     Spacer(modifier = Modifier.height(10.dp))
                     InfoBox(
                         icon = Icons.Default.Phone,
