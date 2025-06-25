@@ -43,6 +43,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
@@ -52,10 +53,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import com.VaSeguro.data.model.Child.Child
+import com.VaSeguro.data.remote.Auth.UserResponse
 import com.VaSeguro.ui.components.AdminCardItem
 import com.VaSeguro.ui.components.Container.ConfirmationDialog
 import com.VaSeguro.ui.components.Container.DropDownSelector
 import com.VaSeguro.ui.components.CustomizableOutlinedTextField
+import com.VaSeguro.ui.screens.Driver.Chat.ChatViewModel
 import com.VaSeguro.ui.theme.PrimaryColor
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -66,7 +69,9 @@ import kotlin.collections.lastIndex
 
 
 @Composable
-fun ChildrenAdminScreen(viewModel: ChildrenAdminScreenViewModel = viewModel()) {
+fun ChildrenAdminScreen(
+    viewModel: ChildrenAdminScreenViewModel = viewModel(factory = ChildrenAdminScreenViewModel.Factory)
+) {
     val context = LocalContext.current
     val children = viewModel.children.collectAsState().value
     val expandedMap = viewModel.expandedMap.collectAsState().value
@@ -75,6 +80,10 @@ fun ChildrenAdminScreen(viewModel: ChildrenAdminScreenViewModel = viewModel()) {
     var showDeleteDialog by remember { mutableStateOf(false) }
     var selectedIdToDelete by remember { mutableStateOf<Int?>(null) }
 
+    LaunchedEffect(Unit) {
+        viewModel.fetchUsersForRoles()
+        viewModel.fetchAllChildren()
+    }
 
     Box(
         modifier = Modifier
@@ -213,11 +222,11 @@ fun AddChildDialog(
     var forenames by remember { mutableStateOf(TextFieldValue("")) }
     var surnames by remember { mutableStateOf(TextFieldValue("")) }
     var medicalInfo by remember { mutableStateOf(TextFieldValue("")) }
-    var selectedParent by remember { mutableStateOf<String?>(null) }
-    var selectedDriver by remember { mutableStateOf<String?>(null) }
+    var selectedParent by remember { mutableStateOf<UserResponse?>(null) }
+    var selectedDriver by remember { mutableStateOf<UserResponse?>(null) }
 
-    val parents = listOf("Carlos Portillo", "Laura Gómez")
-    val drivers = listOf("Juan Mendoza", "Pedro Torres")
+    val parentOptions = viewModel.parents
+    val driverOptions = viewModel.drivers
 
     val dateFormatter = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
     var selectedDateMillis by remember { mutableStateOf<Long?>(null) }
@@ -260,8 +269,25 @@ fun AddChildDialog(
                 )
 
                 CustomizableOutlinedTextField(medicalInfo, { medicalInfo = it }, "Medical Info")
-                DropDownSelector("Parent", parents, selectedParent) { selectedParent = it }
-                DropDownSelector("Driver", drivers, selectedDriver) { selectedDriver = it }
+
+                DropDownSelector(
+                    label = "Parent",
+                    options = parentOptions.map { "${it.forenames} ${it.surnames}" },
+                    selectedOption = selectedParent?.let { "${it.forenames} ${it.surnames}" },
+                    onOptionSelected = { name ->
+                        selectedParent = parentOptions.find { "${it.forenames} ${it.surnames}" == name }
+                    }
+                )
+
+                DropDownSelector(
+                    label = "Driver",
+                    options = driverOptions.map { "${it.forenames} ${it.surnames}" },
+                    selectedOption = selectedDriver?.let { "${it.forenames} ${it.surnames}" },
+                    onOptionSelected = { name ->
+                        selectedDriver = driverOptions.find { "${it.forenames} ${it.surnames}" == name }
+                    }
+                )
+
             }
         },
         confirmButton = {
@@ -272,40 +298,23 @@ fun AddChildDialog(
                         surnames.text.isBlank() ||
                         selectedDateText.isBlank() ||
                         medicalInfo.text.isBlank() ||
-                        selectedParent.isNullOrBlank() ||
-                        selectedDriver.isNullOrBlank()
+                        selectedParent == null ||
+                        selectedDriver == null
                     ) {
                         Toast.makeText(context, "Por favor completa todos los campos.", Toast.LENGTH_SHORT).show()
                         return@Button
                     }
 
-                    val fullName = "${forenames.text} ${surnames.text}"
-                    val birth = selectedDateText
-                    val age = selectedDateMillis?.let {
-                        val birthDate = Calendar.getInstance().apply { timeInMillis = it }
-                        val today = Calendar.getInstance()
-                        today.get(Calendar.YEAR) - birthDate.get(Calendar.YEAR) -
-                                if (today.get(Calendar.DAY_OF_YEAR) < birthDate.get(Calendar.DAY_OF_YEAR)) 1 else 0
-                    } ?: 0
-
-                    val id = UUID.randomUUID().toString()
-                    val createdAt = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date())
-
-                    val child = Child(
-                        id = 0,
-                        fullName = fullName,
+                    viewModel.addChild(
                         forenames = forenames.text,
                         surnames = surnames.text,
-                        birth = birth,
-                        age = age,
-                        driver = selectedDriver ?: "",
-                        parent = selectedParent ?: "",
-                        medicalInfo = medicalInfo.text,
-                        createdAt = createdAt,
-                        profilePic = null
+                        birth_date = selectedDateText,
+                        medical_info = medicalInfo.text,
+                        gender = "N/A",
+                        parent_id = selectedParent!!.id,
+                        driver_id = selectedDriver!!.id,
                     )
 
-                    viewModel.addChild(child)
                     onSave()
                 },
                 colors = ButtonDefaults.buttonColors(
@@ -353,8 +362,6 @@ fun AddChildDialog(
         }
     }
 }
-
-
 
 @Preview(showBackground = true)
 @Composable
