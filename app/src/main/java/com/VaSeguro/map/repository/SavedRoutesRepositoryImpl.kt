@@ -8,6 +8,7 @@ import com.VaSeguro.data.model.StopPassenger.StopPassenger
 import com.VaSeguro.data.model.User.UserData
 import com.VaSeguro.data.model.User.UserRole
 import com.VaSeguro.data.model.Vehicle.Vehicle
+import com.VaSeguro.data.model.Vehicle.VehicleMap
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -88,8 +89,8 @@ class SavedRoutesRepositoryImpl: SavedRoutesRepository {
             gender = "Male"
         )
 
-        val burnedVehicle = Vehicle(
-            id = "VEH-002",
+        val burnedVehicle = VehicleMap(
+            id = 2,
             plate = "P987654",
             model = "Toyota Hiace 2020",
             driver_id = driver.id,
@@ -110,7 +111,7 @@ class SavedRoutesRepositoryImpl: SavedRoutesRepository {
                 name = "Ruta Escolar Mañana",
                 start_date = dateFormat.format(Date(now.time - 24 * 60 * 60 * 1000)), // ayer
                 vehicle_id = burnedVehicle,
-                status_id = RouteStatus.FINISHED,
+                status_id = RouteStatus.NO_INIT,
                 type_id = RouteType.INBOUND,
                 end_date = dateFormat.format(Date(now.time - 23 * 60 * 60 * 1000)),
                 stopRoute = listOf(
@@ -131,7 +132,7 @@ class SavedRoutesRepositoryImpl: SavedRoutesRepository {
                 name = "Ruta Escolar Tarde",
                 start_date = dateFormat.format(now), // hoy
                 vehicle_id = burnedVehicle,
-                status_id = RouteStatus.ON_PROGRESS,
+                status_id = RouteStatus.FINISHED,
                 type_id = RouteType.INBOUND,
                 end_date = "",
                 stopRoute = listOf(

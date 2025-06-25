@@ -9,6 +9,7 @@ enum class RouteStatus(val id: String, val status: String) {
     NO_INIT("1", "Sin iniciar"),
     ON_PROGRESS("2", "En progreso"),
     STOPED("3", "Detenida"),
+    PROBLEMS("5", "Con problemas"),
     FINISHED("4", "Finalizada");
 
     companion object {

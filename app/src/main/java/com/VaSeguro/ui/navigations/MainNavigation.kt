@@ -51,12 +51,7 @@ fun MainNavigation(navController: NavHostController, isAdmin: Boolean) {
         navController.navigate(RouteScreenNavigation(routeId))
     }
 
-    val onEditRoute = { routeId: Int ->
-        println("DEBUG: Editando ruta $routeId")
-        navController.navigate(RouteScreenNavigation(routeId))
-    }
-
-    NavHost(navController = navController, startDestination = startDestination) {
+    NavHost(navController = navController, startDestination = RouteScreenNavigation()) {
         composable<MapScreenNavigation> { RouteScreen() }
         composable<HistoryScreenNavigation> { HistoryScreen() }
         composable<BusScreenNavigation> { BusScreen() }
@@ -74,11 +69,10 @@ fun MainNavigation(navController: NavHostController, isAdmin: Boolean) {
         //DRIVER SCREENS
         composable<RouteScreenNavigation> { backStackEntry ->
             // Obtenemos el parámetro routeId si existe
-            val routeId = backStackEntry.arguments?.getString("routeId")
+            val routeId = backStackEntry.arguments?.getInt("routeId")
 
             RouteScreen(
-                viewModel = routeViewModel,
-                routeId = routeId as Int?,
+                routeId = routeId,
                 onNavigateToSavedRoutes = onNavigateToSavedRoutes
             )
         }

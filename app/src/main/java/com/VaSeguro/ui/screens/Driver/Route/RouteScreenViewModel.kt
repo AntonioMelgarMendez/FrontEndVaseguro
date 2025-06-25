@@ -9,10 +9,16 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.VaSeguro.MyApplication
-import com.VaSeguro.data.model.Child.Child
+import com.VaSeguro.data.model.Child.ChildMap
+import com.VaSeguro.data.model.Route.RouteStatus
+import com.VaSeguro.data.model.Route.RouteType
 import com.VaSeguro.data.model.Routes.RoutesData
+import com.VaSeguro.data.model.Stop.StopData
 import com.VaSeguro.data.model.StopPassenger.StopPassenger
 import com.VaSeguro.data.model.Stop.StopType
+import com.VaSeguro.data.model.Stop.StopRoute
+import com.VaSeguro.data.model.Vehicle.Vehicle
+import com.VaSeguro.data.model.Vehicle.VehicleMap
 import com.VaSeguro.map.repository.StopPassengerRepository
 import com.VaSeguro.map.calculateDistance
 import com.VaSeguro.map.data.PlaceResult
@@ -20,6 +26,7 @@ import com.VaSeguro.map.data.Polyline
 import com.VaSeguro.map.data.Route
 import com.VaSeguro.map.data.RoutePoint
 import com.VaSeguro.map.data.RouteSegment
+import com.VaSeguro.map.data.driver
 import com.VaSeguro.map.decodePolyline
 import com.VaSeguro.map.isPointNearPolyline
 import com.VaSeguro.map.repository.MapsApiRepository
@@ -33,6 +40,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
  * ViewModel para la pantalla de rutas.
@@ -47,8 +57,8 @@ class RouteScreenViewModel(
 ) : ViewModel() {
 
     // Estados para niños y paradas
-    private val _children = MutableStateFlow<List<Child>>(emptyList())
-    val children: StateFlow<List<Child>> = _children.asStateFlow()
+    private val _children = MutableStateFlow<List<ChildMap>>(emptyList())
+    val children: StateFlow<List<ChildMap>> = _children.asStateFlow()
 
     private val _stopPassengers = MutableStateFlow<List<StopPassenger>>(emptyList())
     val stopPassengers: StateFlow<List<StopPassenger>> = _stopPassengers.asStateFlow()
@@ -62,7 +72,7 @@ class RouteScreenViewModel(
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
     // Estado para niños filtrados por búsqueda
-    val filteredChildren = MutableStateFlow<List<Child>>(emptyList())
+    val filteredChildren = MutableStateFlow<List<ChildMap>>(emptyList())
 
     // Estados para puntos de la ruta
     private val _routePoints = mutableStateListOf<RoutePoint>()
@@ -107,6 +117,28 @@ class RouteScreenViewModel(
     private val _currentPointName = MutableStateFlow("")
     val currentPointName: StateFlow<String> = _currentPointName.asStateFlow()
 
+    // NUEVOS ESTADOS PARA POPUP DE PARADA
+
+    // Distancia en metros configurable para mostrar popup de parada
+    private val _stopProximityThreshold = MutableStateFlow(200.0)
+    val stopProximityThreshold: StateFlow<Double> = _stopProximityThreshold.asStateFlow()
+
+    // Estado para controlar si el popup de parada está visible
+    private val _isStopInfoDialogVisible = MutableStateFlow(false)
+    val isStopInfoDialogVisible: StateFlow<Boolean> = _isStopInfoDialogVisible.asStateFlow()
+
+    // Estado para la parada actual cerca de la que estamos
+    private val _currentNearbyStop = MutableStateFlow<StopData?>(null)
+    val currentNearbyStop: StateFlow<StopData?> = _currentNearbyStop.asStateFlow()
+
+    // Estado para los StopPassengers asociados a la parada actual
+    private val _currentStopPassengers = MutableStateFlow<List<StopPassenger>>(emptyList())
+    val currentStopPassengers: StateFlow<List<StopPassenger>> = _currentStopPassengers.asStateFlow()
+
+    // Mapa para mantener el estado de cada parada (completada o no)
+    private val _stopCompletionStates = MutableStateFlow<Map<Int, Boolean>>(emptyMap())
+    val stopCompletionStates: StateFlow<Map<Int, Boolean>> = _stopCompletionStates.asStateFlow()
+
     // Estado para la velocidad actual del conductor (km/h)
     private val _currentSpeed = MutableStateFlow(0.0)
     val currentSpeed: StateFlow<Double> = _currentSpeed.asStateFlow()
@@ -119,19 +151,31 @@ class RouteScreenViewModel(
     private val _isCurrentRouteSaved = MutableStateFlow(false)
     val isCurrentRouteSaved: StateFlow<Boolean> = _isCurrentRouteSaved.asStateFlow()
 
+    // Estado para el tipo de ruta actual (INBOUND/OUTBOUND)
+    private val _currentRouteType = MutableStateFlow(RouteType.INBOUND)
+    val currentRouteType: StateFlow<RouteType> = _currentRouteType.asStateFlow()
+
     // ID de la ruta cargada actualmente (si es una ruta guardada)
     private val _currentRouteId = MutableStateFlow<Int?>(null)
     val currentRouteId: StateFlow<Int?> = _currentRouteId.asStateFlow()
+
+    // Nuevo: Estado para el objeto RoutesData sincronizado con la ruta actual
+    private val _currentRoutesData = MutableStateFlow<RoutesData?>(null)
+    val currentRoutesData: StateFlow<RoutesData?> = _currentRoutesData.asStateFlow()
+
+    // Nuevo: Estado para el status actual de la ruta
+    private val _currentRouteStatus = MutableStateFlow<RouteStatus>(RouteStatus.NO_INIT)
+    val currentRouteStatus: StateFlow<RouteStatus> = _currentRouteStatus.asStateFlow()
 
     // Última ubicación para calcular velocidad
     private var lastLocation: LatLng? = null
     private var lastLocationTime: Long = 0
 
     // Distancia en metros para considerar que estamos cerca de un punto
-    private val proximityThreshold = 50.0
+    private val proximityThreshold = 300.0
 
     // Distancia en metros para considerar que hemos llegado a un punto y pasar al siguiente segmento
-    private val waypointArrivalThreshold = 20.0
+    private val waypointArrivalThreshold = 200.0
 
     // Job para control de alertas de proximidad
     private var proximityAlertJob: Job? = null
@@ -187,8 +231,8 @@ class RouteScreenViewModel(
         } else {
             allChildren.filter { child ->
                 child.fullName.lowercase().contains(query) ||
-                child.forenames.lowercase().contains(query) ||
-                child.surnames.lowercase().contains(query)
+                        child.forenames.lowercase().contains(query) ||
+                        child.surnames.lowercase().contains(query)
             }
         }
     }
@@ -277,34 +321,6 @@ class RouteScreenViewModel(
     }
 
     /**
-     * Añade los puntos de parada de múltiples niños a la ruta
-     * pero sin calcular automáticamente la ruta
-     */
-    fun addMultipleChildrenStopsToRoute(childrenIds: List<Int>) {
-        if (childrenIds.isEmpty()) {
-            showError("No se han seleccionado niños")
-            return
-        }
-
-        clearRoute()
-
-        // Obtener todas las paradas de los niños seleccionados
-        childrenIds.forEach { childId ->
-            val childStops = getStopsByChild(childId)
-            childStops.forEach { stop ->
-                val latLng = LatLng(stop.stop.latitude, stop.stop.longitude)
-                val name = "${stop.child.fullName} - ${stop.stop.name} (${stop.stopType.name})"
-                addRoutePoint(latLng, name, stop.stopType)
-            }
-        }
-
-        // Ya no calculamos la ruta aquí, solo notificamos que hay puntos disponibles
-        if (_routePoints.size < 2) {
-            showError("No hay suficientes paradas para una ruta. Necesitas al menos 2 puntos.")
-        }
-    }
-
-    /**
      * Añade un punto a la ruta con información opcional
      */
     fun addRoutePoint(point: LatLng, name: String = "", stopType: StopType? = null) {
@@ -324,7 +340,11 @@ class RouteScreenViewModel(
         _adjustedTimeToNextPoint.value = ""
         _isCurrentRouteSaved.value = false
         _currentRouteId.value = null
+        _currentRoutesData.value = null // Limpiar objeto RoutesData sincronizado
+        _currentRouteStatus.value = RouteStatus.NO_INIT // Restablecer estado a inicial
+        _stopCompletionStates.value = emptyMap() // Limpiar estados de paradas
         dismissProximityAlert()
+        dismissStopInfoDialog() // Asegurar que el diálogo se cierra
 
         // Deseleccionar todos los niños cuando se limpia la ruta
         _selectedChildIds.value = emptyList()
@@ -364,25 +384,11 @@ class RouteScreenViewModel(
         }
     }
 
-    /**
-     * Reordena los puntos de la ruta
-     */
-    fun reorderRoutePoints(fromIndex: Int, toIndex: Int) {
-        if (fromIndex in _routePoints.indices && toIndex in _routePoints.indices) {
-            val item = _routePoints.removeAt(fromIndex)
-            _routePoints.add(toIndex, item)
-
-            // Recalcular la ruta si ya existe una
-            if (_selectedRoute.value != null && _routePoints.size >= 2) {
-                calculateRoute()
-            }
-        }
-    }
 
     /**
      * Actualiza la ubicación actual del conductor y verifica proximidad a puntos de la ruta
      */
-    fun updateCurrentLocation(location: LatLng) {
+    fun updateCurrentLocation(location: LatLng, routeStatus: RouteStatus) {
         // Calcular velocidad actual
         updateCurrentSpeed(location)
 
@@ -391,6 +397,9 @@ class RouteScreenViewModel(
         checkProximityToRoutePoints(location)
         updateCurrentSegmentIndex(location)
         updateAdjustedTimeEstimation()
+        if(!(routeStatus.equals(RouteStatus.NO_INIT) || routeStatus.equals(RouteStatus.FINISHED))){
+
+        }
     }
 
     /**
@@ -477,6 +486,17 @@ class RouteScreenViewModel(
             return
         }
 
+        // Solo actualizar segmentos y mostrar alertas si la ruta está iniciada
+        val isRouteStarted = _currentRouteStatus.value == RouteStatus.ON_PROGRESS
+
+        // Siempre actualizar la información del próximo punto (para mostrar en la UI)
+        updateNextPointInfo()
+
+        // Si la ruta no está iniciada, no actualizamos segmentos ni mostramos alertas
+        if (!isRouteStarted) {
+            return
+        }
+
         // Verificar si estamos cerca del siguiente waypoint
         val currentIndex = _currentSegmentIndex.value
 
@@ -485,25 +505,77 @@ class RouteScreenViewModel(
             val currentSegment = route.segments[currentIndex]
             val distanceToNextPoint = calculateDistance(location, currentSegment.endPoint)
 
-            // Si llegamos al punto final del segmento actual, avanzamos al siguiente
+            // Si llegamos al punto final del segmento actual
             if (distanceToNextPoint <= waypointArrivalThreshold) {
-                if (currentIndex < route.segments.size - 1) {
-                    _currentSegmentIndex.value = currentIndex + 1
-                    updateNextPointInfo()
-
-                    // Mostrar alerta de llegada al punto
-                    showProximityAlert("Llegaste a: ${currentSegment.endPointName}")
-                } else {
+                // Verificar si es el punto final
+                if (currentIndex >= route.segments.size - 1) {
                     // Si es el último segmento, mostramos alerta de llegada a destino
                     showProximityAlert("¡Has llegado a tu destino!")
                     _nextPointName.value = ""
                     _timeToNextPoint.value = ""
+                    return
+                }
+
+                // Obtener el punto final del segmento actual (parada actual)
+                val currentStopPoint = _routePoints.getOrNull(currentIndex + 1) ?: return
+
+                // Buscar todos los StopPassengers asociados a esta parada
+                val stopPassengersForCurrentStop = findStopPassengersForLocation(currentStopPoint.location)
+
+                // Si no hay niños asociados a esta parada, avanzamos al siguiente punto
+                if (stopPassengersForCurrentStop.isEmpty()) {
+                    advanceToNextSegment()
+                    return
+                }
+
+                // Verificar si todos los niños de esta parada han sido marcados como recogidos/dejados
+                val allCompleted = stopPassengersForCurrentStop.all { stopPassenger ->
+                    _stopCompletionStates.value[stopPassenger.id] == true
+                }
+
+                // Solo avanzar al siguiente segmento cuando todos los niños han sido marcados
+                if (allCompleted) {
+                    advanceToNextSegment()
+                } else {
+                    // Si no todos están marcados, solo mostrar un mensaje de proximidad
+                    // pero no avanzar al siguiente segmento
+                    if (!_isStopInfoDialogVisible.value) {
+                        showProximityAlert("Llegaste a: ${currentSegment.endPointName}. Marca todos los niños para continuar.")
+                    }
                 }
             }
         }
+    }
 
-        // Actualizamos la información del próximo punto
-        updateNextPointInfo()
+    /**
+     * Encuentra todos los StopPassenger asociados a una ubicación específica
+     */
+    private fun findStopPassengersForLocation(location: LatLng): List<StopPassenger> {
+        return _stopPassengers.value.filter { stopPassenger ->
+            val stopLocation = LatLng(stopPassenger.stop.latitude, stopPassenger.stop.longitude)
+            isApproximatelySameLocation(location, stopLocation)
+        }
+    }
+
+    /**
+     * Avanza al siguiente segmento de la ruta y actualiza la información
+     */
+    private fun advanceToNextSegment() {
+        val route = _selectedRoute.value ?: return
+        val currentIndex = _currentSegmentIndex.value
+
+        if (currentIndex < route.segments.size - 1) {
+            val currentSegment = route.segments[currentIndex]
+
+            // Incrementar el índice de segmento
+            _currentSegmentIndex.value = currentIndex + 1
+
+            // Actualizar información del próximo punto
+            updateNextPointInfo()
+
+            // Mostrar alerta de llegada al punto
+            showProximityAlert("Llegaste a: ${currentSegment.endPointName}")
+        }
     }
 
     /**
@@ -545,25 +617,148 @@ class RouteScreenViewModel(
             return
         }
 
-        // Verificar proximidad a cada punto de la ruta (excepto el punto de partida y los que ya pasamos)
-        // Comenzamos desde el índice 1 para saltar el punto de partida ("Mi ubicación")
-        for (i in maxOf(1, _currentSegmentIndex.value) until _routePoints.size) {
-            val point = _routePoints[i]
-            val distance = calculateDistance(currentLocation, point.location)
-            if (distance <= proximityThreshold && distance > waypointArrivalThreshold) {
-                showProximityAlert("Próximamente: ${point.name.ifEmpty { "Punto de ruta" }}")
-                break
-            }
-        }
+        // Solo mostrar alertas de proximidad si la ruta está iniciada (en progreso)
+        val isRouteStarted = _currentRouteStatus.value == RouteStatus.ON_PROGRESS
 
-        // Verificar si estamos cerca de la ruta para mostrar notificaciones
+        // Verificar si estamos cerca de la ruta para mostrar notificaciones de desviación
+        // (esto debe verificarse independientemente del estado de la ruta)
         val routePath = _selectedRoute.value?.polyline?.encodedPolyline?.let {
             decodePolyline(it)
         } ?: return
 
         if (!isPointNearPolyline(currentLocation, routePath, 50.0)) {
-            showError("¡Te has desviado de la ruta!")
+            // Solo mostrar advertencia de desviación si la ruta está iniciada
+            if (isRouteStarted) {
+                showError("¡Te has desviado de la ruta!")
+            }
+            return
         }
+
+        // Si la ruta no está iniciada, no mostramos alertas de proximidad
+        if (!isRouteStarted) {
+            return
+        }
+
+        // Verificar proximidad a cada punto de la ruta (excepto el punto de partida y los que ya pasamos)
+        // Comenzamos desde el índice 1 para saltar el punto de partida ("Mi ubicación")
+        for (i in maxOf(1, _currentSegmentIndex.value) until _routePoints.size) {
+            val point = _routePoints[i]
+            val distance = calculateDistance(currentLocation, point.location)
+
+            // Si estamos dentro del umbral de proximidad para mostrar alertas
+            if (distance <= proximityThreshold && distance > waypointArrivalThreshold) {
+                showProximityAlert("Próximamente: ${point.name.ifEmpty { "Punto de ruta" }}")
+                break
+            }
+        }
+    }
+
+    /**
+     * Verifica si el usuario está lo suficientemente cerca de un punto y muestra el diálogo si es así
+     * @param markerPosition La posición del marcador en el que se ha hecho clic
+     * @return true si se muestra el diálogo, false si no está lo suficientemente cerca
+     */
+    fun checkMarkerProximityAndShowDialog(markerPosition: LatLng): Boolean {
+        // Si la ruta no está en progreso, no hacemos nada
+        if (_currentRouteStatus.value != RouteStatus.ON_PROGRESS) {
+            return false
+        }
+
+        // Obtener la ubicación actual
+        val currentLocation = _currentLocation.value ?: return false
+
+        // Calcular la distancia al marcador
+        val distance = calculateDistance(currentLocation, markerPosition)
+
+        // Verificar si estamos dentro del umbral de proximidad
+        if (distance <= _stopProximityThreshold.value) {
+            // Encontrar el RoutePoint correspondiente a este marcador
+            val routePoint = _routePoints.find { isApproximatelySameLocation(it.location, markerPosition) }
+
+            routePoint?.let {
+                // Buscar la StopData asociada a este punto
+                _stopPassengers.value.forEach { stopPassenger ->
+                    val stopLocation = LatLng(
+                        stopPassenger.stop.latitude,
+                        stopPassenger.stop.longitude
+                    )
+
+                    if (isApproximatelySameLocation(markerPosition, stopLocation)) {
+                        // Encontramos una parada cerca
+                        val stopData = stopPassenger.stop
+
+                        // Buscar todos los StopPassengers asociados a esta parada
+                        val relatedPassengers = _stopPassengers.value.filter {
+                            isApproximatelySameLocation(
+                                LatLng(it.stop.latitude, it.stop.longitude),
+                                stopLocation
+                            )
+                        }
+
+                        if (relatedPassengers.isNotEmpty()) {
+                            // Actualizar estados y mostrar diálogo
+                            _currentNearbyStop.value = stopData
+                            _currentStopPassengers.value = relatedPassengers
+                            _isStopInfoDialogVisible.value = true
+                            return true
+                        }
+                    }
+                }
+            }
+
+            return false
+        } else {
+            // Si no estamos lo suficientemente cerca, mostrar mensaje de error
+            showError("Necesitas acercarte más a la parada para poder interactuar con ella")
+            return false
+        }
+    }
+
+    /**
+     * Configura el umbral de proximidad para detectar paradas (en metros)
+     */
+    fun setStopProximityThreshold(meters: Double) {
+        _stopProximityThreshold.value = meters
+    }
+
+    /**
+     * Actualiza el estado de un StopPassenger (recogido/dejado)
+     */
+    fun updateStopPassengerState(stopPassengerId: Int, isCompleted: Boolean) {
+        // Actualizar el mapa de estados de paradas
+        val currentStates = _stopCompletionStates.value.toMutableMap()
+        currentStates[stopPassengerId] = isCompleted
+        _stopCompletionStates.value = currentStates
+
+        // Si estamos trabajando con una ruta que tiene datos sincronizados
+        _currentRoutesData.value?.let { routeData ->
+            // Encontrar el StopRoute correspondiente a este StopPassenger
+            val updatedStopRoutes = routeData.stopRoute.map { stopRoute ->
+                if (stopRoute.stopPassenger.id == stopPassengerId) {
+                    // Actualizar el estado de esta parada
+                    stopRoute.copy(state = isCompleted)
+                } else {
+                    stopRoute
+                }
+            }
+
+            // Actualizar el objeto RoutesData
+            _currentRoutesData.value = routeData.copy(
+                stopRoute = updatedStopRoutes
+            )
+
+            // Aquí se podría implementar la sincronización con el backend
+            // Por ahora solo actualizamos el estado local
+        }
+    }
+
+    /**
+     * Cierra el diálogo de información de parada
+     */
+    fun dismissStopInfoDialog() {
+        _isStopInfoDialogVisible.value = false
+        _currentNearbyStop.value = null
+        _currentStopPassengers.value = emptyList()
     }
 
     /**
@@ -572,6 +767,12 @@ class RouteScreenViewModel(
     private fun showProximityAlert(pointName: String) {
         // Cancelar cualquier alerta previa
         dismissProximityAlert()
+
+        // Verificar si el mensaje comienza con "Llegaste a:" y ya tenemos otro mensaje similar
+        if (pointName.startsWith("Llegaste a:") && _currentPointName.value.startsWith("Llegaste a:")) {
+            // No mostrar otro mensaje de llegada si ya hay uno activo
+            return
+        }
 
         _currentPointName.value = pointName
         _isProximityAlertVisible.value = true
@@ -998,6 +1199,15 @@ class RouteScreenViewModel(
             try {
                 // Si tenemos una ruta cargada con un ID
                 _currentRouteId.value?.let { routeId ->
+                    // Actualizar el estado interno
+                    val newStatus = RouteStatus.fromId(statusId)
+                    _currentRouteStatus.value = newStatus
+
+                    // Si tenemos datos de ruta, actualizar también el objeto RoutesData
+                    _currentRoutesData.value?.let { routeData ->
+                        _currentRoutesData.value = routeData.copy(status_id = newStatus)
+                    }
+
                     // Aquí se implementaría la llamada al repositorio para actualizar el estado
                     // Por ahora, solo mostramos un mensaje de confirmación
                     val statusName = when(statusId) {
@@ -1013,6 +1223,121 @@ class RouteScreenViewModel(
                 showError("Error al actualizar estado: ${e.message}")
             }
         }
+    }
+
+    /**
+     * Actualiza el tipo de ruta (INBOUND/OUTBOUND)
+     * @param routeType El nuevo tipo de ruta
+     */
+    fun updateRouteType(routeType: RouteType) {
+        _currentRouteType.value = routeType
+
+        // Si tenemos datos de ruta, actualizar también el objeto RoutesData
+        _currentRoutesData.value?.let { routeData ->
+            _currentRoutesData.value = routeData.copy(type_id = routeType)
+        }
+    }
+
+    /**
+     * Convierte la ruta seleccionada actual a un objeto RoutesData
+     * para uso en persistencia y sincronización con el backend
+     */
+    private fun syncRouteToRoutesData() {
+        val route = _selectedRoute.value ?: return
+        val routeId = _currentRouteId.value ?: -System.currentTimeMillis().toInt() // ID temporal si no existe
+
+        // Crear StopRoute a partir de los puntos de ruta
+        // Omitimos el primer punto (ubicación actual) si existe
+        val stopRouteList = mutableListOf<StopRoute>()
+
+        // Comienza desde el índice 1 para omitir "Mi ubicación" si existe
+        val startIndex = if (_routePoints.size > 0 && _routePoints[0].name == "Mi ubicación") 1 else 0
+
+        // Convertir RoutePoints a StopRoute
+        for (i in startIndex until _routePoints.size) {
+            val point = _routePoints[i]
+
+            // Buscar el StopPassenger correspondiente
+            val stopPassenger = findStopPassengerForRoutePoint(point)
+
+            // Si encontramos un StopPassenger válido, crear el StopRoute
+            stopPassenger?.let { sp ->
+                val stopRoute = StopRoute(
+                    id = -i, // ID temporal negativo
+                    stopPassenger = sp,
+                    order = i,
+                    state = true
+                )
+                stopRouteList.add(stopRoute)
+            }
+        }
+
+        // Formatear fecha actual
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+        val currentDate = dateFormat.format(Date())
+
+        // Crear el objeto RoutesData
+        val routesData = RoutesData(
+            id = routeId,
+            name = route.getRouteName(),
+            start_date = currentDate,
+            // Nota: Estos son placeholders que deberían reemplazarse con valores reales
+            vehicle_id = VehicleMap(
+                id = 2,
+                plate = "P987654",
+                model = "Toyota Hiace 2020",
+                driver_id = driver.id,
+                year = "2020",
+                color = "White",
+                capacity = "20",
+                updated_at = "2025-06-16T09:00:00",
+                carPic = "https://example.com/toyota_hiace_2020.jpg",
+                created_at = "2025-06-16T09:00:00",
+                brand = "Toyota",
+            ), // Placeholder
+            status_id = _currentRouteStatus.value,
+            type_id = RouteType.INBOUND, // Placeholder
+            end_date = "", // Vacío hasta que se complete
+            stopRoute = stopRouteList
+        )
+
+        // Actualizar el estado
+        _currentRoutesData.value = routesData
+    }
+
+    /**
+     * Busca el StopPassenger correspondiente a un punto de ruta
+     * basado en el nombre y la ubicación
+     */
+    private fun findStopPassengerForRoutePoint(routePoint: RoutePoint): StopPassenger? {
+        // Si el punto tiene un nombre que sigue el formato esperado: "NombreNiño - NombreParada (TipoParada)"
+        val pointName = routePoint.name
+        if (pointName.isEmpty() || !pointName.contains(" - ")) return null
+
+        // Extraer partes del nombre
+        val childName = pointName.substringBefore(" - ")
+        val remainingText = pointName.substringAfter(" - ")
+        val stopName = remainingText.substringBeforeLast(" (")
+        val stopTypeName = remainingText.substringAfterLast(" (").removeSuffix(")")
+
+        // Buscar en todos los StopPassengers
+        return _stopPassengers.value.find { stopPassenger ->
+            val nameMatches = stopPassenger.child.fullName == childName
+            val locationMatches = isApproximatelySameLocation(
+                LatLng(stopPassenger.stop.latitude, stopPassenger.stop.longitude),
+                routePoint.location
+            )
+
+            nameMatches && locationMatches
+        }
+    }
+
+    /**
+     * Compara dos ubicaciones para ver si están aproximadamente en el mismo lugar
+     * (distancia menor a 10 metros)
+     */
+    private fun isApproximatelySameLocation(loc1: LatLng, loc2: LatLng): Boolean {
+        return calculateDistance(loc1, loc2) < 10.0 // 10 metros de tolerancia
     }
 
     /**

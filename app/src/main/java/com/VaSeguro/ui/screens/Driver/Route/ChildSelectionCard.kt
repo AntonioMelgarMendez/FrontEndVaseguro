@@ -17,10 +17,11 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.VaSeguro.data.model.Child.Child
+import com.VaSeguro.data.model.Child.ChildMap
 
 @Composable
 fun ChildSelectionCard(
-    child: Child,
+    child: ChildMap,
     isSelected: Boolean,
     onToggleSelection: () -> Unit,
     isEnabled: Boolean = true

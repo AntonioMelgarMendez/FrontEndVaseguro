@@ -101,6 +101,7 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation(libs.androidx.material3)
+    implementation(libs.realtime.kt)
     implementation ("com.google.accompanist:accompanist-navigation-animation:0.34.0")
     ksp(libs.room.compiler)
     implementation ("androidx.camera:camera-camera2:1.3.0")
