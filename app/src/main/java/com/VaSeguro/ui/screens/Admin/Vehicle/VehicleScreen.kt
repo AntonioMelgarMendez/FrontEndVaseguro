@@ -27,7 +27,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.VaSeguro.data.AppProvider
 import com.VaSeguro.data.model.Vehicle.Vehicle
-import com.VaSeguro.ui.components.AdminCardItem
+import com.VaSeguro.ui.components.Cards.AdminCardItem
 import com.VaSeguro.ui.theme.PrimaryColor
 
 

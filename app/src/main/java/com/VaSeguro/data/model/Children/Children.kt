@@ -1,5 +1,7 @@
 package com.VaSeguro.data.model.Children
 
+import com.VaSeguro.data.model.Child.Child
+
 data class Children(
     val forenames: String,
     val surnames: String,

@@ -1,16 +1,18 @@
 package com.VaSeguro.data.remote.Children
 
 import com.VaSeguro.data.model.Children.Children
-import com.VaSeguro.data.remote.Auth.Login.LoginResponse
+import com.VaSeguro.data.remote.Responses.ChildrenResponse
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import retrofit2.http.*
 interface ChildrenService {
     @GET("children")
-    suspend fun getChildren(): List<Children>
+    suspend fun getChildren(
+        @Header("Authorization") authHeader: String
+    ): List<ChildrenResponse>
 
     @GET("children/{id}")
-    suspend fun getChild(@Path("id") id: String): Children
+    suspend fun getChild(@Path("id") id: String, @Header("Authorization") authHeader: String): Children
 
     @Multipart
     @POST("children/")
@@ -31,9 +33,10 @@ interface ChildrenService {
     suspend fun update(
         @Path("id") id: String,
         @Part("data") data: Children,
-        @Part profilePic: MultipartBody.Part?
+        @Part profilePic: MultipartBody.Part?,
+        @Header("Authorization") authHeader: String
     ): Children
 
     @DELETE("children/{id}")
-    suspend fun remove(@Path("id") id: String)
+    suspend fun remove(@Path("id") id: String, @Header("Authorization") authHeader: String)
 }
