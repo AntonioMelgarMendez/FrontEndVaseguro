@@ -17,17 +17,18 @@ import com.VaSeguro.ui.components.Chat.ChatTopBar
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.VaSeguro.ui.components.Chat.ChatMessagesList
+import com.VaSeguro.ui.navigations.ChatScreenNavigation
+import com.VaSeguro.ui.navigations.ChildrenScreenNavigation
 
-data class QuickReply(
-  val text: String,
-  val onClick: () -> Unit = {}
-)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(
+    navController: NavController,
   viewModel: ChatViewModel = viewModel(factory = ChatViewModel.Factory)
 ) {
   val text by viewModel.text.collectAsState()
@@ -50,7 +51,7 @@ fun ChatScreen(
             role_id = UserRole(id = 0, role_name = "Unknown"),
             gender = ""
           ),
-          onBackClick = { /* TODO */ }
+          onBackClick = {navController.navigate(ChildrenScreenNavigation)}
         )
       }
     ) { innerPadding ->
@@ -77,7 +78,7 @@ fun ChatScreen(
     topBar = {
       ChatTopBar(
         user = user!!,
-        onBackClick = { /* TODO */ }
+        onBackClick ={navController.navigate(ChildrenScreenNavigation)}
       )
     },
   ) { innerPadding ->
@@ -98,5 +99,7 @@ fun ChatScreen(
 @Preview(showBackground = true)
 @Composable
 fun ChatScreenPreview() {
-  ChatScreen()
+  ChatScreen(
+    navController = NavController(context = LocalContext.current)
+  )
 }

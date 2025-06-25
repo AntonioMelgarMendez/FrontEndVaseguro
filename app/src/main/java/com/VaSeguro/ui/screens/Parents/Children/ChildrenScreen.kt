@@ -32,12 +32,17 @@ import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.NavController
 import com.VaSeguro.data.model.Child.Child
 import com.VaSeguro.ui.components.AddDialogues.AddChildDialog
 import com.VaSeguro.ui.components.Cards.ChildrenCard
+import com.VaSeguro.ui.navigations.ChatScreenNavigation
+import com.VaSeguro.ui.navigations.ChildrenDriverScreenNavigation
 
 @Composable
 fun ChildrenScreen(
+    navController: NavController,
     viewModel: ChildrenViewModel = viewModel(factory = ChildrenViewModel.Factory)
 ) {
     val expandedMap = viewModel.expandedMap.collectAsState().value
@@ -82,6 +87,7 @@ fun ChildrenScreen(
                                     showDialog = true
                                 },
                                 onDeleteClick = { viewModel.deleteChild(child.id.toString()) },
+                                onChat={navController.navigate(ChatScreenNavigation)}
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                         }
@@ -137,5 +143,5 @@ fun ChildrenScreen(
 @Preview(showBackground = true)
 @Composable
 fun ChildrenScreenPreview(){
-    ChildrenScreen()
+    ChildrenScreen(navController = NavController(context = LocalContext.current))
 }

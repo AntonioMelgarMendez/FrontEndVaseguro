@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Card
@@ -51,6 +52,7 @@ fun ChildrenCard(
   onEditClick: () -> Unit = {},
   onDeleteClick: () -> Unit = {},
   onToggleExpand: () -> Unit = {},
+  onChat: () -> Unit = {}
 ){
   var isLoading by remember { mutableStateOf(true) }
   Card(
@@ -178,6 +180,16 @@ fun ChildrenCard(
                   contentDescription = "Delete",
                   tint = Color.White,
                   modifier = Modifier.size(28.dp)
+                )
+              }
+              IconButton(onClick= onChat){
+                Icon(
+                    imageVector = Icons.Default.Chat,
+                    contentDescription = "Chat",
+                    tint = Color.White,
+                    modifier = Modifier.size(28.dp)
+
+
                 )
               }
             }

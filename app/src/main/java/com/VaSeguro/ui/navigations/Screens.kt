@@ -50,4 +50,5 @@ object StopsScreenNavigation
 object SplashScreenNavigation
 @Serializable
 object HomeScreenNavigation
-
+@Serializable
+object ChanScreenNavigation

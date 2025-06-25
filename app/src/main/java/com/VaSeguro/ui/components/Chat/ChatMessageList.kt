@@ -25,6 +25,7 @@ fun ChatMessagesList(
     state = listState,
     modifier = modifier
       .fillMaxSize()
+      .background(Color(0xFFF7F7FA))
       .padding(horizontal = 16.dp, vertical = 8.dp)
   ) {
     items(messages) { msg ->
