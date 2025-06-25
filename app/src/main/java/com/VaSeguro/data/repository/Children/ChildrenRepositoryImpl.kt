@@ -10,7 +10,7 @@ class ChildrenRepositoryImpl(
   private val childrenService: ChildrenService
 ) : ChildrenRepository {
   override suspend fun getChildren() = childrenService.getChildren()
-  override suspend fun getChild(id: String) = childrenService.getChild(id)
+  override suspend fun getChild(id: String,token: String) = childrenService.getChild(id,"Bearer $token")
   override suspend fun create(
     forenames: String,
     surnames: String,

@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import okhttp3.MultipartBody
 
 class BusViewModel(
     private val userPreferencesRepository: UserPreferencesRepository,
@@ -36,6 +37,15 @@ class BusViewModel(
 
     private val _isDriverLoading = MutableStateFlow(false)
     val isDriverLoading: StateFlow<Boolean> = _isDriverLoading
+    private val _userRole = MutableStateFlow<Int?>(null)
+    val userRole: StateFlow<Int?> = _userRole
+
+    init {
+        viewModelScope.launch {
+            _userRole.value = userPreferencesRepository.getUserData()?.role_id
+            Log.d("data", "User role: ${_userRole.value.toString()}")
+        }
+    }
 
     fun resolveVehicleImage(rawUrl: String?) {
         viewModelScope.launch {
@@ -53,6 +63,7 @@ class BusViewModel(
                 4 -> user.id
                 else -> null
             }
+            Log.d("BusViewModel", "Driver ID: ${DriverPrefs.getDriverId(context).toString()}")
             if (idToUse != null && !token.isNullOrEmpty()) {
                 vehicleRepository.getVehicleById(idToUse, token).collectLatest { vehicleResource ->
                     _vehicle.value = vehicleResource
@@ -79,6 +90,47 @@ class BusViewModel(
                 _driverPhoneNumber.value = null
             } finally {
                 _isDriverLoading.value = false
+            }
+        }
+    }
+    fun editVehicle(
+        plate: String,
+        model: String,
+        brand: String,
+        year: String,
+        color: String,
+        capacity: String,
+        carPic: MultipartBody.Part? = null,
+        onResult: (Boolean, String?) -> Unit
+    ) {
+        viewModelScope.launch {
+            val token = userPreferencesRepository.getAuthToken()
+            val vehicleId = (_vehicle.value as? Resource.Success)?.data?.id
+            if (token != null && vehicleId != null) {
+                vehicleRepository.updateVehicle(
+                    token = token,
+                    id = vehicleId,
+                    plate = plate,
+                    model = model,
+                    brand = brand,
+                    year = year,
+                    color = color,
+                    capacity = capacity,
+                    carPic = carPic
+                ).collect { result ->
+                    when (result) {
+                        is Resource.Success -> {
+                            _vehicle.value = result
+                            onResult(true, null)
+                        }
+                        is Resource.Error -> {
+                            onResult(false, result.message)
+                        }
+                        else -> {}
+                    }
+                }
+            } else {
+                onResult(false, "Missing token or vehicle ID")
             }
         }
     }

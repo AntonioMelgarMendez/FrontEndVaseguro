@@ -10,7 +10,7 @@ interface ChildrenService {
     suspend fun getChildren(): List<Children>
 
     @GET("children/{id}")
-    suspend fun getChild(@Path("id") id: String): Children
+    suspend fun getChild(@Path("id") id: String ,   @Header("Authorization") authHeader: String): Children
 
     @Multipart
     @POST("children/")

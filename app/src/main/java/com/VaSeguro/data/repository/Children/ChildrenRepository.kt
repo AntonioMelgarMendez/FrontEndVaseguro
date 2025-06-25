@@ -5,7 +5,7 @@ import okhttp3.MultipartBody
 
 interface ChildrenRepository {
     suspend fun getChildren(): List<Children>
-    suspend fun getChild(id: String): Children
+    suspend fun getChild(id: String,token: String): Children
     suspend fun create(
         forenames: String,
         surnames: String,
