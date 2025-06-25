@@ -47,7 +47,7 @@ import com.VaSeguro.data.model.Stop.StopType
 import com.VaSeguro.ui.components.Container.ConfirmationDialog
 import com.VaSeguro.ui.components.Container.DropDownSelector
 import com.VaSeguro.ui.theme.PrimaryColor
-import com.VaSeguro.ui.components.AdminCardItem
+import com.VaSeguro.ui.components.Cards.AdminCardItem
 import com.VaSeguro.ui.components.CustomizableOutlinedTextField
 
 @Composable

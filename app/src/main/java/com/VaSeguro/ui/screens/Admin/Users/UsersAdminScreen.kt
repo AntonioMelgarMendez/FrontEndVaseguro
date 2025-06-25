@@ -37,13 +37,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.VaSeguro.data.AppProvider
 import com.VaSeguro.data.model.User.UserData
-import com.VaSeguro.ui.components.AdminCardItem
+import com.VaSeguro.ui.components.Cards.AdminCardItem
 import com.VaSeguro.ui.components.Container.ConfirmationDialog
 import com.VaSeguro.ui.components.Container.DropDownSelector
 import com.VaSeguro.ui.components.CustomizableOutlinedTextField

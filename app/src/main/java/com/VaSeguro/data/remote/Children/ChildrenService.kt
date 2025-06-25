@@ -2,12 +2,13 @@ package com.VaSeguro.data.remote.Children
 
 import com.VaSeguro.data.model.Children.Children
 import com.VaSeguro.data.remote.Auth.Login.LoginResponse
+import com.VaSeguro.data.remote.Responses.ChildrenResponse
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import retrofit2.http.*
 interface ChildrenService {
     @GET("children")
-    suspend fun getChildren(): List<Children>
+    suspend fun getChildren(): List<ChildrenResponse>
 
     @GET("children/{id}")
     suspend fun getChild(@Path("id") id: String): Children

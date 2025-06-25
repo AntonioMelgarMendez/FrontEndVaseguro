@@ -13,35 +13,3 @@ data class Children(
     val profile_pic: String? = null,
 
 )
-
-fun Children.toChild(
-    id: Int,
-    parentName: String,
-    driverName: String,
-    createdAt: String = "N/A"
-): Child {
-    return Child(
-        id = id,
-        fullName = "$forenames $surnames",
-        forenames = forenames,
-        surnames = surnames,
-        birth = birth_date,
-        age = calculateAge(birth_date),
-        driver = driverName,
-        parent = parentName,
-        medicalInfo = medical_info,
-        createdAt = createdAt,
-        profilePic = profile_pic
-    )
-}
-
-fun calculateAge(birthDate: String): Int {
-    return try {
-        val formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd")
-        val birth = java.time.LocalDate.parse(birthDate, formatter)
-        val today = java.time.LocalDate.now()
-        java.time.Period.between(birth, today).years
-    } catch (e: Exception) {
-        0
-    }
-}

@@ -1,5 +1,6 @@
 package com.VaSeguro.ui.screens.Admin.Children
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
@@ -11,12 +12,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import com.VaSeguro.data.model.Child.Child
 import com.VaSeguro.data.model.Children.Children
-import com.VaSeguro.data.model.Children.toChild
 import com.VaSeguro.data.remote.Auth.UserResponse
+import com.VaSeguro.data.remote.Responses.toChild
 import com.VaSeguro.data.repository.AuthRepository.AuthRepository
 import com.VaSeguro.data.repository.Children.ChildrenRepository
 import com.VaSeguro.data.repository.UserPreferenceRepository.UserPreferencesRepository
-import com.VaSeguro.ui.screens.Driver.Chat.ChatViewModel
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import okhttp3.MultipartBody
@@ -37,6 +37,18 @@ class ChildrenAdminScreenViewModel(
 
     val drivers: List<UserResponse>
         get() = _allUsers.value.filter { it.role_id == 4 }
+
+    private val _expandedMap = MutableStateFlow<Map<String, Boolean>>(emptyMap())
+    val expandedMap: StateFlow<Map<String, Boolean>> = _expandedMap
+
+    private val _checkedMap = MutableStateFlow<Map<String, Boolean>>(emptyMap())
+    val checkedMap: StateFlow<Map<String, Boolean>> = _checkedMap
+
+    private val _loading = MutableStateFlow(false)
+    val loading: StateFlow<Boolean> = _loading
+
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage
 
     fun fetchUsersForRoles() {
         viewModelScope.launch {
@@ -59,15 +71,6 @@ class ChildrenAdminScreenViewModel(
             ?.let { "${it.forenames} ${it.surnames}" } ?: "Desconocido"
     }
 
-    private val _expandedMap = MutableStateFlow<Map<String, Boolean>>(emptyMap())
-    val expandedMap: StateFlow<Map<String, Boolean>> = _expandedMap
-
-    private val _checkedMap = MutableStateFlow<Map<String, Boolean>>(emptyMap())
-    val checkedMap: StateFlow<Map<String, Boolean>> = _checkedMap
-
-    private val _loading = MutableStateFlow(false)
-    val loading: StateFlow<Boolean> = _loading
-
     fun fetchAllChildren() {
         viewModelScope.launch {
             _loading.value = true
@@ -77,21 +80,25 @@ class ChildrenAdminScreenViewModel(
                     _allUsers.value = authRepository.getAllUsers(token)
                 }
 
-                val uiChildren = childrenRepository.getChildren().mapIndexed { index, child ->
+                val childrenBackend = childrenRepository.getChildren()
+                val uiChildren = childrenBackend.map { child ->
                     child.toChild(
-                        id = index,
                         parentName = getParentNameById(child.parent_id),
-                        driverName = getDriverNameById(child.driver_id),
-                        createdAt = "2024-01-01 00:00"
+                        driverName = getDriverNameById(child.driver_id)
                     )
                 }
+
                 _children.value = uiChildren
             } catch (e: Exception) {
-                // Manejo error
+                _errorMessage.value = "Error al cargar niños: ${e.localizedMessage ?: "Error desconocido"}"
             } finally {
                 _loading.value = false
             }
         }
+    }
+
+    fun clearError() {
+        _errorMessage.value = null
     }
 
     fun toggleExpand(childId: String) {
