@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -31,6 +32,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.setValue
@@ -39,7 +41,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.tooling.preview.Preview
-import com.VaSeguro.ui.components.AddDialogues.AddChildDialog
+import com.VaSeguro.ui.components.AddDialogues.AddChildDialogAdmin
 import com.VaSeguro.ui.components.Cards.AdminCardItem
 import com.VaSeguro.ui.components.Container.ConfirmationDialog
 import kotlin.collections.lastIndex
@@ -52,6 +54,7 @@ fun ChildrenAdminScreen(
     val children = viewModel.children.collectAsState().value
     val expandedMap = viewModel.expandedMap.collectAsState().value
     val checkedMap = viewModel.checkedMap.collectAsState().value
+    val isLoading = viewModel.loading.collectAsState().value
     var showDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var selectedIdToDelete by remember { mutableStateOf<Int?>(null) }
@@ -121,8 +124,17 @@ fun ChildrenAdminScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            LazyColumn {
-                if (children.isNotEmpty()) {
+            if (isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            } else {
+                LazyColumn {
                     itemsIndexed(children) { index, child ->
                         val isFirst = index == 0
                         val isLast = index == children.lastIndex
@@ -158,24 +170,13 @@ fun ChildrenAdminScreen(
                             onToggleExpand = { viewModel.toggleExpand(child.id.toString()) }
                         )
                     }
-                } else {
-                    item {
-                        Text(
-                            text = "No children found.",
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            color = Color.Gray,
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                    }
                 }
             }
         }
     }
 
     if (showDialog) {
-        AddChildDialog(
+        AddChildDialogAdmin(
             onDismiss = { showDialog = false },
             onSave = { showDialog = false }
         )

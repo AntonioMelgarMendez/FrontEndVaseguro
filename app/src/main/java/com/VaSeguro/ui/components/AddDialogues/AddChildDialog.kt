@@ -1,7 +1,5 @@
 package com.VaSeguro.ui.components.AddDialogues
 
-import android.widget.Toast
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -33,172 +31,229 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material3.*
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.input.TextFieldValue
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.VaSeguro.data.model.Child.Child
 import com.VaSeguro.data.model.User.UserData
 import com.VaSeguro.data.model.User.UserRole
-import com.VaSeguro.data.remote.Auth.UserResponse
-import com.VaSeguro.ui.components.Container.DropDownSelector
-import com.VaSeguro.ui.components.CustomizableOutlinedTextField
-import com.VaSeguro.ui.screens.Admin.Children.ChildrenAdminScreenViewModel
-import com.VaSeguro.ui.theme.PrimaryColor
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+
+fun getCurrentDateTime(): String {
+  val formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+  return java.time.LocalDateTime.now().format(formatter)
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddChildDialog(
-  viewModel: ChildrenAdminScreenViewModel = viewModel(factory = ChildrenAdminScreenViewModel.Factory),
   onDismiss: () -> Unit,
-  onSave: () -> Unit
+  onConfirm: (Child) -> Unit,
+  drivers: List<UserData>,
+  parents: List<UserData>,
+  existingChild: Child? = null
 ) {
-  val context = LocalContext.current
-  var forenames by remember { mutableStateOf(TextFieldValue("")) }
-  var surnames by remember { mutableStateOf(TextFieldValue("")) }
-  var medicalInfo by remember { mutableStateOf(TextFieldValue("")) }
-  var selectedParent by remember { mutableStateOf<UserResponse?>(null) }
-  var selectedDriver by remember { mutableStateOf<UserResponse?>(null) }
+  val customColor = Color(0xFF6C63FF)
 
-  val parentOptions = viewModel.parents
-  val driverOptions = viewModel.drivers
+  var forenames by remember { mutableStateOf(existingChild?.forenames ?: "") }
+  var surnames by remember { mutableStateOf(existingChild?.surnames ?: "") }
+  var birth by remember { mutableStateOf(existingChild?.birth ?: "") }
+  var age by remember { mutableStateOf(existingChild?.age?.toString() ?: "") }
+  var medicalInfo by remember { mutableStateOf(existingChild?.medicalInfo ?: "") }
 
-  val dateFormatter = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
-  var selectedDateMillis by remember { mutableStateOf<Long?>(null) }
-  val selectedDateText = selectedDateMillis?.let { dateFormatter.format(Date(it)) } ?: ""
-  var showDatePicker by remember { mutableStateOf(false) }
+  var selectedDriver by remember { mutableStateOf(
+    drivers.find { it.id == existingChild?.driver }
+  ) }
+  var selectedParent by remember { mutableStateOf(
+    parents.find { it.id == existingChild?.parent }
+  ) }
 
-  fun resetForm() {
-    forenames = TextFieldValue("")
-    surnames = TextFieldValue("")
-    medicalInfo = TextFieldValue("")
-  }
+  var expandedDriver by remember { mutableStateOf(false) }
+  var expandedParent by remember { mutableStateOf(false) }
 
-  AlertDialog(
-    onDismissRequest = onDismiss,
-    title = { Text("Add Child") },
-    text = {
-      Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-
-        CustomizableOutlinedTextField(forenames, { forenames = it }, "Forenames")
-        CustomizableOutlinedTextField(surnames, { surnames = it }, "Surnames")
+  Dialog(onDismissRequest = onDismiss) {
+    Box(
+      modifier = Modifier
+        .border(1.dp, Color.LightGray, RoundedCornerShape(16.dp))
+        .background(Color.White, RoundedCornerShape(16.dp))
+        .padding(24.dp)
+    ) {
+      Column {
+        Text(
+          text = if (existingChild == null) "Agregar Niño" else "Editar Niño",
+          style = MaterialTheme.typography.titleLarge
+        )
+        Spacer(Modifier.height(8.dp))
 
         OutlinedTextField(
-          value = selectedDateText,
-          onValueChange = {},
-          label = { Text("Birth") },
-          readOnly = true,
-          trailingIcon = {
-            IconButton(onClick = { showDatePicker = true }) {
-              Icon(Icons.Default.CalendarToday, contentDescription = "Calendar")
-            }
-          },
-          colors = TextFieldDefaults.colors(
-            focusedContainerColor = Color.Transparent,
-            unfocusedContainerColor = Color.Transparent,
-            focusedIndicatorColor = PrimaryColor,
-            unfocusedIndicatorColor = Color.LightGray,
-            focusedLabelColor = PrimaryColor,
-            unfocusedLabelColor = Color.Gray
+          value = forenames,
+          onValueChange = { forenames = it },
+          label = { Text("Nombres") },
+          modifier = Modifier.fillMaxWidth(),
+          colors = textFieldColors(customColor)
+        )
+
+        OutlinedTextField(
+          value = surnames,
+          onValueChange = { surnames = it },
+          label = { Text("Apellidos") },
+          modifier = Modifier.fillMaxWidth(),
+          colors = textFieldColors(customColor)
+        )
+
+        OutlinedTextField(
+          value = birth,
+          onValueChange = { birth = it },
+          label = { Text("Fecha de nacimiento (yyyy-MM-dd)") },
+          modifier = Modifier.fillMaxWidth(),
+          colors = textFieldColors(customColor)
+        )
+
+        OutlinedTextField(
+          value = age,
+          onValueChange = { age = it },
+          label = { Text("Edad") },
+          modifier = Modifier.fillMaxWidth(),
+          colors = textFieldColors(customColor)
+        )
+
+        OutlinedTextField(
+          value = medicalInfo,
+          onValueChange = { medicalInfo = it },
+          label = { Text("Info médica") },
+          modifier = Modifier.fillMaxWidth(),
+          colors = textFieldColors(customColor)
+        )
+
+        ExposedDropdownMenuBox(
+          expanded = expandedDriver,
+          onExpandedChange = { expandedDriver = !expandedDriver }
+        ) {
+          OutlinedTextField(
+            value = selectedDriver?.let { "${it.forename} ${it.surname}" } ?: "",
+            onValueChange = {},
+            label = { Text("Conductor") },
+            readOnly = true,
+            trailingIcon = {
+              Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+            },
+            colors = textFieldColors(customColor),
+            modifier = Modifier
+              .menuAnchor()
+              .fillMaxWidth()
+              .clickable { expandedDriver = true }
           )
-        )
 
-        CustomizableOutlinedTextField(medicalInfo, { medicalInfo = it }, "Medical Info")
-
-        DropDownSelector(
-          label = "Parent",
-          options = parentOptions.map { "${it.forenames} ${it.surnames}" },
-          selectedOption = selectedParent?.let { "${it.forenames} ${it.surnames}" },
-          onOptionSelected = { name ->
-            selectedParent = parentOptions.find { "${it.forenames} ${it.surnames}" == name }
-          }
-        )
-
-        DropDownSelector(
-          label = "Driver",
-          options = driverOptions.map { "${it.forenames} ${it.surnames}" },
-          selectedOption = selectedDriver?.let { "${it.forenames} ${it.surnames}" },
-          onOptionSelected = { name ->
-            selectedDriver = driverOptions.find { "${it.forenames} ${it.surnames}" == name }
-          }
-        )
-
-      }
-    },
-    confirmButton = {
-      Button(
-        onClick = {
-          if (
-            forenames.text.isBlank() ||
-            surnames.text.isBlank() ||
-            selectedDateText.isBlank() ||
-            medicalInfo.text.isBlank() ||
-            selectedParent == null ||
-            selectedDriver == null
+          ExposedDropdownMenu(
+            expanded = expandedDriver,
+            onDismissRequest = { expandedDriver = false }
           ) {
-            Toast.makeText(context, "Por favor completa todos los campos.", Toast.LENGTH_SHORT).show()
-            return@Button
+            drivers.forEach { driver ->
+              DropdownMenuItem(
+                text = { Text("${driver.forename} ${driver.surname}") },
+                onClick = {
+                  selectedDriver = driver
+                  expandedDriver = false
+                }
+              )
+            }
           }
+        }
 
-          viewModel.addChild(
-            forenames = forenames.text,
-            surnames = surnames.text,
-            birth_date = selectedDateText,
-            medical_info = medicalInfo.text,
-            gender = "N/A",
-            parent_id = selectedParent!!.id,
-            driver_id = selectedDriver!!.id,
+        ExposedDropdownMenuBox(
+          expanded = expandedParent,
+          onExpandedChange = { expandedParent = !expandedParent }
+        ) {
+          OutlinedTextField(
+            value = selectedParent?.let { "${it.forename} ${it.surname}" } ?: "",
+            onValueChange = {},
+            label = { Text("Encargado") },
+            readOnly = true,
+            trailingIcon = {
+              Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+            },
+            colors = textFieldColors(customColor),
+            modifier = Modifier
+              .menuAnchor()
+              .fillMaxWidth()
+              .clickable { expandedParent = true }
           )
 
-          onSave()
-        },
-        colors = ButtonDefaults.buttonColors(
-          contentColor = Color.White,
-          containerColor = PrimaryColor
-        )
-      ) {
-        Text("Agregar")
-      }
-    },
-    dismissButton = {
-      OutlinedButton(
-        onClick = {
-          resetForm()
-          onDismiss()
-        },
-        border = BorderStroke(2.dp, PrimaryColor),
-        colors = ButtonDefaults.outlinedButtonColors(contentColor = PrimaryColor)
-      ) {
-        Text("Cancelar")
-      }
-    }
-  )
-
-  if (showDatePicker) {
-    val state = rememberDatePickerState(initialSelectedDateMillis = selectedDateMillis)
-
-    DatePickerDialog(
-      onDismissRequest = { showDatePicker = false },
-      confirmButton = {
-        TextButton(onClick = {
-          selectedDateMillis = state.selectedDateMillis
-          showDatePicker = false
-        }) {
-          Text("OK")
+          ExposedDropdownMenu(
+            expanded = expandedParent,
+            onDismissRequest = { expandedParent = false }
+          ) {
+            parents.forEach { parent ->
+              DropdownMenuItem(
+                text = { Text("${parent.forename} ${parent.surname}") },
+                onClick = {
+                  selectedParent = parent
+                  expandedParent = false
+                }
+              )
+            }
+          }
         }
-      },
-      dismissButton = {
-        TextButton(onClick = { showDatePicker = false }) {
-          Text("Cancel")
+
+        Spacer(Modifier.height(16.dp))
+
+        Row(
+          modifier = Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+          TextButton(
+            onClick = onDismiss,
+            modifier = Modifier.weight(1f),
+            colors = ButtonDefaults.textButtonColors(contentColor = customColor)
+          ) {
+            Text("Cancelar", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+          }
+
+          Spacer(modifier = Modifier.width(8.dp))
+
+          Button(
+            onClick = {
+              if (
+                forenames.isNotBlank() && surnames.isNotBlank() && birth.isNotBlank() &&
+                age.isNotBlank() && selectedDriver != null && selectedParent != null
+              ) {
+                val newChild = Child(
+                  id = existingChild?.id ?: (10000..99999).random(),
+                  fullName = "$forenames $surnames",
+                  surnames = surnames,
+                  forenames = forenames,
+                  birth = birth,
+                  age = age.toIntOrNull() ?: 0,
+                  driver = selectedDriver?.id ?: "",
+                  parent = selectedParent?.id ?: "",
+                  medicalInfo = medicalInfo,
+                  createdAt = existingChild?.createdAt ?: getCurrentDateTime(),
+                  profilePic = existingChild?.profilePic
+                )
+                onConfirm(newChild)
+              }
+            },
+            modifier = Modifier.weight(1f),
+            colors = ButtonDefaults.buttonColors(
+              containerColor = customColor,
+              contentColor = Color.White
+            )
+          ) {
+            Text(
+              text = if (existingChild == null) "Agregar" else "Guardar cambios",
+              modifier = Modifier.fillMaxWidth(),
+              textAlign = TextAlign.Center
+            )
+          }
         }
       }
-    ) {
-      DatePicker(state = state, showModeToggle = false)
     }
   }
 }
+
+@Composable
+private fun textFieldColors(customColor: Color) = TextFieldDefaults.colors(
+  focusedContainerColor = Color.Transparent,
+  unfocusedContainerColor = Color.Transparent,
+  focusedIndicatorColor = customColor,
+  unfocusedIndicatorColor = Color.LightGray,
+  focusedLabelColor = customColor,
+  unfocusedLabelColor = Color.Gray
+)

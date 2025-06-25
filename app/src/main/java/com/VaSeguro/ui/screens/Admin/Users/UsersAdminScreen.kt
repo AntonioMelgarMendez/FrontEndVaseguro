@@ -44,7 +44,7 @@ import com.VaSeguro.data.model.User.UserData
 import com.VaSeguro.ui.components.Cards.AdminCardItem
 import com.VaSeguro.ui.components.Container.ConfirmationDialog
 import com.VaSeguro.ui.components.Container.DropDownSelector
-import com.VaSeguro.ui.components.CustomizableOutlinedTextField
+import com.VaSeguro.ui.components.Misc.CustomizableOutlinedTextField
 import com.VaSeguro.ui.theme.PrimaryColor
 
 @Composable

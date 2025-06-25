@@ -30,10 +30,10 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import com.VaSeguro.data.model.Child.Child
 import com.VaSeguro.ui.components.AddDialogues.AddChildDialog
+import com.VaSeguro.ui.components.AddDialogues.AddChildDialogAdmin
 import com.VaSeguro.ui.components.Cards.ChildrenCard
 
 @Composable

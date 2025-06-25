@@ -81,6 +81,8 @@ class ChildrenAdminScreenViewModel(
                 }
 
                 val childrenBackend = childrenRepository.getChildren()
+                Log.d("ChildrenDebug", "Children fetched: ${childrenBackend.size}")
+
                 val uiChildren = childrenBackend.map { child ->
                     child.toChild(
                         parentName = getParentNameById(child.parent_id),
@@ -95,10 +97,6 @@ class ChildrenAdminScreenViewModel(
                 _loading.value = false
             }
         }
-    }
-
-    fun clearError() {
-        _errorMessage.value = null
     }
 
     fun toggleExpand(childId: String) {
