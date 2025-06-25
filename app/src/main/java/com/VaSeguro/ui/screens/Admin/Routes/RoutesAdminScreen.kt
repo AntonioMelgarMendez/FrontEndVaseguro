@@ -45,6 +45,7 @@ import com.VaSeguro.data.model.Route.RouteStatus
 import com.VaSeguro.data.model.Route.RouteType
 import com.VaSeguro.data.model.Routes.RoutesData
 import com.VaSeguro.data.model.Vehicle.Vehicle
+import com.VaSeguro.data.model.Vehicle.VehicleMap
 import com.VaSeguro.ui.components.CustomizableOutlinedTextField
 import kotlin.random.Random
 import java.util.UUID
@@ -252,8 +253,8 @@ fun AddRouteDialog(
                         return@Button
                     }
 
-                    val burnedVehicle = Vehicle(
-                        id = "VEH-002",
+                    val burnedVehicle = VehicleMap(
+                        id = 2,
                         plate = "P987654",
                         model = "Toyota Hiace 2020",
                         driver_id = 1.toString(),

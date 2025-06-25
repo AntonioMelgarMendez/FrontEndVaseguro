@@ -1,6 +1,7 @@
 package com.VaSeguro.map.repository
 
 import com.VaSeguro.data.model.Child.Child
+import com.VaSeguro.data.model.Child.ChildMap
 import com.VaSeguro.data.model.Driver.Driver
 import com.VaSeguro.data.model.Stop.StopData
 import com.VaSeguro.data.model.Stop.StopType
@@ -26,41 +27,41 @@ class StopPassengerRepositoryImpl: StopPassengerRepository {
 
     // Children quemados para las paradas
     private val children = listOf(
-        Child(
+        ChildMap(
             id = 1,
             fullName = "Ana García",
             forenames = "Ana",
             surnames = "García",
             birth = "2016-05-10",
             age = 8,
-            driver = "driver_123",
-            parent = "parent_101",
+            driverId = 1,
+            parentId = 1,
             medicalInfo = "Sin alergias",
             createdAt = "2023-01-15",
             profilePic = null
         ),
-        Child(
+        ChildMap(
             id = 2,
             fullName = "Carlos López",
             forenames = "Carlos",
             surnames = "López",
             birth = "2014-08-20",
             age = 10,
-            driver = "driver_123",
-            parent = "parent_102",
+            driverId = 1,
+            parentId = 2,
             medicalInfo = "Alergia a mariscos",
             createdAt = "2023-01-15",
             profilePic = null
         ),
-        Child(
+        ChildMap(
             id = 3,
             fullName = "María Rodríguez",
             forenames = "María",
             surnames = "Rodríguez",
             birth = "2017-03-12",
             age = 7,
-            driver = "driver_123",
-            parent = "parent_103",
+            driverId = 1,
+            parentId = 3,
             medicalInfo = "Asma leve",
             createdAt = "2023-01-15",
             profilePic = null
@@ -75,8 +76,8 @@ class StopPassengerRepositoryImpl: StopPassengerRepository {
             stop = StopData(
                 id = 1,
                 name = "Casa 1",
-                latitude = 13.719149334657295,
-                longitude = -89.18715776408806
+                latitude = 13.727814745719943,
+                longitude = -89.20637232229953
             ),
             child = children[0],
             stopType = StopType.HOME
@@ -85,9 +86,9 @@ class StopPassengerRepositoryImpl: StopPassengerRepository {
             id = 2,
             stop = StopData(
                 id = 2,
-                name = "Metrocentro",
-                latitude = 13.705982000097556,
-                longitude = -89.2115589593364
+                name = "UCA",
+                latitude = 13.68114721119151,
+                longitude = -89.2360115785806
             ),
             child = children[0],
             stopType = StopType.INSTITUTION
@@ -109,9 +110,9 @@ class StopPassengerRepositoryImpl: StopPassengerRepository {
             id = 4,
             stop = StopData(
                 id = 4,
-                name = "Metropolis",
-                latitude = 13.729798472776263,
-                longitude = -89.21071148925459
+                name = "Little sisa picsa picsa",
+                latitude = 13.68401102231903,
+                longitude = -89.23577743059397
             ),
             child = children[1],
             stopType = StopType.INSTITUTION

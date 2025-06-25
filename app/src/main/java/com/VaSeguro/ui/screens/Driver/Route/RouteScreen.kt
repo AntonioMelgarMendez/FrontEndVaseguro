@@ -2,6 +2,7 @@ package com.VaSeguro.ui.screens.Driver.Route
 
 import android.Manifest
 import android.os.Looper
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -29,13 +30,16 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.VaSeguro.R
+import com.VaSeguro.data.model.Route.RouteStatus
 import com.VaSeguro.data.model.Stop.StopType
+import com.VaSeguro.data.model.Route.RouteType
 import com.VaSeguro.helpers.bitmapDescriptorFromVector
 import com.VaSeguro.map.repository.SavedRoutesRepository
 import com.VaSeguro.map.data.PlaceResult
 import com.VaSeguro.map.data.RoutePoint
 import com.VaSeguro.map.decodePolyline
 import com.VaSeguro.ui.components.Dialogs.ConfirmationDialog
+import com.VaSeguro.ui.components.Dialogs.StopInfoDialog
 import com.VaSeguro.ui.components.Map.FloatingMenu
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
@@ -83,6 +87,12 @@ fun RouteScreen(
     val timeToNextPoint by viewModel.timeToNextPoint.collectAsStateWithLifecycle()
     val adjustedTimeToNextPoint by viewModel.adjustedTimeToNextPoint.collectAsStateWithLifecycle()
     val currentSpeed by viewModel.currentSpeed.collectAsStateWithLifecycle()
+
+    // Estado del estado de la ruta
+    val routeStatus by viewModel.currentRouteStatus.collectAsStateWithLifecycle()
+
+    // Estado para el tipo de ruta (INBOUND/OUTBOUND)
+    val currentRouteType by viewModel.currentRouteType.collectAsStateWithLifecycle()
 
     // Estados para control de ruta
     var showStartRouteConfirmation by remember { mutableStateOf(false) }
@@ -151,7 +161,7 @@ fun RouteScreen(
                 lastLocationTask.addOnSuccessListener { location ->
                     location?.let {
                         val initialLatLng = LatLng(location.latitude, location.longitude)
-                        viewModel.updateCurrentLocation(initialLatLng)
+                        viewModel.updateCurrentLocation(initialLatLng, routeStatus)
 
                         // Mover cámara a la ubicación inicial
                         cameraPositionState.move(
@@ -173,7 +183,7 @@ fun RouteScreen(
                 super.onLocationResult(locationResult)
                 locationResult.lastLocation?.let { location ->
                     val currentLatLng = LatLng(location.latitude, location.longitude)
-                    viewModel.updateCurrentLocation(currentLatLng)
+                    viewModel.updateCurrentLocation(currentLatLng, routeStatus )
 
                     // Mover la cámara automáticamente si la ruta está iniciada,
                     // o si no hay ninguna ruta seleccionada (para seguir al usuario al abrir la pantalla).
@@ -229,16 +239,6 @@ fun RouteScreen(
         }
     }
 
-    // Efecto para mostrar alerta cuando estamos cerca de un punto de ruta
-    LaunchedEffect(isProximityAlertVisible, currentPointName) {
-        if (isProximityAlertVisible && currentPointName.isNotEmpty() ) {
-            snackbarHostState.showSnackbar(
-                message = "Estás cerca de: $currentPointName",
-                duration = SnackbarDuration.Short
-            )
-        }
-    }
-
     // Mostrar mensaje de error si existe
     LaunchedEffect(errorMessage) {
         errorMessage?.let { error ->
@@ -291,6 +291,94 @@ fun RouteScreen(
         }
     }
 
+    // NUEVO: Dialog para mostrar información de paradas cercanas
+    val isStopInfoDialogVisible by viewModel.isStopInfoDialogVisible.collectAsStateWithLifecycle()
+    val nearbyStop by viewModel.currentNearbyStop.collectAsStateWithLifecycle()
+    val nearbyStopPassengers by viewModel.currentStopPassengers.collectAsStateWithLifecycle()
+    val stopCompletionStates by viewModel.stopCompletionStates.collectAsStateWithLifecycle()
+
+    // Mostrar diálogo de información de parada
+    StopInfoDialog(
+        isVisible = isStopInfoDialogVisible,
+        stopData = nearbyStop,
+        stopPassengers = nearbyStopPassengers,
+        currentStopStates = stopCompletionStates,
+        onDismiss = { viewModel.dismissStopInfoDialog() },
+        onStateChanged = { stopPassengerId, isCompleted ->
+            viewModel.updateStopPassengerState(stopPassengerId, isCompleted)
+        },
+        routeType = currentRouteType // Pasar el tipo de ruta actual al diálogo
+    )
+
+    // Dialog de configuración del umbral de proximidad
+    var showProximitySettingsDialog by remember { mutableStateOf(false) }
+    var proximityThreshold by remember { mutableFloatStateOf(viewModel.stopProximityThreshold.value.toFloat()) }
+
+    if (showProximitySettingsDialog) {
+        AlertDialog(
+            onDismissRequest = { showProximitySettingsDialog = false },
+            title = { Text("Configurar distancia de detección") },
+            text = {
+                Column {
+                    Text(
+                        "Ajusta la distancia (en metros) a la que se mostrará la notificación cuando te acerques a una parada.",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = "20m",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+
+                        Slider(
+                            value = proximityThreshold,
+                            onValueChange = { proximityThreshold = it },
+                            valueRange = 20f..200f,
+                            steps = 18,
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        Text(
+                            text = "200m",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+
+                    Text(
+                        text = "${proximityThreshold.toInt()} metros",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.setStopProximityThreshold(proximityThreshold.toDouble())
+                        showProximitySettingsDialog = false
+                    }
+                ) {
+                    Text("Confirmar")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showProximitySettingsDialog = false }
+                ) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
+
     // Diálogo de confirmación para iniciar la ruta
     ConfirmationDialog(
         isVisible = showStartRouteConfirmation,
@@ -304,6 +392,8 @@ fun RouteScreen(
             if (viewModel.routeProgress.value == 0f) {
                 viewModel.updateRouteProgress(0.001f)
             }
+            // Actualizar el estado de la ruta a "En proceso"
+            viewModel.updateRouteStatus(RouteStatus.ON_PROGRESS.id)
             showStartRouteConfirmation = false
 
             // Mostrar mensaje de confirmación
@@ -370,6 +460,13 @@ fun RouteScreen(
                                     context.bitmapDescriptorFromVector(R.drawable.user, heightDp = 40)
                                 } else {
                                     context.bitmapDescriptorFromVector(R.drawable.school,heightDp= 40)
+                                },
+                                onClick = {
+                                    // Al hacer clic en un marcador, verificar si estamos lo suficientemente cerca
+                                    // para mostrar el diálogo de información de parada
+                                    viewModel.checkMarkerProximityAndShowDialog(point.location)
+                                    // Devolver true para que el mapa no muestre la ventana de información por defecto
+                                    true
                                 }
                             )
                         }
@@ -431,6 +528,50 @@ fun RouteScreen(
                         Spacer(modifier = Modifier.height(8.dp))
                     }
 
+                    // NUEVO: Selector de tipo de ruta
+                    if (!isRouteStarted) {  // Solo permitir cambiar si la ruta no está iniciada
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Tipo de ruta:",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            )
+
+                            Row {
+                                RouteTypeChip(
+                                    type = RouteType.INBOUND,
+                                    isSelected = currentRouteType == RouteType.INBOUND,
+                                    onSelect = { viewModel.updateRouteType(RouteType.INBOUND) }
+                                )
+
+                                Spacer(modifier = Modifier.width(8.dp))
+
+                                RouteTypeChip(
+                                    type = RouteType.OUTBOUND,
+                                    isSelected = currentRouteType == RouteType.OUTBOUND,
+                                    onSelect = { viewModel.updateRouteType(RouteType.OUTBOUND) }
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+                    } else {
+                        // Mostrar el tipo de ruta actual como texto cuando la ruta está iniciada
+                        Text(
+                            text = "Tipo de ruta: ${currentRouteType.type}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.align(Alignment.End)
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+
                     // Información del próximo punto
                     if (nextPointName.isNotEmpty()) {
                         Row(
@@ -452,26 +593,28 @@ fun RouteScreen(
                                 )
                             }
 
-                            Column(
-                                horizontalAlignment = Alignment.End,
-                                modifier = Modifier.padding(start = 8.dp)
-                            ) {
-                                Text(
-                                    text = "Tiempo estimado:",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                                    textAlign = TextAlign.End
-                                )
+                            if(isRouteStarted){
+                                Column(
+                                    horizontalAlignment = Alignment.End,
+                                    modifier = Modifier.padding(start = 8.dp)
+                                ) {
+                                    Text(
+                                        text = "Tiempo estimado:",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                        textAlign = TextAlign.End
+                                    )
 
-                                // Mostrar tiempo estimado ajustado si está disponible, de lo contrario el tiempo original
-                                val timeToShow = if (adjustedTimeToNextPoint.isNotEmpty())
-                                    adjustedTimeToNextPoint else timeToNextPoint
+                                    // Mostrar tiempo estimado ajustado si está disponible, de lo contrario el tiempo original
+                                    val timeToShow = if (adjustedTimeToNextPoint.isNotEmpty())
+                                        adjustedTimeToNextPoint else timeToNextPoint
 
-                                Text(
-                                    text = timeToShow,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
+                                    Text(
+                                        text = timeToShow,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
                             }
                         }
 
@@ -511,8 +654,6 @@ fun RouteScreen(
 
             // Menú de estados del viaje (solo visible cuando la ruta está iniciada)
             if (isRouteStarted && selectedRoute != null) {
-                // Estado de la ruta
-                var currentRouteStatus by remember { mutableStateOf("En proceso") }
                 // Estado para el diálogo de confirmación para borrar la ruta
                 var showDeleteConfirmation by remember { mutableStateOf(false) }
                 // Estado para el diálogo de confirmación para pausar la ruta
@@ -534,7 +675,7 @@ fun RouteScreen(
                             .padding(vertical = 8.dp)
                     ) {
                         Text(
-                            text = "Estado del viaje: $currentRouteStatus",
+                            text = "Estado del viaje: ${routeStatus?.status}",
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium,
                             modifier = Modifier
@@ -549,21 +690,20 @@ fun RouteScreen(
                             horizontalArrangement = Arrangement.SpaceEvenly
                         ) {
                             // Botón "En proceso"
-                            val isProcessActive = currentRouteStatus == "En proceso"
+                            val isProcessActive = routeStatus == RouteStatus.ON_PROGRESS
                             RouteStatusButton(
                                 text = "En proceso",
                                 icon = Icons.Default.DirectionsCar,
                                 isActive = isProcessActive,
                                 activeColor = Color(0xFF4CAF50), // Verde
                                 onClick = {
-                                    if(!isRouteStarted) isRouteStarted = true
-                                    currentRouteStatus = "En proceso"
-                                    viewModel.updateRouteStatus("1") // ID para "En proceso"
+                                    if (!isRouteStarted) isRouteStarted = true
+                                    viewModel.updateRouteStatus(RouteStatus.ON_PROGRESS.id)
                                 }
                             )
 
                             // Botón "Pausado"
-                            val isPausedActive = currentRouteStatus == "Pausado"
+                            val isPausedActive = routeStatus == RouteStatus.STOPED
                             RouteStatusButton(
                                 text = "Pausado",
                                 icon = Icons.Default.Pause,
@@ -576,22 +716,21 @@ fun RouteScreen(
                             )
                         }
 
-                        Row (
+                        Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 8.dp),
                             horizontalArrangement = Arrangement.SpaceEvenly
-                        ){
-                            // Botón "Problemas"
-                            val isIssueActive = currentRouteStatus == "Problemas"
+                        ) {
+                            // Botón "Finalizado"
+                            val isFinishedActive = routeStatus == RouteStatus.PROBLEMS
                             RouteStatusButton(
-                                text = "Problemas",
+                                text = "Con Problemas",
                                 icon = Icons.Default.Warning,
-                                isActive = isIssueActive,
-                                activeColor = Color(0xFFF44336), // Rojo
+                                isActive = isFinishedActive,
+                                activeColor = Color(0xFF2196F3), // Azul
                                 onClick = {
-                                    currentRouteStatus = "Problemas"
-                                    viewModel.updateRouteStatus("4") // ID para "Problemas"
+                                    viewModel.updateRouteStatus(RouteStatus.PROBLEMS.id)
                                 }
                             )
 
@@ -635,8 +774,7 @@ fun RouteScreen(
                     confirmButtonText = "Pausar",
                     onConfirm = {
                         isRouteStarted = false // pausar la ruta
-                        currentRouteStatus = "Pausado"
-                        viewModel.updateRouteStatus("3") // ID para "Pausado"
+                        viewModel.updateRouteStatus(RouteStatus.STOPED.toString())
                         showPauseConfirmation = false
                         coroutineScope.launch {
                             snackbarHostState.showSnackbar("Ruta pausada correctamente")
@@ -650,7 +788,7 @@ fun RouteScreen(
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(bottom = 90.dp, end = 16.dp),
+                    .padding(16.dp),
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -665,7 +803,7 @@ fun RouteScreen(
                         Icon(Icons.Default.PlayArrow, contentDescription = "Iniciar ruta")
                     }
                 }
-                if (!isRouteStarted){
+                if (!isRouteStarted) {
                     FloatingMenu(
                         onOptionSelected = { option ->
                             when (option) {
@@ -696,10 +834,43 @@ fun RouteScreen(
                         }
                     )
                 }
-
-
             }
         }
+    }
+}
+
+// Componente para mostrar un chip de selección de tipo de ruta
+@Composable
+fun RouteTypeChip(
+    type: RouteType,
+    isSelected: Boolean,
+    onSelect: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .clickable { onSelect() },
+        shape = MaterialTheme.shapes.small,
+        color = if (isSelected)
+            MaterialTheme.colorScheme.primaryContainer
+        else
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
+        border = BorderStroke(
+            width = 1.dp,
+            color = if (isSelected)
+                MaterialTheme.colorScheme.primary
+            else
+                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+        )
+    ) {
+        Text(
+            text = type.type,
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (isSelected)
+                MaterialTheme.colorScheme.onPrimaryContainer
+            else
+                MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+        )
     }
 }
 
