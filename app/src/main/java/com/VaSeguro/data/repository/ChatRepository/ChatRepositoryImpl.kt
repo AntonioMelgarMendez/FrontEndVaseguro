@@ -35,10 +35,7 @@ class ChatRepositoryImpl(
     socket = IO.socket(webSocketUrl, opts)
 
     socket?.on(Socket.EVENT_CONNECT) {
-      val joinPayload = JSONObject()
-      joinPayload.put("type", "join")
-      joinPayload.put("userId", userId)
-      socket?.emit("join", joinPayload)
+      socket?.emit("join", userId)
     }
 
     socket?.on("newMessage") { args ->
