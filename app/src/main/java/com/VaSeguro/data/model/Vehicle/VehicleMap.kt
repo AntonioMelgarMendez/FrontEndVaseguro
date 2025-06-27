@@ -17,7 +17,7 @@ data class VehicleMap (
 fun Vehicle.toVehicleMap(): VehicleMap = VehicleMap(
   id = this.id.toInt(),
   plate = this.plate,
-  driver_id = this.driver_id,
+  driver_id = this.driver_id.toInt(),
   model = this.model,
   brand = this.brand,
   year = this.year,

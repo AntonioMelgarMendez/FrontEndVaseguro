@@ -39,7 +39,11 @@ interface RouteService {
     @PUT("routes/{id}")
     suspend fun updateRoute(
         @Path("id") id: String,
-        @Part("data") data: RoutesData,
+        @Part("name") name: RequestBody,
+        @Part("start_date") startDate: RequestBody,
+        @Part("vehicle_id") vehicleId: RequestBody,
+        @Part("status_id") statusId: RequestBody,
+        @Part("type_id") typeId: RequestBody,
         @Header("Authorization") authHeader: String
     ): RoutesData
 

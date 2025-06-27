@@ -23,6 +23,6 @@ interface RouteRepository {
     suspend fun updateRoute(
         id: Int,
         data: RoutesData
-    ): Route
+    ): RoutesData
     suspend fun deleteRoute(id: Int)
 }

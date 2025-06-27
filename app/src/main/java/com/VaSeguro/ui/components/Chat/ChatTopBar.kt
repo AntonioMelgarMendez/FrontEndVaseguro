@@ -1,3 +1,4 @@
+
 package com.VaSeguro.ui.components.Chat
 
 import androidx.compose.foundation.background
@@ -21,7 +22,6 @@ import coil3.compose.AsyncImage
 import coil3.compose.AsyncImagePainter
 import coil3.request.ImageRequest
 import coil3.request.crossfade
-import com.VaSeguro.R
 import com.VaSeguro.data.model.User.UserData
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -31,7 +31,6 @@ fun ChatTopBar(
   onBackClick: () -> Unit,
   onCallClick: () -> Unit = {}
 ) {
-  var isLoading by remember { mutableStateOf(true) }
   TopAppBar(
     title = {
       Box(
@@ -39,34 +38,50 @@ fun ChatTopBar(
         contentAlignment = Alignment.Center
       ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-          Box(
-            modifier = Modifier
-              .size(36.dp)
-              .clip(CircleShape),
-            contentAlignment = Alignment.Center
-          ) {
-            val imageData = user.profilePic ?: R.drawable.school_title
-            AsyncImage(
-              model = ImageRequest.Builder(LocalContext.current)
-                .data(imageData)
-                .crossfade(true)
-                .build(),
-              contentDescription = user.forename,
-              contentScale = ContentScale.Crop,
+          val initials = (user.forename.take(1) + (user.surname.takeIf { it.isNotEmpty() }?.take(1) ?: "")).uppercase()
+          if (!user.profilePic.isNullOrBlank()) {
+            var isImageLoading by remember { mutableStateOf(true) }
+            Box(
               modifier = Modifier
                 .size(36.dp)
                 .clip(CircleShape),
-              onState = {
-                isLoading = when (it) {
-                  is AsyncImagePainter.State.Loading -> true
-                  is AsyncImagePainter.State.Success,
-                  is AsyncImagePainter.State.Error -> false
-                  else -> false
+              contentAlignment = Alignment.Center
+            ) {
+              AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                  .data(user.profilePic)
+                  .crossfade(true)
+                  .build(),
+                contentDescription = user.forename,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                  .size(36.dp)
+                  .clip(CircleShape),
+                onState = {
+                  isImageLoading = it is AsyncImagePainter.State.Loading
                 }
+              )
+              if (isImageLoading) {
+                CircularProgressIndicator(
+                  modifier = Modifier.size(20.dp),
+                  strokeWidth = 2.dp
+                )
               }
-            )
-            if (isLoading) {
-              CircularProgressIndicator()
+            }
+          } else {
+            Box(
+              modifier = Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primary),
+              contentAlignment = Alignment.Center
+            ) {
+              Text(
+                text = initials,
+                color = Color.White,
+                fontSize = 18.sp,
+                fontWeight = Bold
+              )
             }
           }
           Spacer(modifier = Modifier.width(8.dp))

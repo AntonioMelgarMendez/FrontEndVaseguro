@@ -4,7 +4,7 @@
     <selectionStates>
       <SelectionState runConfigName="VaSeguro.app">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2025-06-27T19:05:06.319878413Z">
+        <DropdownSelection timestamp="2025-06-27T20:38:23.401910307Z">
           <Target type="DEFAULT_BOOT">
             <handle>
               <DeviceId pluginId="PhysicalDevice" identifier="serial=FLCH100019112656" />

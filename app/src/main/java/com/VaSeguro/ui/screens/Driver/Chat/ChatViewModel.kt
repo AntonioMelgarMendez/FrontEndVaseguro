@@ -48,16 +48,24 @@ class ChatViewModel(
   private val _isLoading = MutableStateFlow(false)
   val isLoading: StateFlow<Boolean> = _isLoading
   private fun formatTimestamp(raw: String): String {
-    return try {
-      val parser = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault())
-      val date = parser.parse(raw)
-      val formatter = SimpleDateFormat("hh:mm a", Locale.getDefault()) // e.g., 08:08 PM
-      date?.let { formatter.format(it) } ?: raw
-    } catch (e: Exception) {
-      raw
+    val formats = listOf(
+      "yyyy-MM-dd'T'HH:mm:ss.SSS",
+      "yyyy-MM-dd'T'HH:mm:ss",
+      "yyyy-MM-dd HH:mm:ss.SSS",
+      "yyyy-MM-dd HH:mm:ss"
+    )
+    for (pattern in formats) {
+      try {
+        val parser = java.text.SimpleDateFormat(pattern, java.util.Locale.US)
+        val date = parser.parse(raw)
+        if (date != null) {
+          val formatter = java.text.SimpleDateFormat("hh:mm a", java.util.Locale.getDefault())
+          return formatter.format(date)
+        }
+      } catch (_: Exception) { }
     }
+    return raw
   }
-
   val quickReplies: List<QuickReply> = listOf(
     QuickReply(
       text = "I'm here!",
@@ -105,13 +113,12 @@ class ChatViewModel(
       val token = userPreferencesRepository.getAuthToken() ?: return@launch
       try {
         val chat = chatRepository.getChatBetweenUsers(user1Id, user2Id, token)
-        // Map ChatMessage to your Message model if needed
         _messages.value = chat.map {
           Message(
             id = it.id.toLong(),
             content = it.message,
             isUser = it.sender_id == user1Id,
-            timestamp = formatTimestamp(it.created_at)// Format as needed
+            timestamp = formatTimestamp(it.created_at)
           )
         }
       } catch (e: Exception) {

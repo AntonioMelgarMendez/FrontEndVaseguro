@@ -39,7 +39,7 @@ fun ChatMessagesList(
           horizontalAlignment = if (msg.isUser) Alignment.End else Alignment.Start,
           modifier = Modifier
             .background(
-              color = if (msg.isUser) Color(0xFF645AFF) else Color(0xFFF0F0F0),
+              color = if (msg.isUser) Color(0xFF645AFF) else Color(0xFFDDDEE3),
               shape = RoundedCornerShape(
                 topStart = 16.dp,
                 topEnd = 16.dp,
@@ -52,7 +52,7 @@ fun ChatMessagesList(
         ) {
           Text(
             text = msg.content,
-            color = if (msg.isUser) Color.White else Color.Black,
+            color = if (msg.isUser) Color.White else Color(0xFF232323),
           )
           Spacer(modifier = Modifier.height(4.dp))
           Text(

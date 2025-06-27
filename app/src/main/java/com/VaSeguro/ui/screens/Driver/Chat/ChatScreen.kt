@@ -3,9 +3,14 @@ package com.VaSeguro.ui.screens.Driver.Chat
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.navigation.NavController
 import com.VaSeguro.data.model.User.UserData
 import com.VaSeguro.data.model.User.UserRole
@@ -29,7 +34,6 @@ fun ChatScreen(
   val quickReplies = viewModel.quickReplies
   val isLoading by viewModel.isLoading.collectAsState()
 
-  // Load user and chat, connect socket
   LaunchedEffect(id) {
     viewModel.loadUser(id)
     val currentUser = viewModel.userPreferencesRepository.getUserData()
@@ -42,26 +46,22 @@ fun ChatScreen(
   if (isLoading) {
     Scaffold(
       topBar = {
-        ChatTopBar(
-          user = UserData(
-            id = "",
-            forename = "Loading...",
-            surname = "",
-            email = "",
-            phoneNumber = "",
-            profilePic = "",
-            role_id = UserRole(id = 0, role_name = "Unknown"),
-            gender = ""
-          ),
-          onBackClick = { navController.navigate(ChildrenScreenNavigation) }
+        TopAppBar(
+          title = {},
+          navigationIcon = {
+            IconButton(onClick = { navController.navigate(ChildrenScreenNavigation) }) {
+              Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+            }
+          },
+          colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
         )
       }
     ) { innerPadding ->
       Box(
         modifier = Modifier
           .padding(innerPadding)
-          .fillMaxSize()
-          .wrapContentSize()
+          .fillMaxSize(),
+        contentAlignment = Alignment.Center
       ) {
         CircularProgressIndicator()
       }
@@ -72,18 +72,14 @@ fun ChatScreen(
   if (user == null) {
     Scaffold(
       topBar = {
-        ChatTopBar(
-          user = UserData(
-            id = "",
-            forename = "Desconocido",
-            surname = "",
-            email = "",
-            phoneNumber = "",
-            profilePic = "",
-            role_id = UserRole(id = 0, role_name = "Unknown"),
-            gender = ""
-          ),
-          onBackClick = { navController.navigate(ChildrenScreenNavigation) }
+        TopAppBar(
+          title = {},
+          navigationIcon = {
+            IconButton(onClick = { navController.navigate(ChildrenScreenNavigation) }) {
+              Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+            }
+          },
+          colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
         )
       }
     ) { innerPadding ->
