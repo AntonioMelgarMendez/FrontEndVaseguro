@@ -1,50 +1,53 @@
 package com.VaSeguro.ui.screens.Parents.Children
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.FloatingActionButtonDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.ChildCare
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
-import com.VaSeguro.data.model.Child.Child
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import com.VaSeguro.data.AppProvider
+import com.VaSeguro.data.model.Children.Children
 import com.VaSeguro.ui.components.AddDialogues.AddChildDialog
 import com.VaSeguro.ui.components.Cards.ChildrenCard
+import com.VaSeguro.ui.navigations.ChatScreenNavigation
 
 @Composable
 fun ChildrenScreen(
-    viewModel: ChildrenViewModel = viewModel(factory = ChildrenViewModel.Factory)
+    navController: NavController
 ) {
-    val expandedMap = viewModel.expandedMap.collectAsState().value
-    val children = viewModel.children.collectAsState().value
-    val drivers = viewModel.drivers.collectAsState().value
-    val parents = viewModel.parents.collectAsState().value
-    var editingChild by remember { mutableStateOf<Child?>(null) }
+    val context = LocalContext.current
+    val viewModel: ChildrenViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                val appProvider = AppProvider(context.applicationContext)
+                return ChildrenViewModel(
+                    appProvider.provideChildrenRepository(),
+                    appProvider.provideUserPreferences()
+                ) as T
+            }
+        }
+    )
+    val expandedMap by viewModel.expandedMap.collectAsState()
+    val children by viewModel.children.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
+    var editingChild by remember { mutableStateOf<Children?>(null) }
     var showDialog by remember { mutableStateOf(false) }
 
     Box(
@@ -66,30 +69,70 @@ fun ChildrenScreen(
                 textAlign = TextAlign.Center
             )
 
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                ) {
-                    if (children.isNotEmpty()) {
+            when {
+                isLoading -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(top = 32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+                children.isNotEmpty() -> {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                    ) {
                         items(children) { child ->
                             ChildrenCard(
                                 child = child,
                                 isExpanded = expandedMap[child.id.toString()] ?: false,
+                                isDriver = !viewModel.canEdit.collectAsState().value,
                                 onToggleExpand = { viewModel.toggleExpand(child.id.toString()) },
                                 onEditClick = {
                                     editingChild = child
                                     showDialog = true
                                 },
-                                onDeleteClick = { viewModel.deleteChild(child.id.toString()) },
+                                onDeleteClick = { viewModel.deleteChild(context, child.id.toString()) },
+                                onChat = { navController.navigate(ChatScreenNavigation) }
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                         }
-                    } else {
-                        item{
-                            Text("No hay niños, agrega uno tocando el botón de abajo",)
-                        }
                     }
+                }
+                else -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 48.dp, bottom = 16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ChildCare,
+                            contentDescription = "No hay hijos",
+                            tint = Color(0xFFBDBDBD),
+                            modifier = Modifier.size(80.dp)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            "No se han encontrado hijos",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.Gray,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            "Agrega un hijo presionando el botón de abajo",
+                            fontSize = 16.sp,
+                            color = Color.Gray,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
             }
         }
 
@@ -99,43 +142,71 @@ fun ChildrenScreen(
                     showDialog = false
                     editingChild = null
                 },
-                onConfirm = { child ->
+                onConfirm = { child, profileImageUri ->
                     if (editingChild == null) {
-                        viewModel.addChild(child)
+                        viewModel.addChild(
+                            context = context,
+                            forenames = child.forenames,
+                            surnames = child.surnames,
+                            birthDate = child.birth_date,
+                            medicalInfo = child.medical_info,
+                            gender = child.gender,
+                            profileImageUri = profileImageUri,
+                            onSuccess = {
+                                showDialog = false
+                                editingChild = null
+                            },
+                            onError = {
+                                // Show error message if needed
+                            }
+                        )
                     } else {
-                        viewModel.updateChild(child)
+                        viewModel.updateChild(
+                            context = context,
+                            updatedChild = child,
+                            profileImageUri = profileImageUri,
+                            onSuccess = {
+                                showDialog = false
+                                editingChild = null
+                            },
+                            onError = {
+                                // Show error message if needed
+                            }
+                        )
                     }
-                    showDialog = false
-                    editingChild = null
                 },
-                drivers = drivers,
-                parents = parents,
                 existingChild = editingChild
             )
         }
 
-        FloatingActionButton(
-            onClick = { showDialog = true },
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(16.dp),
-            containerColor = Color(0xFF6C63FF),
-            contentColor = Color.White,
-            elevation = FloatingActionButtonDefaults.elevation(
-                defaultElevation = 6.dp,
-                pressedElevation = 12.dp
-            )
-        ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = "Add child"
+        error?.let {
+            Text(
+                text = it,
+                color = Color.Red,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 16.dp)
             )
         }
-    }
-}
 
-@Preview(showBackground = true)
-@Composable
-fun ChildrenScreenPreview(){
-    ChildrenScreen()
+        if (viewModel.canEdit.collectAsState().value) {
+            FloatingActionButton(
+                onClick = { showDialog = true },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp),
+                containerColor = Color(0xFF6C63FF),
+                contentColor = Color.White,
+                elevation = FloatingActionButtonDefaults.elevation(
+                    defaultElevation = 6.dp,
+                    pressedElevation = 12.dp
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Add child"
+                )
+            }
+        }
+    }
 }

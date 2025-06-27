@@ -1,72 +1,85 @@
 package com.VaSeguro.ui.components.AddDialogues
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Environment
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.*
-import com.VaSeguro.data.model.Child.Child
-import com.VaSeguro.data.model.User.UserData
-import com.VaSeguro.data.model.User.UserRole
-
-fun getCurrentDateTime(): String {
-  val formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
-  return java.time.LocalDateTime.now().format(formatter)
-}
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
+import coil3.compose.rememberAsyncImagePainter
+import com.VaSeguro.data.model.Children.Children
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddChildDialog(
   onDismiss: () -> Unit,
-  onConfirm: (Child) -> Unit,
-  drivers: List<UserData>,
-  parents: List<UserData>,
-  existingChild: Child? = null
+  onConfirm: (Children, profileImageUri: Uri?) -> Unit,
+  existingChild: Children? = null
 ) {
   val customColor = Color(0xFF6C63FF)
 
   var forenames by remember { mutableStateOf(existingChild?.forenames ?: "") }
   var surnames by remember { mutableStateOf(existingChild?.surnames ?: "") }
-  var birth by remember { mutableStateOf(existingChild?.birth ?: "") }
-  var age by remember { mutableStateOf(existingChild?.age?.toString() ?: "") }
-  var medicalInfo by remember { mutableStateOf(existingChild?.medicalInfo ?: "") }
+  var birthDate by remember { mutableStateOf(existingChild?.birth_date ?: "") }
+  var medicalInfo by remember { mutableStateOf(existingChild?.medical_info ?: "") }
+  var gender by remember { mutableStateOf(existingChild?.gender ?: "") }
 
-  var selectedDriver by remember { mutableStateOf(
-    drivers.find { it.id == existingChild?.driver }
-  ) }
-  var selectedParent by remember { mutableStateOf(
-    parents.find { it.id == existingChild?.parent }
-  ) }
+  // Image picker state
+  var profileImageUri by remember {
+    mutableStateOf(
+      existingChild?.profile_pic?.let { Uri.parse(it) }
+    )
+  }
+  var showDialog by remember { mutableStateOf(false) }
+  var cameraImageUri by remember { mutableStateOf<Uri?>(null) }
+  var pendingCameraLaunch by remember { mutableStateOf<Uri?>(null) }
+  val context = LocalContext.current
+  val coroutineScope = rememberCoroutineScope()
 
-  var expandedDriver by remember { mutableStateOf(false) }
-  var expandedParent by remember { mutableStateOf(false) }
+  val galleryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+    uri?.let { profileImageUri = it }
+  }
+  val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+    if (success && cameraImageUri != null) {
+      profileImageUri = cameraImageUri
+    }
+  }
+  val permissionLauncher = rememberLauncherForActivityResult(
+    ActivityResultContracts.RequestPermission()
+  ) { isGranted ->
+    pendingCameraLaunch?.let { uri ->
+      if (isGranted) {
+        cameraImageUri = uri
+        cameraLauncher.launch(uri)
+      }
+      pendingCameraLaunch = null
+    }
+  }
 
   Dialog(onDismissRequest = onDismiss) {
     Box(
@@ -75,11 +88,93 @@ fun AddChildDialog(
         .background(Color.White, RoundedCornerShape(16.dp))
         .padding(24.dp)
     ) {
-      Column {
+      Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        // Title
         Text(
           text = if (existingChild == null) "Agregar Niño" else "Editar Niño",
-          style = MaterialTheme.typography.titleLarge
+          fontSize = 24.sp,
+          fontWeight = FontWeight.Bold,
+          color = Color.Black,
+          modifier = Modifier.fillMaxWidth(),
+          textAlign = TextAlign.Center
         )
+        Spacer(Modifier.height(16.dp))
+
+        // Avatar
+        Box(
+          modifier = Modifier
+            .size(120.dp)
+            .clip(CircleShape)
+            .background(
+              if (profileImageUri == null) Color(0xFF6C63FF) else Color.Transparent
+            )
+            .then(
+              if (profileImageUri != null)
+                Modifier.border(4.dp, Color(0xFF6C63FF), CircleShape)
+              else Modifier
+            )
+            .clickable { showDialog = true },
+          contentAlignment = Alignment.Center
+        ) {
+          if (profileImageUri != null) {
+            Image(
+              painter = rememberAsyncImagePainter(profileImageUri),
+              contentDescription = "Profile",
+              modifier = Modifier.fillMaxSize(),
+              contentScale = ContentScale.Crop
+            )
+          } else {
+            Icon(
+              imageVector = Icons.Outlined.Person,
+              contentDescription = "Default profile",
+              tint = Color.White,
+              modifier = Modifier.size(48.dp)
+            )
+          }
+        }
+
+        if (showDialog) {
+          AlertDialog(
+            onDismissRequest = { showDialog = false },
+            title = { Text("Seleccionar imagen") },
+            text = { Text("¿Cómo quieres agregar la foto?") },
+            confirmButton = {
+              TextButton(onClick = {
+                val photoFile = File.createTempFile(
+                  "child_profile_", ".jpg",
+                  context.getExternalFilesDir(Environment.DIRECTORY_PICTURES)
+                )
+                val uri = FileProvider.getUriForFile(
+                  context,
+                  "${context.packageName}.provider",
+                  photoFile
+                )
+                val permissionCheck = ContextCompat.checkSelfPermission(
+                  context,
+                  Manifest.permission.CAMERA
+                )
+                if (permissionCheck == PackageManager.PERMISSION_GRANTED) {
+                  cameraImageUri = uri
+                  cameraLauncher.launch(uri)
+                } else {
+                  pendingCameraLaunch = uri
+                  permissionLauncher.launch(Manifest.permission.CAMERA)
+                }
+                showDialog = false
+              }) { Text("Tomar foto", color = Color.Gray) }
+            },
+            dismissButton = {
+              TextButton(onClick = {
+                galleryLauncher.launch("image/*")
+                showDialog = false
+              }) { Text("Elegir de galería", color = Color.Gray) }
+            },
+            containerColor = Color.White,
+            titleContentColor = Color.Black,
+            textContentColor = Color.Black
+          )
+        }
+
         Spacer(Modifier.height(8.dp))
 
         OutlinedTextField(
@@ -99,17 +194,9 @@ fun AddChildDialog(
         )
 
         OutlinedTextField(
-          value = birth,
-          onValueChange = { birth = it },
+          value = birthDate,
+          onValueChange = { birthDate = it },
           label = { Text("Fecha de nacimiento (yyyy-MM-dd)") },
-          modifier = Modifier.fillMaxWidth(),
-          colors = textFieldColors(customColor)
-        )
-
-        OutlinedTextField(
-          value = age,
-          onValueChange = { age = it },
-          label = { Text("Edad") },
           modifier = Modifier.fillMaxWidth(),
           colors = textFieldColors(customColor)
         )
@@ -122,75 +209,13 @@ fun AddChildDialog(
           colors = textFieldColors(customColor)
         )
 
-        ExposedDropdownMenuBox(
-          expanded = expandedDriver,
-          onExpandedChange = { expandedDriver = !expandedDriver }
-        ) {
-          OutlinedTextField(
-            value = selectedDriver?.let { "${it.forename} ${it.surname}" } ?: "",
-            onValueChange = {},
-            label = { Text("Conductor") },
-            readOnly = true,
-            trailingIcon = {
-              Icon(Icons.Default.ArrowDropDown, contentDescription = null)
-            },
-            colors = textFieldColors(customColor),
-            modifier = Modifier
-              .menuAnchor()
-              .fillMaxWidth()
-              .clickable { expandedDriver = true }
-          )
-
-          ExposedDropdownMenu(
-            expanded = expandedDriver,
-            onDismissRequest = { expandedDriver = false }
-          ) {
-            drivers.forEach { driver ->
-              DropdownMenuItem(
-                text = { Text("${driver.forename} ${driver.surname}") },
-                onClick = {
-                  selectedDriver = driver
-                  expandedDriver = false
-                }
-              )
-            }
-          }
-        }
-
-        ExposedDropdownMenuBox(
-          expanded = expandedParent,
-          onExpandedChange = { expandedParent = !expandedParent }
-        ) {
-          OutlinedTextField(
-            value = selectedParent?.let { "${it.forename} ${it.surname}" } ?: "",
-            onValueChange = {},
-            label = { Text("Encargado") },
-            readOnly = true,
-            trailingIcon = {
-              Icon(Icons.Default.ArrowDropDown, contentDescription = null)
-            },
-            colors = textFieldColors(customColor),
-            modifier = Modifier
-              .menuAnchor()
-              .fillMaxWidth()
-              .clickable { expandedParent = true }
-          )
-
-          ExposedDropdownMenu(
-            expanded = expandedParent,
-            onDismissRequest = { expandedParent = false }
-          ) {
-            parents.forEach { parent ->
-              DropdownMenuItem(
-                text = { Text("${parent.forename} ${parent.surname}") },
-                onClick = {
-                  selectedParent = parent
-                  expandedParent = false
-                }
-              )
-            }
-          }
-        }
+        OutlinedTextField(
+          value = gender,
+          onValueChange = { gender = it },
+          label = { Text("Género") },
+          modifier = Modifier.fillMaxWidth(),
+          colors = textFieldColors(customColor)
+        )
 
         Spacer(Modifier.height(16.dp))
 
@@ -211,23 +236,20 @@ fun AddChildDialog(
           Button(
             onClick = {
               if (
-                forenames.isNotBlank() && surnames.isNotBlank() && birth.isNotBlank() &&
-                age.isNotBlank() && selectedDriver != null && selectedParent != null
+                forenames.isNotBlank() && surnames.isNotBlank() && birthDate.isNotBlank()
               ) {
-                val newChild = Child(
+                val newChild = Children(
                   id = existingChild?.id ?: (10000..99999).random(),
-                  fullName = "$forenames $surnames",
-                  surnames = surnames,
                   forenames = forenames,
-                  birth = birth,
-                  age = age.toIntOrNull() ?: 0,
-                  driver = selectedDriver?.id ?: "",
-                  parent = selectedParent?.id ?: "",
-                  medicalInfo = medicalInfo,
-                  createdAt = existingChild?.createdAt ?: getCurrentDateTime(),
-                  profilePic = existingChild?.profilePic
+                  surnames = surnames,
+                  birth_date = birthDate,
+                  medical_info = medicalInfo,
+                  parent_id = existingChild?.parent_id ?: 0,
+                  driver_id = existingChild?.driver_id ?: 0,
+                  profile_pic = existingChild?.profile_pic,
+                  gender = gender
                 )
-                onConfirm(newChild)
+                onConfirm(newChild, profileImageUri)
               }
             },
             modifier = Modifier.weight(1f),

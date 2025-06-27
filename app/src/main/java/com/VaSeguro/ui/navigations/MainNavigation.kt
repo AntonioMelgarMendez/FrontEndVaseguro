@@ -16,6 +16,7 @@ import com.VaSeguro.ui.screens.Admin.Routes.RoutesAdminScreen
 import com.VaSeguro.ui.screens.Admin.Stops.StopsAdminScreen
 import com.VaSeguro.ui.screens.Admin.Users.UsersAdminScreen
 import com.VaSeguro.ui.screens.Admin.Vehicle.VehicleScreen
+import com.VaSeguro.ui.screens.Driver.Chat.ChatScreen
 import com.VaSeguro.ui.screens.Driver.Route.RouteScreen
 import com.VaSeguro.ui.screens.Driver.Route.RouteScreenViewModel
 import com.VaSeguro.ui.screens.Driver.SavedRoutes.SavedRoutesScreen
@@ -60,7 +61,7 @@ fun MainNavigation(navController: NavHostController, isAdmin: Boolean) {
         composable<MapScreenNavigation> { RouteScreen() }
         composable<HistoryScreenNavigation> { HistoryScreen() }
         composable<BusScreenNavigation> { BusScreen() }
-        composable<ChildrenScreenNavigation> { ChildrenScreen() }
+        composable<ChildrenScreenNavigation> { ChildrenScreen(navController) }
         composable<ConfigurationScreenNavigation> { ConfigurationScreen() }
         //ADMIN SCREENS
         composable <HomeAdminScreenNavigation>{ HomeAdminScreen() }
@@ -83,7 +84,7 @@ fun MainNavigation(navController: NavHostController, isAdmin: Boolean) {
             )
         }
         composable<BusDriverScreenNavigation>{ BusScreen() }
-        composable<ChildrenDriverScreenNavigation>{ ChildrenScreen() }
+        composable<ChildrenDriverScreenNavigation>{ ChildrenScreen(navController) }
         composable<HistoryScreenNavigation>{ HistoryScreen() }
 
         composable<SavedRoutesScreenNavigation> {
@@ -94,5 +95,6 @@ fun MainNavigation(navController: NavHostController, isAdmin: Boolean) {
                 onRunRoute = onRunRoute,
             )
         }
+        composable<ChatScreenNavigation>{ ChatScreen(navController) }
     }
 }
