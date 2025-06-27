@@ -40,11 +40,13 @@ class AppProvider(context: Context) {
     private val mapsApiRepository = MapsApiRepositoryImpl(mapsApiService)
     private val routesApiRepository = RoutesApiRepositoryImpl(routesApiService)
     private val vehicleRespository = VehicleRepositoryImpl(RetrofitInstance.vehicleService)
-    private val childrenRespository = ChildrenRepositoryImpl(RetrofitInstance.childrenService, userPreferencesRepository)
+    private val childrenRespository = ChildrenRepositoryImpl(RetrofitInstance.childrenService)
     private val routeRepository = RouteRepositoryImpl(routeService,userPreferencesRepository)
     private val chatRepository = ChatRepositoryImpl(RetrofitInstance.chatService)
     private val stopPassengerRepository = StopPassengerRepositoryImpl()
     private val savedRoutesRepository = SavedRoutesRepositoryImpl()
+    private val LocationRepository = LocationRepositoryImpl(SupabaseModule.supabaseClient)
+    private val StopRouteRepository = StopRouteRepositoryImpl()
 
     fun provideUserPreferences() = userPreferencesRepository
     fun provideAuthRepository() = authRepository
@@ -57,5 +59,8 @@ class AppProvider(context: Context) {
     fun provideChildrenRepository() = childrenRespository
     fun provideRoutes() = routeRepository
     fun provideChatRepository() = chatRepository
+    fun provideLocationRepository() = LocationRepository
+    fun provideStopRouteRepository()=StopRouteRepository
+}
 
 }

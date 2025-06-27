@@ -46,11 +46,14 @@ fun LoginScreen(navController: NavController) {
                 val appProvider = AppProvider(context.applicationContext)
                 return LoginViewModel(
                     appProvider.provideAuthRepository(),
-                    appProvider.provideUserPreferences()
+                    appProvider.provideUserPreferences(),
+                    appProvider.provideChildrenRepository(),
+                    context
                 ) as T
             }
         }
     )
+
     LaunchedEffect(Unit) {
         viewModel.clearFields()
     }

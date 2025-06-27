@@ -25,6 +25,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
+import androidx.navigation.compose.currentBackStackEntryAsState
+import com.VaSeguro.ui.screens.Driver.Chat.ChatScreen
 
 import kotlinx.coroutines.launch
 import kotlin.comparisons.then
@@ -86,7 +88,9 @@ fun GeneralScaffold(navControllerx: NavController) {
             "Buses" -> navController.navigate(VehiclesAdminScreenNavigation)
         }
     }
-
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+    if (currentRoute != ChatScreenNavigation::class.qualifiedName) {
     Scaffold(
         containerColor = Color.White,
         topBar = {
@@ -116,4 +120,26 @@ fun GeneralScaffold(navControllerx: NavController) {
             }
         }
     )
+    }
+    else{
+        Scaffold(
+            containerColor = Color.White,
+            topBar = {
+            },
+            bottomBar = {
+            },
+            snackbarHost = {
+                SnackbarHost(hostState = snackbarHostState)
+            },
+            content = { innerPadding ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                ) {
+                    MainNavigation(navController = navController, isAdmin = isAdmin)
+                }
+            }
+        )
+    }
 }

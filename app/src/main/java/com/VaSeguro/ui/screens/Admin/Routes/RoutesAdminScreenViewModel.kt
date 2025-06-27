@@ -11,7 +11,6 @@ import com.VaSeguro.MyApplication
 import com.VaSeguro.data.model.Route.RouteStatus
 import com.VaSeguro.data.model.Route.RouteType
 import com.VaSeguro.data.model.Routes.RoutesData
-import com.VaSeguro.data.model.Vehicle.Vehicle
 import com.VaSeguro.data.model.Vehicle.VehicleMap
 import com.VaSeguro.data.model.Vehicle.toVehicleMap
 import com.VaSeguro.data.remote.Vehicle.toDomain

@@ -16,6 +16,7 @@ import com.VaSeguro.ui.screens.Admin.Routes.RoutesAdminScreen
 import com.VaSeguro.ui.screens.Admin.Stops.StopsAdminScreen
 import com.VaSeguro.ui.screens.Admin.Users.UsersAdminScreen
 import com.VaSeguro.ui.screens.Admin.Vehicle.VehicleScreen
+import com.VaSeguro.ui.screens.Driver.Chat.ChatScreen
 import com.VaSeguro.ui.screens.Driver.Route.RouteScreen
 import com.VaSeguro.ui.screens.Driver.Route.RouteScreenViewModel
 import com.VaSeguro.ui.screens.Driver.SavedRoutes.SavedRoutesScreen
@@ -24,6 +25,7 @@ import com.VaSeguro.ui.screens.Parents.Bus.BusScreen
 import com.VaSeguro.ui.screens.Parents.Children.ChildrenScreen
 import com.VaSeguro.ui.screens.Parents.Configuration.ConfigurationScreen
 import com.VaSeguro.ui.screens.Parents.History.HistoryScreen
+import com.VaSeguro.ui.screens.Parents.Map.MapScreen
 
 @Composable
 fun MainNavigation(navController: NavHostController, isAdmin: Boolean) {
@@ -51,11 +53,11 @@ fun MainNavigation(navController: NavHostController, isAdmin: Boolean) {
         navController.navigate(RouteScreenNavigation(routeId))
     }
 
-    NavHost(navController = navController, startDestination = RouteScreenNavigation()) {
-        composable<MapScreenNavigation> { RouteScreen() }
+    NavHost(navController = navController, startDestination = MapScreenNavigation) {
+        composable<MapScreenNavigation> { MapScreen() }
         composable<HistoryScreenNavigation> { HistoryScreen() }
         composable<BusScreenNavigation> { BusScreen() }
-        composable<ChildrenScreenNavigation> { ChildrenScreen() }
+        composable<ChildrenScreenNavigation> { ChildrenScreen(navController) }
         composable<ConfigurationScreenNavigation> { ConfigurationScreen() }
         //ADMIN SCREENS
         composable <HomeAdminScreenNavigation>{ HomeAdminScreen() }
@@ -77,7 +79,7 @@ fun MainNavigation(navController: NavHostController, isAdmin: Boolean) {
             )
         }
         composable<BusDriverScreenNavigation>{ BusScreen() }
-        composable<ChildrenDriverScreenNavigation>{ ChildrenScreen() }
+        composable<ChildrenDriverScreenNavigation>{ ChildrenScreen(navController) }
         composable<HistoryScreenNavigation>{ HistoryScreen() }
 
         composable<SavedRoutesScreenNavigation> {
@@ -88,5 +90,6 @@ fun MainNavigation(navController: NavHostController, isAdmin: Boolean) {
                 onRunRoute = onRunRoute,
             )
         }
+        composable<ChatScreenNavigation>{ ChatScreen(navController) }
     }
 }

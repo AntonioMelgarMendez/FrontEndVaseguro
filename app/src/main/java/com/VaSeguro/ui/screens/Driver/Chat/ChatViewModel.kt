@@ -1,5 +1,10 @@
 package com.VaSeguro.ui.screens.Driver.Chat
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.HourglassEmpty
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.TagFaces
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
@@ -7,6 +12,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.VaSeguro.MyApplication
 import com.VaSeguro.data.model.Message.Message
+import com.VaSeguro.data.model.QuickReply
 import com.VaSeguro.data.model.User.UserData
 import com.VaSeguro.data.model.User.UserRole
 import com.VaSeguro.data.repository.ChatRepository.ChatRepository
@@ -30,10 +36,26 @@ class ChatViewModel(
   val user: StateFlow<UserData?> = _user
 
   val quickReplies: List<QuickReply> = listOf(
-    QuickReply("I'm here!") { onTextChange("I'm here!") },
-    QuickReply("Wait a little!") { onTextChange("Wait a little!") },
-    QuickReply("Can't see you rn lol!") { onTextChange("Can't see you rn lol!") },
-    QuickReply("Holaaaa") { onTextChange("Holaaaa") }
+    QuickReply(
+      text = "I'm here!",
+      icon = Icons.Filled.CheckCircle,
+      onClick = { onTextChange("I'm here!") }
+    ),
+    QuickReply(
+      text = "Wait a little!",
+      icon = Icons.Filled.HourglassEmpty,
+      onClick = { onTextChange("Wait a little!") }
+    ),
+    QuickReply(
+      text = "Can't see you rn lol!",
+      icon = Icons.Filled.VisibilityOff,
+      onClick = { onTextChange("Can't see you rn lol!") }
+    ),
+    QuickReply(
+      text = "Holaaaa",
+      icon = Icons.Filled.TagFaces,
+      onClick = { onTextChange("Holaaaa") }
+    )
   )
 
   init {

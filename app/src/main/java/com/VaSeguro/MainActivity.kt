@@ -28,7 +28,6 @@ import com.google.accompanist.navigation.animation.AnimatedNavHost
 import androidx.core.graphics.toColorInt
 import androidx.core.view.WindowInsetsControllerCompat
 import com.VaSeguro.ui.Aux.ContentScreen
-import com.VaSeguro.ui.navigations.MainNavigation
 import com.VaSeguro.ui.screens.Driver.Children.ChildrenScreen
 import com.VaSeguro.ui.screens.Start.Code.CodeScreen
 import com.VaSeguro.ui.screens.Start.CreateAccountDriver.CreateAccountDriverScreen
@@ -60,7 +59,6 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val navController = rememberNavController()
-//                    MainNavigation(navController = navController, false)
                     AnimatedNavHost(
                         navController = navController,
                         startDestination = "splash",
@@ -84,13 +82,12 @@ class MainActivity : ComponentActivity() {
                         composable("signup") {
                             SignUpScreen(navController)
                         }
-                        composable("driver_registration"){
+                        composable("driver_registration") {
                             CreateAccountDriverScreen(navController)
                         }
                         composable("code") {
                             CodeScreen(navController)
                         }
-
                         composable(
                             route = "content/{message}/{description}/{imageArg}/{buttonText}/{destination}",
                         ) { backStackEntry ->
@@ -109,7 +106,7 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         composable("save_bus") {
-                            RegisterBusScreen(navController,{})
+                            RegisterBusScreen(navController, {})
                         }
                         composable("forgot_password") {
                             EmailCodeScreen(navController)
@@ -127,8 +124,3 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-
-//val navController = rememberNavController()
-//
-//// Usamos el sistema de navegación principal definido en MainNavigation
-//MainNavigation(navController = navController)
