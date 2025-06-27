@@ -5,7 +5,10 @@ package com.VaSeguro.data.model.Route
  * Se implementa como un enum para seguridad de tipos, pero mantiene
  * compatibilidad con código que lo usaba como data class.
  */
-enum class RouteType(val id: String, val type: String) {
+enum class RouteType(
+    val id: String,
+    val type: String
+) {
     INBOUND("1", "Ida"),
     OUTBOUND("2", "Vuelta"),
     SPECIAL("3", "Especial");

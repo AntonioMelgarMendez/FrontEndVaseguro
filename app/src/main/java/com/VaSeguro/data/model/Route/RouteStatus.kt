@@ -5,7 +5,10 @@ package com.VaSeguro.data.model.Route
  * Se implementa como un enum para seguridad de tipos, pero mantiene
  * compatibilidad con código que lo usaba como data class.
  */
-enum class RouteStatus(val id: String, val status: String) {
+enum class RouteStatus(
+    val id: String,
+    val status: String
+) {
     NO_INIT("1", "Sin iniciar"),
     ON_PROGRESS("2", "En progreso"),
     STOPED("3", "Detenida"),
