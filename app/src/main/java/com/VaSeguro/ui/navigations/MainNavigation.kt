@@ -7,6 +7,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.toRoute
 import com.VaSeguro.map.repository.SavedRoutesRepository
 import com.VaSeguro.map.repository.SavedRoutesRepositoryImpl
 import com.VaSeguro.ui.screens.Admin.Account.AccountAdminScreen
@@ -90,6 +91,14 @@ fun MainNavigation(navController: NavHostController, isAdmin: Boolean) {
                 onRunRoute = onRunRoute,
             )
         }
-        composable<ChatScreenNavigation>{ ChatScreen(navController) }
+        composable<ChatScreenNavigation> { backStackEntry ->
+            val args = backStackEntry.toRoute<ChatScreenNavigation>()
+
+            ChatScreen(
+                navController = navController,
+                id= args.id,
+            )
+        }
+
     }
 }

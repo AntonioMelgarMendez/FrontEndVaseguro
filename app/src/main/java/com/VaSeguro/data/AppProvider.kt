@@ -44,7 +44,7 @@ class AppProvider(context: Context) {
     private val routesApiRepository = RoutesApiRepositoryImpl(routesApiService)
     private val vehicleRespository = VehicleRepositoryImpl(RetrofitInstance.vehicleService)
     private val childrenRespository = ChildrenRepositoryImpl(RetrofitInstance.childrenService)
-    private val chatRepository = ChatRepositoryImpl(RetrofitInstance.chatService)
+    private val chatRepository = ChatRepositoryImpl(RetrofitInstance.chatService,"https://sonoradinamita.live/")
     private val stopPassengerRepository = StopPassengerRepositoryImpl()
     private val savedRoutesRepository = SavedRoutesRepositoryImpl()
     private val LocationRepository = LocationRepositoryImpl(SupabaseModule.supabaseClient)

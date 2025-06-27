@@ -20,8 +20,9 @@ data class RouteScreenNavigation(val routeId: Int = -1)
 object SavedRoutesScreenNavigation
 @Serializable
 object RouteMenuScreenNavigation
+
 @Serializable
-object ChatScreenNavigation
+data class  ChatScreenNavigation(val id: String)
 @Serializable
 object BusDriverScreenNavigation
 @Serializable

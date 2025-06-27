@@ -56,6 +56,7 @@ fun ChildrenScreen(
     val error by viewModel.error.collectAsState()
     var editingChild by remember { mutableStateOf<Children?>(null) }
     var showDialog by remember { mutableStateOf(false) }
+    val isDriver = !viewModel.canEdit.collectAsState().value
 
     Box(
         modifier = Modifier.fillMaxSize()
@@ -104,7 +105,17 @@ fun ChildrenScreen(
                                     showDialog = true
                                 },
                                 onDeleteClick = { viewModel.deleteChild(context, child.id.toString()) },
-                                onChat = { navController.navigate(ChatScreenNavigation) }
+                                onChat = {
+
+                                    val chatPartnerId = if (isDriver) {
+                                        child.parent_id.toString()
+                                    } else {
+                                        child.driver_id.toString()
+                                    }
+                                    navController.navigate(
+                                        ChatScreenNavigation(id = chatPartnerId)
+                                    )
+                                }
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                         }

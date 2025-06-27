@@ -82,5 +82,8 @@ object RetrofitInstance {
     val routesApiService: RoutesApiService by lazy {
         routesRetrofit.create(RoutesApiService::class.java)
     }
+    val chatApiService: ChatService by lazy {
+        retrofit.create(ChatService::class.java)
+    }
 
 }

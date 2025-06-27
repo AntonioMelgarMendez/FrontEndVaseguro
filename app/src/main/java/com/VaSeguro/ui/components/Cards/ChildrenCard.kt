@@ -48,7 +48,7 @@ fun ChildrenCard(
   onEditClick: () -> Unit = {},
   onDeleteClick: () -> Unit = {},
   onToggleExpand: () -> Unit = {},
-  onChat: () -> Unit = {}
+  onChat: (chatId: String) -> Unit = {}
 ) {
   var isLoading by remember { mutableStateOf(true) }
   var showDialog by remember { mutableStateOf(false) }
@@ -175,7 +175,13 @@ fun ChildrenCard(
                   )
                 }
               }
-              IconButton(onClick = onChat) {
+              IconButton(
+                onClick = {
+                  val chatPartnerId = if (isDriver) child.parent_id.toString()
+                  else child.driver_id.toString()
+                  onChat(chatPartnerId)
+                }
+              ) {
                 Icon(
                   imageVector = Icons.Default.Chat,
                   contentDescription = "Chat",

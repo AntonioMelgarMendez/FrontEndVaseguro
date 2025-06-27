@@ -121,5 +121,6 @@ dependencies {
     implementation("io.ktor:ktor-client-cio:3.0.1") // Motor CIO que soporta WebSockets
     implementation("io.ktor:ktor-client-websockets:3.0.1") // Soporte para WebSockets
     implementation("io.ktor:ktor-utils:3.0.1")
+    implementation ("io.socket:socket.io-client:2.1.0") // Usa la última versión disponible
 }
 

@@ -90,7 +90,11 @@ fun GeneralScaffold(navControllerx: NavController) {
     }
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
-    if (currentRoute != ChatScreenNavigation::class.qualifiedName) {
+    fun isChatRoute(route: String?): Boolean {
+        return route?.contains("ChatScreenNavigation") == true
+    }
+
+    if (!isChatRoute(currentRoute)) {
     Scaffold(
         containerColor = Color.White,
         topBar = {
