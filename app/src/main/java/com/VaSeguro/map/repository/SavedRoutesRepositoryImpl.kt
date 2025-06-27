@@ -6,8 +6,8 @@ import com.VaSeguro.data.model.Routes.RoutesData
 import com.VaSeguro.data.model.Stop.StopRoute
 import com.VaSeguro.data.model.StopPassenger.StopPassenger
 import com.VaSeguro.data.model.User.UserData
+import com.VaSeguro.data.model.User.UserDataMap
 import com.VaSeguro.data.model.User.UserRole
-import com.VaSeguro.data.model.Vehicle.Vehicle
 import com.VaSeguro.data.model.Vehicle.VehicleMap
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,7 +18,6 @@ import kotlinx.coroutines.runBlocking
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import java.util.UUID
 import kotlin.random.Random
 
 class SavedRoutesRepositoryImpl: SavedRoutesRepository {
@@ -78,8 +77,8 @@ class SavedRoutesRepositoryImpl: SavedRoutesRepository {
             role_name = "Driver"
         )
 
-        val driver = UserData(
-            id = "USR-001",
+        val driver = UserDataMap(
+            id = 1,
             forename = "Carlos",
             surname = "Ramírez",
             email = "carlos.ramirez@example.com",
@@ -107,7 +106,7 @@ class SavedRoutesRepositoryImpl: SavedRoutesRepository {
         return listOf(
             // Ruta 1: Mañana - Recogida de niños para llevarlos a la escuela
             RoutesData(
-                id = Random.nextInt(1, 9999),
+                id = 1,
                 name = "Ruta Escolar Mañana",
                 start_date = dateFormat.format(Date(now.time - 24 * 60 * 60 * 1000)), // ayer
                 vehicle_id = burnedVehicle,
@@ -173,3 +172,4 @@ class SavedRoutesRepositoryImpl: SavedRoutesRepository {
             ?: throw IllegalStateException("No se encontró parada de tipo $type para el niño")
     }
 }
+
