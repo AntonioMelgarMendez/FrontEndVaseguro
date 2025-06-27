@@ -63,15 +63,45 @@ class LocationRepositoryImpl(
         lat: Double,
         lon: Double
     ) {
-        // Crear objeto serializable en lugar de usar mapOf
+        // Crear objeto serializable con valores por defecto seguros
         val locationUpdate = LocationDriverAddress(
             driver_id = driverId,
             latitude = lat,
             longitude = lon,
-            updated_at = System.now().toString()
+            updated_at = System.now().toString(),
+            encoded_polyline = null,
+            route_active = false,
+            route_progress = 0.0f,
+            current_segment = 0,
+            route_status = null
         )
 
-        // Usar insert con objeto serializable
+        client.postgrest.from("location").upsert(locationUpdate)
+    }
+
+    // NUEVO: Método para actualizar ubicación con información de ruta
+    override suspend fun updateLocationWithRoute(
+        driverId: Int,
+        lat: Double,
+        lon: Double,
+        encodedPolyline: String?,
+        routeActive: Boolean,
+        routeProgress: Float,
+        currentSegment: Int,
+        routeStatus: String?
+    ) {
+        val locationUpdate = LocationDriverAddress(
+            driver_id = driverId,
+            latitude = lat,
+            longitude = lon,
+            updated_at = System.now().toString(),
+            encoded_polyline = encodedPolyline,
+            route_active = routeActive,
+            route_progress = routeProgress,
+            current_segment = currentSegment,
+            route_status = routeStatus
+        )
+
         client.postgrest.from("location").upsert(locationUpdate)
     }
 
@@ -85,6 +115,11 @@ class LocationRepositoryImpl(
                     }
                 }.decodeSingle<LocationDriverAddress>()
         }
+    }
+
+    // NUEVO: Método para obtener ubicación completa con información de ruta
+    override suspend fun getDriverLocationWithRoute(driverId: Int): LocationDriverAddress {
+        return getDriverLocation(driverId) // Ambos métodos son iguales ahora
     }
 
     override fun subscribeToDriverLocationUpdates(driverId: Int): Flow<LatLng> = callbackFlow {
@@ -147,6 +182,68 @@ class LocationRepositoryImpl(
         }
     }
 
+    // NUEVO: Método para suscribirse a cambios completos (ubicación + ruta)
+    override fun subscribeToDriverLocationAndRouteUpdates(driverId: Int): Flow<LocationDriverAddress> = callbackFlow {
+        // Cerrar canal anterior si existe
+        unsubscribeFromLocationUpdates()
+
+        try {
+            // Obtener los datos iniciales completos
+            val initialData = getDriverLocationWithRoute(driverId)
+            send(initialData) // Enviar datos iniciales al flow
+
+            // Crear un nuevo canal de suscripción
+            realtimeChannel = client.channel("driver_location_route_updates_$driverId")
+
+            // Configurar la suscripción al canal
+            val changes = realtimeChannel!!.postgresChangeFlow<PostgresAction.Update>(schema = "public") {
+                table = "location"
+                filter("driver_id", FilterOperator.EQ, driverId)
+            }
+
+            // Job para manejar cambios
+            val job = changes.onEach { update ->
+                try {
+                    val record = update.record
+                    if (record != null) {
+                        // CORREGIDO: Manejo seguro de valores nulos
+                        val updatedData = LocationDriverAddress(
+                            driver_id = record["driver_id"]?.toString()?.toIntOrNull() ?: driverId,
+                            latitude = record["latitude"]?.toString()?.toDoubleOrNull() ?: 0.0,
+                            longitude = record["longitude"]?.toString()?.toDoubleOrNull() ?: 0.0,
+                            updated_at = record["updated_at"]?.toString() ?: "",
+                            encoded_polyline = record["encoded_polyline"]?.toString(), // null es válido
+                            route_active = record["route_active"]?.toString()?.toBooleanStrictOrNull() ?: false,
+                            route_progress = record["route_progress"]?.toString()?.toFloatOrNull() ?: 0.0f,
+                            current_segment = record["current_segment"]?.toString()?.toIntOrNull() ?: 0,
+                            route_status = record["route_status"]?.toString() // null es válido
+                        )
+
+                        println("Datos completos recibidos: $updatedData")
+                        send(updatedData)
+                    }
+                } catch (e: Exception) {
+                    println("Error procesando actualización completa: ${e.message}")
+                    e.printStackTrace()
+                    // NUEVO: No cerrar el flow por errores de parsing, solo loggear
+                }
+            }.launchIn(coroutineScope)
+
+            // Activar la suscripción
+            realtimeChannel?.subscribe()
+            println("Suscripción completa activada para driver_id: $driverId")
+
+            awaitClose {
+                println("Cerrando suscripción completa")
+                job.cancel()
+                unsubscribeFromLocationUpdates()
+            }
+        } catch (e: Exception) {
+            println("Error al suscribirse a actualizaciones completas: ${e.message}")
+            close(e)
+        }
+    }
+
     override fun unsubscribeFromLocationUpdates() {
         realtimeChannel?.let {
             CoroutineScope(Dispatchers.IO).launch {
@@ -167,5 +264,10 @@ data class LocationDriverAddress(
     val driver_id: Int,
     val latitude: Double,
     val longitude: Double,
-    val updated_at: String
+    val updated_at: String,
+    val encoded_polyline: String? = null, // NUEVO: Polyline de la ruta activa
+    val route_active: Boolean = false, // NUEVO: Indica si hay una ruta activa
+    val route_progress: Float = 0.0f, // NUEVO: Progreso de la ruta (0.0 - 1.0)
+    val current_segment: Int = 0, // NUEVO: Segmento actual de la ruta
+    val route_status: String? = null // NUEVO: Estado de la ruta
 )

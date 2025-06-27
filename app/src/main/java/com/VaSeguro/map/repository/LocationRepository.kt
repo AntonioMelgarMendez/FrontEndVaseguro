@@ -12,13 +12,32 @@ interface LocationRepository {
         driverId: Int, lat: Double, lon: Double
     )
 
+    // NUEVO: Método para actualizar ubicación con información de ruta
+    suspend fun updateLocationWithRoute(
+        driverId: Int,
+        lat: Double,
+        lon: Double,
+        encodedPolyline: String?,
+        routeActive: Boolean,
+        routeProgress: Float,
+        currentSegment: Int,
+        routeStatus: String?
+    )
+
     // Método para obtener la última ubicación conocida de un conductor
     suspend fun getDriverLocation(driverId: Int): LocationDriverAddress
+
+    // NUEVO: Método para obtener ubicación completa con información de ruta
+    suspend fun getDriverLocationWithRoute(driverId: Int): LocationDriverAddress
 
     // Método para suscribirse a los cambios de ubicación de un conductor
     fun subscribeToDriverLocationUpdates(driverId: Int): Flow<LatLng>
 
+    // NUEVO: Método para suscribirse a cambios completos (ubicación + ruta)
+    fun subscribeToDriverLocationAndRouteUpdates(driverId: Int): Flow<LocationDriverAddress>
+
     // Método para cancelar la suscripción
     fun unsubscribeFromLocationUpdates()
 }
+
 

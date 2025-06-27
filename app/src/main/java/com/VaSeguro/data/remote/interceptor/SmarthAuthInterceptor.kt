@@ -28,7 +28,7 @@ class SmartAuthInterceptor(private val apiKeyProvider: () -> String) : Intercept
                 chain.proceed(
                     requestBuilder
                         .addHeader("X-Goog-Api-Key", apiKeyProvider())
-                        .addHeader("X-Goog-FieldMask", "routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline")
+                        .addHeader("X-Goog-FieldMask", "routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline,routes.legs")
                         .build()
                 )
             }
@@ -37,3 +37,4 @@ class SmartAuthInterceptor(private val apiKeyProvider: () -> String) : Intercept
         }
     }
 }
+

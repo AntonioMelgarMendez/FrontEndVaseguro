@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DirectionsBus
 import androidx.compose.material.icons.filled.MyLocation
@@ -26,6 +27,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -68,7 +70,8 @@ import kotlinx.coroutines.launch
 @SuppressLint("MissingPermission")
 @Composable
 fun MapScreen(
-    viewModel: MapViewModel = viewModel(factory = MapViewModel.Factory)
+    viewModel: MapViewModel = viewModel(factory = MapViewModel.Factory),
+    childId: Int = 1
 ) {
     // Estados del ViewModel
     val driverLocation by viewModel.driverLocation.collectAsStateWithLifecycle()
@@ -76,6 +79,15 @@ fun MapScreen(
     val routePoints by viewModel.routePoints.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
+
+    // NUEVOS: Estados para paradas filtradas y información de ruta
+    val parentChildrenStops by viewModel.parentChildrenStops.collectAsStateWithLifecycle()
+    val routeProgress by viewModel.routeProgress.collectAsStateWithLifecycle()
+    val routeStatus by viewModel.routeStatus.collectAsStateWithLifecycle()
+
+    // NUEVOS: Estados para notificaciones y alertas
+    val proximityAlert by viewModel.proximityAlert.collectAsStateWithLifecycle()
+    val stopStateChangeNotification by viewModel.stopStateChangeNotification.collectAsStateWithLifecycle()
 
     // Estado para la cámara del mapa
     val cameraPositionState = rememberCameraPositionState()
@@ -103,18 +115,20 @@ fun MapScreen(
     // Contador de actualizaciones para debug
     var updateCount by remember { mutableStateOf(0) }
 
+    // Configurar el parent ID cuando se inicializa o cambia
+    LaunchedEffect(childId) {
+        viewModel.setChildId(childId)
+    }
+
     // Gestión del ciclo de vida para optimizar recursos del mapa
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
                 Lifecycle.Event.ON_PAUSE -> {
                     viewModel.pauseLocationUpdates()
-                    // Cuando la app va a segundo plano, liberar recursos del mapa
                     isMapVisible = false
-                    // Forzar liberación del bloqueo de SQLite
                     mapRef?.let { map ->
                         try {
-                            // Acceder por reflection a métodos internos para liberar bloqueos de BD
                             val mapClass = map.javaClass
                             mapClass.declaredFields.find { it.name.contains("cacheManager", ignoreCase = true) }?.let { cacheField ->
                                 cacheField.isAccessible = true
@@ -134,7 +148,6 @@ fun MapScreen(
                     viewModel.resumeLocationUpdates()
                 }
                 Lifecycle.Event.ON_DESTROY -> {
-                    // Asegurar liberación completa de recursos
                     mapRef = null
                 }
                 else -> { /* No hacer nada */ }
@@ -145,7 +158,6 @@ fun MapScreen(
 
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
-            // Liberar recursos adicionales
             mapRef = null
         }
     }
@@ -153,17 +165,14 @@ fun MapScreen(
     // Efecto para mover la cámara cuando se actualiza la ubicación del conductor
     LaunchedEffect(driverLocation) {
         driverLocation?.let { location ->
-            // Incrementar contador de actualizaciones para verificar que estamos recibiendo cambios
             updateCount++
             println("Actualización #$updateCount recibida en MapScreen: $location")
 
-            // Mover la cámara si es primera vez o se ha activado el seguimiento
             if (!hasInitializedCamera || followDriver) {
-                // Preservar el zoom actual en actualizaciones posteriores
                 val currentZoom = if (hasInitializedCamera) {
                     cameraPositionState.position.zoom
                 } else {
-                    15f // Zoom predeterminado solo para la primera inicialización
+                    15f
                 }
 
                 cameraPositionState.animate(
@@ -184,6 +193,30 @@ fun MapScreen(
         }
     }
 
+    // NUEVO: Efecto para mostrar alertas de proximidad
+    LaunchedEffect(proximityAlert) {
+        proximityAlert?.let { alert ->
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar(
+                    message = alert,
+                    duration = SnackbarDuration.Long
+                )
+            }
+        }
+    }
+
+    // NUEVO: Efecto para mostrar notificaciones de cambio de estado
+    LaunchedEffect(stopStateChangeNotification) {
+        stopStateChangeNotification?.let { notification ->
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar(
+                    message = notification,
+                    duration = SnackbarDuration.Long
+                )
+            }
+        }
+    }
+
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { paddingValues ->
@@ -192,75 +225,56 @@ fun MapScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Solo mostrar el mapa si está visible (controla ciclo de vida)
+            // Solo mostrar el mapa si está visible
             if (isMapVisible) {
-                // Mapa de Google con optimizaciones
                 GoogleMap(
                     modifier = Modifier.fillMaxSize(),
                     cameraPositionState = cameraPositionState,
                     properties = MapProperties(
-                        isMyLocationEnabled = false, // Usamos nuestro propio marcador
+                        isMyLocationEnabled = false,
                         mapType = MapType.NORMAL,
-                        // Reducir el uso de memoria caché
                         minZoomPreference = 5f,
                         maxZoomPreference = 20f,
-                        isTrafficEnabled = false, // Desactivar tráfico para reducir uso de memoria
+                        isTrafficEnabled = false,
                     ),
                     uiSettings = MapUiSettings(
                         zoomControlsEnabled = true,
                         compassEnabled = true,
                         mapToolbarEnabled = false,
                     ),
-                    // Guardar referencia del mapa cuando se crea
                     onMapLoaded = {
                         println("Mapa cargado completamente")
                     }
                 ) {
-                    // Efecto para aplicar configuraciones al mapa
                     MapEffect { map ->
-                        // Guardar referencia del mapa para usar en el ciclo de vida
                         mapRef = map
-
-                        // Limitar el uso de caché para evitar los errores de "pinning"
                         map.setMaxZoomPreference(20f)
                         map.setMinZoomPreference(5f)
-
-                        // Optimizar renderizado
                         map.isBuildingsEnabled = false
                         map.isIndoorEnabled = false
 
-                        // Configurar límites de memoria
                         try {
-                            // Configurar política de memoria usando reflection
                             val mapClassType = map.javaClass
-
-                            // Deshabilitar el almacenamiento de caché persistente
                             mapClassType.getDeclaredMethod("setPersistentCacheEnabled", Boolean::class.java)?.let {
                                 it.isAccessible = true
                                 it.invoke(map, false)
                             }
-
-                            // Configurar política de memoria más agresiva para evitar bloqueos
                             mapClassType.getDeclaredMethod("setTrimMemoryPolicy", Int::class.java)?.let {
                                 it.isAccessible = true
-                                it.invoke(map, 5) // TRIM_MEMORY_RUNNING_MODERATE
+                                it.invoke(map, 5)
                             }
-
-                            // Liberar bloqueos de base de datos al iniciar
                             mapClassType.getDeclaredMethod("releaseDatabaseLocks")?.let {
                                 it.isAccessible = true
                                 it.invoke(map)
                             }
                         } catch (e: Exception) {
-                            // Si falla la reflection, no afecta la funcionalidad principal
                             println("No se pudo configurar política de memoria: ${e.message}")
                         }
 
-                        // Forzar actualización de mapa sin usar pinning
                         map.snapshot { /* No hacer nada, solo para forzar actualización */ }
                     }
 
-                    // Mostrar el polyline de la ruta si hay una ruta activa
+                    // NUEVO: Mostrar el polyline de la ruta si hay una ruta activa
                     if (isRouteActive && routePoints.isNotEmpty()) {
                         Polyline(
                             points = routePoints,
@@ -278,9 +292,27 @@ fun MapScreen(
                             flat = true,
                         )
                     }
+
+                    // NUEVO: Mostrar marcadores de las paradas de los hijos del padre
+                    parentChildrenStops.forEach { stopPassenger ->
+                        val stopLocation = LatLng(
+                            stopPassenger.stop.latitude,
+                            stopPassenger.stop.longitude
+                        )
+
+                        Marker(
+                            state = MarkerState(position = stopLocation),
+                            title = "${stopPassenger.child.fullName} - ${stopPassenger.stop.name}",
+                            snippet = "Tipo: ${stopPassenger.stopType.name}",
+                            icon = if (stopPassenger.stopType.name == "HOME") {
+                                context.bitmapDescriptorFromVector(R.drawable.user, heightDp = 35)
+                            } else {
+                                context.bitmapDescriptorFromVector(R.drawable.school, heightDp = 35)
+                            }
+                        )
+                    }
                 }
             } else {
-                // Placeholder cuando el mapa no está visible para conservar recursos
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -294,7 +326,7 @@ fun MapScreen(
                 }
             }
 
-            // Tarjeta informativa en la parte superior
+            // MODIFICADO: Tarjeta informativa mejorada con información de ruta
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -330,17 +362,142 @@ fun MapScreen(
                         }
                     }
 
+                    // NUEVO: Mostrar alerta de proximidad si existe
+                    proximityAlert?.let { alert ->
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = Color(0xFF4CAF50).copy(alpha = 0.2f)
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.DirectionsBus,
+                                    contentDescription = "Proximidad",
+                                    tint = Color(0xFF4CAF50),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = alert,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color(0xFF4CAF50),
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+
+                    // NUEVO: Mostrar notificación de cambio de estado si existe
+                    stopStateChangeNotification?.let { notification ->
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = Color(0xFF2196F3).copy(alpha = 0.2f)
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "✅",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = notification,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color(0xFF2196F3),
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    // Mostrar estado de la ruta
-                    Text(
-                        text = if (isRouteActive) "Ruta activa" else "Sin ruta activa",
-                        color = if (isRouteActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium
-                    )
+                    // NUEVO: Mostrar información detallada de la ruta
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column {
+                            Text(
+                                text = if (isRouteActive) "Ruta activa" else "Sin ruta activa",
+                                color = if (isRouteActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium
+                            )
 
-                    // Mostrar coordenadas del conductor - Actualizado para mostrar actualizaciones
+                            // NUEVO: Mostrar estado de la ruta si está disponible
+                            routeStatus?.let { status ->
+                                Text(
+                                    text = "Estado: $status",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                )
+                            }
+                        }
+
+                        // NUEVO: Mostrar progreso de la ruta si está activa
+                        if (isRouteActive && routeProgress > 0) {
+                            Column(
+                                horizontalAlignment = Alignment.End
+                            ) {
+                                Text(
+                                    text = "Progreso",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                )
+                                Text(
+                                    text = "${(routeProgress * 100).toInt()}%",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    }
+
+                    // NUEVO: Mostrar información de paradas de los hijos
+                    if (parentChildrenStops.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        val stopsOnRoute = viewModel.getStopsOnCurrentRoute()
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "Paradas de mis hijos: ${parentChildrenStops.size}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                            )
+
+                            if (isRouteActive && stopsOnRoute.isNotEmpty()) {
+                                Text(
+                                    text = "En ruta actual: ${stopsOnRoute.size}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+
+                    // Mostrar coordenadas del conductor
                     driverLocation?.let { location ->
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
@@ -369,7 +526,6 @@ fun MapScreen(
                         followDriver = !followDriver
                         if (followDriver && driverLocation != null) {
                             coroutineScope.launch {
-                                // Usar el zoom actual para mantener la experiencia del usuario
                                 cameraPositionState.animate(
                                     update = CameraUpdateFactory.newLatLngZoom(driverLocation!!, cameraPositionState.position.zoom),
                                     durationMs = 1000
@@ -400,7 +556,6 @@ fun MapScreen(
                     onClick = {
                         driverLocation?.let { location ->
                             coroutineScope.launch {
-                                // Usar el zoom actual en lugar de un valor fijo
                                 cameraPositionState.animate(
                                     update = CameraUpdateFactory.newLatLngZoom(location, cameraPositionState.position.zoom),
                                     durationMs = 1000
@@ -462,8 +617,7 @@ fun MapScreen(
 
                         Button(
                             onClick = {
-                                // Reintentar cargar la ubicación del conductor
-                                viewModel.setDriverId(1) // Esto forzará una recarga
+                                viewModel.setDriverId(1)
                             }
                         ) {
                             Text("Reintentar")

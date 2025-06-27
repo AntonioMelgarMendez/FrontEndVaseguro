@@ -28,6 +28,8 @@ import androidx.core.graphics.createBitmap
 import com.VaSeguro.map.Supabase.SupabaseModule
 import com.VaSeguro.map.repository.LocationRepository
 import com.VaSeguro.map.repository.LocationRepositoryImpl
+import com.VaSeguro.map.repository.StopRouteRepository
+import com.VaSeguro.map.repository.StopRouteRepositoryImpl
 
 private const val USER_PREFERENCE_NAME = "user_preferences"
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = USER_PREFERENCE_NAME)
@@ -46,6 +48,7 @@ class AppProvider(context: Context) {
     private val stopPassengerRepository = StopPassengerRepositoryImpl()
     private val savedRoutesRepository = SavedRoutesRepositoryImpl()
     private val LocationRepository = LocationRepositoryImpl(SupabaseModule.supabaseClient)
+    private val StopRouteRepository = StopRouteRepositoryImpl()
 
     fun provideUserPreferences() = userPreferencesRepository
     fun provideAuthRepository() = authRepository
@@ -58,4 +61,6 @@ class AppProvider(context: Context) {
     fun provideChildrenRepository() = childrenRespository
     fun provideChatRepository() = chatRepository
     fun provideLocationRepository() = LocationRepository
+    fun provideStopRouteRepository()=StopRouteRepository
 }
+
