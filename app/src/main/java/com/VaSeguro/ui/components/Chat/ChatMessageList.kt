@@ -26,19 +26,26 @@ fun ChatMessagesList(
     modifier = modifier
       .fillMaxSize()
       .background(Color(0xFFF7F7FA))
-      .padding(horizontal = 16.dp, vertical = 8.dp)
+      .padding(horizontal = 8.dp, vertical = 8.dp)
   ) {
     items(messages) { msg ->
       Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+          .fillMaxWidth()
+          .padding(vertical = 2.dp),
         horizontalArrangement = if (msg.isUser) Arrangement.End else Arrangement.Start
       ) {
         Column(
           horizontalAlignment = if (msg.isUser) Alignment.End else Alignment.Start,
           modifier = Modifier
             .background(
-              if (msg.isUser) Color(0xFF645AFF) else Color(0xFFE6E6E6),
-              shape = RoundedCornerShape(12.dp)
+              color = if (msg.isUser) Color(0xFF645AFF) else Color(0xFFF0F0F0),
+              shape = RoundedCornerShape(
+                topStart = 16.dp,
+                topEnd = 16.dp,
+                bottomEnd = if (msg.isUser) 0.dp else 16.dp,
+                bottomStart = if (msg.isUser) 16.dp else 0.dp
+              )
             )
             .padding(12.dp)
             .widthIn(max = 280.dp)
@@ -50,12 +57,12 @@ fun ChatMessagesList(
           Spacer(modifier = Modifier.height(4.dp))
           Text(
             text = msg.timestamp,
-            color = if (msg.isUser) Color.White else Color.Black,
+            color = if (msg.isUser) Color.White else Color.Gray,
             fontSize = 10.sp
           )
         }
       }
-      Spacer(modifier = Modifier.height(8.dp))
+      Spacer(modifier = Modifier.height(4.dp))
     }
   }
 }
