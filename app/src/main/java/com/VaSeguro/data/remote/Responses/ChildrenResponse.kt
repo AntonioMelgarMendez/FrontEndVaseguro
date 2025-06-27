@@ -1,6 +1,7 @@
 package com.VaSeguro.data.remote.Responses
 
 import com.VaSeguro.data.model.Child.Child
+import com.VaSeguro.data.model.Children.Children
 
 data class ChildrenResponse(
   val id: Int,
@@ -42,5 +43,20 @@ fun ChildrenResponse.toChild(
     medicalInfo = medical_info,
     createdAt = created_at ?: "N/A",
     profilePic = profile_pic
+  )
+}
+
+fun Children.toChildrenResponse(): ChildrenResponse {
+  return ChildrenResponse(
+    id = this.id,
+    forenames = this.forenames,
+    surnames = this.surnames,
+    birth_date = this.birth_date,
+    medical_info = this.medical_info,
+    parent_id = this.parent_id,
+    driver_id = this.driver_id,
+    gender = this.gender,
+    profile_pic = this.profile_pic,
+    created_at = 0.toString()
   )
 }

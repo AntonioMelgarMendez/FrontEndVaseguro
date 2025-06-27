@@ -13,7 +13,9 @@ import kotlinx.coroutines.flow.StateFlow
 import com.VaSeguro.data.model.Child.Child
 import com.VaSeguro.data.model.Children.Children
 import com.VaSeguro.data.remote.Auth.UserResponse
+import com.VaSeguro.data.remote.Responses.ChildrenResponse
 import com.VaSeguro.data.remote.Responses.toChild
+import com.VaSeguro.data.remote.Responses.toChildrenResponse
 import com.VaSeguro.data.repository.AuthRepository.AuthRepository
 import com.VaSeguro.data.repository.Children.ChildrenRepository
 import com.VaSeguro.data.repository.UserPreferenceRepository.UserPreferencesRepository
@@ -56,7 +58,7 @@ class ChildrenAdminScreenViewModel(
                 val token = userPreferencesRepository.getAuthToken().orEmpty()
                 _allUsers.value = authRepository.getAllUsers(token)
             } catch (e: Exception) {
-                // Manejar error
+                // Handle error
             }
         }
     }
@@ -80,11 +82,12 @@ class ChildrenAdminScreenViewModel(
                     _allUsers.value = authRepository.getAllUsers(token)
                 }
 
-                val childrenBackend = childrenRepository.getChildren()
+                val token = userPreferencesRepository.getAuthToken().orEmpty()
+                val childrenBackend: List<Children> = childrenRepository.getChildren(token)
                 Log.d("ChildrenDebug", "Children fetched: ${childrenBackend.size}")
 
                 val uiChildren = childrenBackend.map { child ->
-                    child.toChild(
+                    child.toChildrenResponse().toChild(
                         parentName = getParentNameById(child.parent_id),
                         driverName = getDriverNameById(child.driver_id)
                     )
@@ -119,10 +122,11 @@ class ChildrenAdminScreenViewModel(
         viewModelScope.launch {
             _loading.value = true
             try {
-                childrenRepository.remove(childId.toString())
+                val token = userPreferencesRepository.getAuthToken().orEmpty()
+                childrenRepository.remove(childId.toString(), token)
                 fetchAllChildren()
             } catch (e: Exception) {
-                // TODO: manejar error
+                // TODO: handle error
             } finally {
                 _loading.value = false
             }
@@ -158,7 +162,7 @@ class ChildrenAdminScreenViewModel(
                 )
                 fetchAllChildren()
             } catch (e: Exception) {
-                // TODO: manejar error
+                // TODO: handle error
             } finally {
                 _loading.value = false
             }
@@ -173,10 +177,11 @@ class ChildrenAdminScreenViewModel(
         viewModelScope.launch {
             _loading.value = true
             try {
-                childrenRepository.update(id, child, profilePic)
+                val token = userPreferencesRepository.getAuthToken().orEmpty()
+                childrenRepository.update(id, child, profilePic, token)
                 fetchAllChildren()
             } catch (e: Exception) {
-                // TODO: manejar error
+                // TODO: handle error
             } finally {
                 _loading.value = false
             }
