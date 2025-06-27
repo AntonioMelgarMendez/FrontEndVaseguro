@@ -1,6 +1,6 @@
 package com.VaSeguro.map.data
 
-import com.VaSeguro.data.model.Child.Child
+import com.VaSeguro.data.model.Child.ChildMap
 import com.VaSeguro.data.model.Route.RouteStatus
 import com.VaSeguro.data.model.Route.RouteType
 import com.VaSeguro.data.model.Routes.RoutesData
@@ -9,10 +9,10 @@ import com.VaSeguro.data.model.Stop.StopRoute
 import com.VaSeguro.data.model.Stop.StopType
 import com.VaSeguro.data.model.StopPassenger.StopPassenger
 import com.VaSeguro.data.model.User.UserData
+import com.VaSeguro.data.model.User.UserDataMap
 import com.VaSeguro.data.model.User.UserRole
-import com.VaSeguro.data.model.Vehicle.Vehicle
+import com.VaSeguro.data.model.Vehicle.VehicleMap
 import com.google.android.gms.maps.model.LatLng
-import java.util.UUID
 import kotlin.random.Random
 
 /**
@@ -29,8 +29,8 @@ val driverRole = UserRole(
     role_name = "Driver"
 )
 
-val driver = UserData(
-    id = "USR-001",
+val driver = UserDataMap(
+    id = 1,
     forename = "Carlos",
     surname = "Ramírez",
     email = "carlos.ramirez@example.com",
@@ -40,8 +40,8 @@ val driver = UserData(
     gender = "Male"
 )
 
-val burnedVehicle = Vehicle(
-    id = "VEH-002",
+val burnedVehicle = VehicleMap(
+    id = 2,
     plate = "P987654",
     model = "Toyota Hiace 2020",
     driver_id = driver.id,
@@ -96,7 +96,7 @@ fun RoutesData.updateFromRoute(route: Route): RoutesData {
 fun createTemporaryStopRoute(
     id: Int,
     stopData: StopData,
-    child: Child,
+    child: ChildMap,
     stopType: StopType,
     order: Int,
     state: Boolean = true

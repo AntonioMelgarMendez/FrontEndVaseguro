@@ -1,49 +1,103 @@
 package com.VaSeguro.ui.screens.Admin.Children
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.VaSeguro.MyApplication
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import com.VaSeguro.data.model.Child.Child
+import com.VaSeguro.data.model.Children.Children
+import com.VaSeguro.data.remote.Auth.UserResponse
+import com.VaSeguro.data.remote.Responses.toChild
+import com.VaSeguro.data.repository.AuthRepository.AuthRepository
+import com.VaSeguro.data.repository.Children.ChildrenRepository
+import com.VaSeguro.data.repository.UserPreferenceRepository.UserPreferencesRepository
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import okhttp3.MultipartBody
 
-class ChildrenAdminScreenViewModel : ViewModel() {
-    private val _children = MutableStateFlow(
-        listOf(
-            Child(
-                id = 1,
-                fullName = "Andrea Castillo",
-                forenames = "Andrea",
-                surnames = "Castillo",
-                birth = "2012-05-10",
-                age = 12,
-                driver = "Carlos Reyes",
-                parent = "Diana Castillo",
-                medicalInfo = "None",
-                createdAt = "10/05/2024 09:15",
-                profilePic = null
-            ),
-            Child(
-                id = 2,
-                fullName = "Samuel Méndez",
-                forenames = "Samuel",
-                surnames = "Méndez",
-                birth = "2014-08-22",
-                age = 10,
-                driver = "Luis Hernández",
-                parent = "Roberto Méndez",
-                medicalInfo = "Allergy to peanuts",
-                createdAt = "11/05/2024 11:45",
-                profilePic = null
-            )
-        )
-    )
+class ChildrenAdminScreenViewModel(
+    private val childrenRepository: ChildrenRepository,
+    private val userPreferencesRepository: UserPreferencesRepository,
+    private val authRepository: AuthRepository
+) : ViewModel() {
+    private val _children = MutableStateFlow<List<Child>>(emptyList())
     val children: StateFlow<List<Child>> = _children
+
+    private val _allUsers = MutableStateFlow<List<UserResponse>>(emptyList())
+    val allUsers: StateFlow<List<UserResponse>> = _allUsers
+
+    val parents: List<UserResponse>
+        get() = _allUsers.value.filter { it.role_id == 3 }
+
+    val drivers: List<UserResponse>
+        get() = _allUsers.value.filter { it.role_id == 4 }
 
     private val _expandedMap = MutableStateFlow<Map<String, Boolean>>(emptyMap())
     val expandedMap: StateFlow<Map<String, Boolean>> = _expandedMap
 
     private val _checkedMap = MutableStateFlow<Map<String, Boolean>>(emptyMap())
     val checkedMap: StateFlow<Map<String, Boolean>> = _checkedMap
+
+    private val _loading = MutableStateFlow(false)
+    val loading: StateFlow<Boolean> = _loading
+
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage
+
+    fun fetchUsersForRoles() {
+        viewModelScope.launch {
+            try {
+                val token = userPreferencesRepository.getAuthToken().orEmpty()
+                _allUsers.value = authRepository.getAllUsers(token)
+            } catch (e: Exception) {
+                // Manejar error
+            }
+        }
+    }
+
+    fun getDriverNameById(driverId: Int): String {
+        return drivers.firstOrNull { it.id == driverId }
+            ?.let { "${it.forenames} ${it.surnames}" } ?: "Sin asignar"
+    }
+
+    fun getParentNameById(parentId: Int): String {
+        return parents.firstOrNull { it.id == parentId }
+            ?.let { "${it.forenames} ${it.surnames}" } ?: "Desconocido"
+    }
+
+    fun fetchAllChildren() {
+        viewModelScope.launch {
+            _loading.value = true
+            try {
+                if (_allUsers.value.isEmpty()) {
+                    val token = userPreferencesRepository.getAuthToken().orEmpty()
+                    _allUsers.value = authRepository.getAllUsers(token)
+                }
+
+                val childrenBackend = childrenRepository.getChildren()
+                Log.d("ChildrenDebug", "Children fetched: ${childrenBackend.size}")
+
+                val uiChildren = childrenBackend.map { child ->
+                    child.toChild(
+                        parentName = getParentNameById(child.parent_id),
+                        driverName = getDriverNameById(child.driver_id)
+                    )
+                }
+
+                _children.value = uiChildren
+            } catch (e: Exception) {
+                _errorMessage.value = "Error al cargar niños: ${e.localizedMessage ?: "Error desconocido"}"
+            } finally {
+                _loading.value = false
+            }
+        }
+    }
 
     fun toggleExpand(childId: String) {
         _expandedMap.update { map ->
@@ -62,12 +116,88 @@ class ChildrenAdminScreenViewModel : ViewModel() {
     }
 
     fun deleteChild(childId: Int) {
-        _children.update { it.filterNot { child -> child.id == childId } }
+        viewModelScope.launch {
+            _loading.value = true
+            try {
+                childrenRepository.remove(childId.toString())
+                fetchAllChildren()
+            } catch (e: Exception) {
+                // TODO: manejar error
+            } finally {
+                _loading.value = false
+            }
+        }
         _expandedMap.update { it - childId.toString() }
         _checkedMap.update { it - childId.toString() }
     }
 
-    fun addChild(child: Child) {
-        _children.update { it + child }
+    fun addChild(
+        forenames: String,
+        surnames: String,
+        birth_date: String,
+        medical_info: String,
+        gender: String,
+        parent_id: Int,
+        driver_id: Int,
+        profile_pic: MultipartBody.Part? = null
+    ) {
+        viewModelScope.launch {
+            _loading.value = true
+            try {
+                val token = userPreferencesRepository.getAuthToken().orEmpty()
+                childrenRepository.create(
+                    forenames,
+                    surnames,
+                    birth_date,
+                    medical_info,
+                    gender,
+                    parent_id,
+                    driver_id,
+                    profile_pic,
+                    token
+                )
+                fetchAllChildren()
+            } catch (e: Exception) {
+                // TODO: manejar error
+            } finally {
+                _loading.value = false
+            }
+        }
+    }
+
+    fun updateChild(
+        id: String,
+        child: Children,
+        profilePic: MultipartBody.Part? = null
+    ) {
+        viewModelScope.launch {
+            _loading.value = true
+            try {
+                childrenRepository.update(id, child, profilePic)
+                fetchAllChildren()
+            } catch (e: Exception) {
+                // TODO: manejar error
+            } finally {
+                _loading.value = false
+            }
+        }
+    }
+
+    companion object {
+        val Factory: ViewModelProvider.Factory = viewModelFactory {
+            initializer {
+                try {
+                    val application = this[APPLICATION_KEY] as MyApplication
+                    ChildrenAdminScreenViewModel(
+                        application.appProvider.provideChildrenRepository(),
+                        application.appProvider.provideUserPreferences(),
+                        application.appProvider.provideAuthRepository()
+                    )
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    throw e
+                }
+            }
+        }
     }
 }

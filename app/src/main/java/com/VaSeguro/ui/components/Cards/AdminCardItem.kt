@@ -1,4 +1,4 @@
-package com.VaSeguro.ui.components
+package com.VaSeguro.ui.components.Cards
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement

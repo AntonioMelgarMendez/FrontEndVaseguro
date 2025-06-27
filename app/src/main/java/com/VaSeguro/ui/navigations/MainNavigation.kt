@@ -25,6 +25,7 @@ import com.VaSeguro.ui.screens.Parents.Bus.BusScreen
 import com.VaSeguro.ui.screens.Parents.Children.ChildrenScreen
 import com.VaSeguro.ui.screens.Parents.Configuration.ConfigurationScreen
 import com.VaSeguro.ui.screens.Parents.History.HistoryScreen
+import com.VaSeguro.ui.screens.Parents.Map.MapScreen
 
 @Composable
 fun MainNavigation(navController: NavHostController, isAdmin: Boolean) {
@@ -52,13 +53,8 @@ fun MainNavigation(navController: NavHostController, isAdmin: Boolean) {
         navController.navigate(RouteScreenNavigation(routeId))
     }
 
-    val onEditRoute = { routeId: Int ->
-        println("DEBUG: Editando ruta $routeId")
-        navController.navigate(RouteScreenNavigation(routeId))
-    }
-
-    NavHost(navController = navController, startDestination = startDestination) {
-        composable<MapScreenNavigation> { RouteScreen() }
+    NavHost(navController = navController, startDestination = MapScreenNavigation) {
+        composable<MapScreenNavigation> { MapScreen() }
         composable<HistoryScreenNavigation> { HistoryScreen() }
         composable<BusScreenNavigation> { BusScreen() }
         composable<ChildrenScreenNavigation> { ChildrenScreen(navController) }
@@ -75,11 +71,10 @@ fun MainNavigation(navController: NavHostController, isAdmin: Boolean) {
         //DRIVER SCREENS
         composable<RouteScreenNavigation> { backStackEntry ->
             // Obtenemos el parámetro routeId si existe
-            val routeId = backStackEntry.arguments?.getString("routeId")
+            val routeId = backStackEntry.arguments?.getInt("routeId")
 
             RouteScreen(
-                viewModel = routeViewModel,
-                routeId = routeId as Int?,
+                routeId = routeId,
                 onNavigateToSavedRoutes = onNavigateToSavedRoutes
             )
         }

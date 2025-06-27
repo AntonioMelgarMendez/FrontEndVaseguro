@@ -14,7 +14,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.VaSeguro.ui.components.AdminCardItem
+import com.VaSeguro.ui.components.Cards.AdminCardItem
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
@@ -44,11 +44,9 @@ import androidx.compose.ui.platform.LocalContext
 import com.VaSeguro.data.model.Route.RouteStatus
 import com.VaSeguro.data.model.Route.RouteType
 import com.VaSeguro.data.model.Routes.RoutesData
-import com.VaSeguro.data.model.Vehicle.Vehicle
-import com.VaSeguro.ui.components.CustomizableOutlinedTextField
+import com.VaSeguro.data.model.Vehicle.VehicleMap
+import com.VaSeguro.ui.components.Misc.CustomizableOutlinedTextField
 import kotlin.random.Random
-import java.util.UUID
-
 
 
 @Composable
@@ -252,11 +250,11 @@ fun AddRouteDialog(
                         return@Button
                     }
 
-                    val burnedVehicle = Vehicle(
-                        id = "VEH-002",
+                    val burnedVehicle = VehicleMap(
+                        id = 2,
                         plate = "P987654",
                         model = "Toyota Hiace 2020",
-                        driver_id = 1.toString(),
+                        driver_id = 1,
                         year = "2020",
                         color = "White",
                         capacity = "20",

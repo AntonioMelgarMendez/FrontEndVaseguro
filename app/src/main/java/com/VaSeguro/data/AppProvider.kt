@@ -25,6 +25,11 @@ import com.VaSeguro.map.repository.StopPassengerRepositoryImpl
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import androidx.core.graphics.createBitmap
+import com.VaSeguro.map.Supabase.SupabaseModule
+import com.VaSeguro.map.repository.LocationRepository
+import com.VaSeguro.map.repository.LocationRepositoryImpl
+import com.VaSeguro.map.repository.StopRouteRepository
+import com.VaSeguro.map.repository.StopRouteRepositoryImpl
 
 private const val USER_PREFERENCE_NAME = "user_preferences"
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = USER_PREFERENCE_NAME)
@@ -38,10 +43,12 @@ class AppProvider(context: Context) {
     private val mapsApiRepository = MapsApiRepositoryImpl(mapsApiService)
     private val routesApiRepository = RoutesApiRepositoryImpl(routesApiService)
     private val vehicleRespository = VehicleRepositoryImpl(RetrofitInstance.vehicleService)
-    private val childrenRespository = ChildrenRepositoryImpl(RetrofitInstance.childrenService)
+    private val childrenRespository = ChildrenRepositoryImpl(RetrofitInstance.childrenService, userPreferencesRepository)
     private val chatRepository = ChatRepositoryImpl(RetrofitInstance.chatService)
     private val stopPassengerRepository = StopPassengerRepositoryImpl()
     private val savedRoutesRepository = SavedRoutesRepositoryImpl()
+    private val LocationRepository = LocationRepositoryImpl(SupabaseModule.supabaseClient)
+    private val StopRouteRepository = StopRouteRepositoryImpl()
 
     fun provideUserPreferences() = userPreferencesRepository
     fun provideAuthRepository() = authRepository
@@ -53,5 +60,7 @@ class AppProvider(context: Context) {
     fun provideVehicleRepository() = vehicleRespository
     fun provideChildrenRepository() = childrenRespository
     fun provideChatRepository() = chatRepository
-
+    fun provideLocationRepository() = LocationRepository
+    fun provideStopRouteRepository()=StopRouteRepository
 }
+

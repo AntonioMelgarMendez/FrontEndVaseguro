@@ -4,15 +4,15 @@ import androidx.lifecycle.ViewModel
 import com.VaSeguro.data.model.Route.RouteStatus
 import com.VaSeguro.data.model.Route.RouteType
 import com.VaSeguro.data.model.Routes.RoutesData
-import com.VaSeguro.data.model.Vehicle.Vehicle
+import com.VaSeguro.data.model.Vehicle.VehicleMap
 import com.VaSeguro.map.data.driver
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 
 class RoutesAdminScreenViewModel : ViewModel(){
-    val burnedVehicle = Vehicle(
-        id = "VEH-002",
+    val burnedVehicle = VehicleMap(
+        id = 2,
         plate = "P987654",
         model = "Toyota Hiace 2020",
         driver_id = driver.id,

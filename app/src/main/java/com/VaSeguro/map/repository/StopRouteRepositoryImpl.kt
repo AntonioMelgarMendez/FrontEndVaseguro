@@ -4,6 +4,7 @@ import com.VaSeguro.data.model.Child.Child
 import com.VaSeguro.data.model.Child.ChildMap
 import com.VaSeguro.data.model.Driver.Driver
 import com.VaSeguro.data.model.Stop.StopData
+import com.VaSeguro.data.model.Stop.StopRoute
 import com.VaSeguro.data.model.Stop.StopType
 import com.VaSeguro.data.model.StopPassenger.StopPassenger
 import com.google.android.gms.maps.model.LatLng
@@ -14,7 +15,7 @@ import kotlinx.coroutines.flow.flow
  * Repositorio para obtener datos de StopPassenger
  * Por el momento utiliza datos quemados
  */
-class StopPassengerRepositoryImpl: StopPassengerRepository {
+class StopRouteRepositoryImpl: StopRouteRepository {
 
     // Driver quemado para las rutas
     private val driver = Driver(
@@ -199,36 +200,87 @@ class StopPassengerRepositoryImpl: StopPassengerRepository {
         )
     ).distinctBy { Pair(it.stop.latitude, it.stop.longitude) }
 
-    /**
-     * Obtiene todos los StopPassenger disponibles
-     */
-    override fun getAllStopPassengers(): Flow<List<StopPassenger>> = flow {
-        emit(mockStopPassengerList)
-    }
+    // Datos quemados de StopRoute basados en mockStopPassengerList
+    private val mockStopRoutes = listOf(
+        // Routes for Child 1 (Ana García)
+        StopRoute(
+            id = 1,
+            stopPassenger = mockStopPassengerList.find { it.id == 1 }!!,
+            order = 1,
+            state = true
+        ),
+        StopRoute(
+            id = 2,
+            stopPassenger = mockStopPassengerList.find { it.id == 2 }!!,
+            order = 2,
+            state = true
+        ),
+        StopRoute(
+            id = 7,
+            stopPassenger = mockStopPassengerList.find { it.id == 7 }!!,
+            order = 3,
+            state = false
+        ),
+        StopRoute(
+            id = 10,
+            stopPassenger = mockStopPassengerList.find { it.id == 10 }!!,
+            order = 4,
+            state = true
+        ),
 
-    /**
-     * Obtiene StopPassenger filtrados por tipo
-     */
-    override fun getStopPassengersByType(type: StopType): Flow<List<StopPassenger>> = flow {
-        emit(mockStopPassengerList.filter { it.stopType == type })
-    }
+        // Routes for Child 2 (Carlos López)
+        StopRoute(
+            id = 3,
+            stopPassenger = mockStopPassengerList.find { it.id == 3 }!!,
+            order = 1,
+            state = true
+        ),
+        StopRoute(
+            id = 4,
+            stopPassenger = mockStopPassengerList.find { it.id == 4 }!!,
+            order = 2,
+            state = true
+        ),
+        StopRoute(
+            id = 8,
+            stopPassenger = mockStopPassengerList.find { it.id == 8 }!!,
+            order = 3,
+            state = false
+        ),
+        StopRoute(
+            id = 11,
+            stopPassenger = mockStopPassengerList.find { it.id == 11 }!!,
+            order = 4,
+            state = true
+        ),
 
-    /**
-     * Obtiene StopPassenger para un niño específico
-     */
-    override fun getStopPassengersByChild(childId: Int): Flow<List<StopPassenger>> = flow {
-        emit(mockStopPassengerList.filter { it.child.id == childId })
-    }
+        // Routes for Child 3 (María Rodríguez)
+        StopRoute(
+            id = 5,
+            stopPassenger = mockStopPassengerList.find { it.id == 5 }!!,
+            order = 1,
+            state = true
+        ),
+        StopRoute(
+            id = 6,
+            stopPassenger = mockStopPassengerList.find { it.id == 6 }!!,
+            order = 2,
+            state = true
+        ),
+        StopRoute(
+            id = 9,
+            stopPassenger = mockStopPassengerList.find { it.id == 9 }!!,
+            order = 3,
+            state = false
+        )
+    )
 
-    /**
-     * Convierte un StopPassenger a LatLng para usar en el mapa
-     */
-    override fun stopPassengerToLatLng(stopPassenger: StopPassenger): LatLng {
-        return LatLng(stopPassenger.stop.latitude, stopPassenger.stop.longitude)
-    }
+    override fun getStopRoutesByChild(childId: Int): Flow<List<StopRoute>> = flow {
+        // Filtrar las rutas por el ID del niño
+        val childRoutes = mockStopRoutes.filter { stopRoute ->
+            stopRoute.stopPassenger.child.id == childId
+        }.sortedBy { it.order }
 
-    /**
-     * Obtiene el driver asignado
-     */
-    override fun getDriver(): Driver = driver
+        emit(childRoutes)
+    }
 }
