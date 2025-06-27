@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import com.VaSeguro.data.model.Route.RouteStatus
 import com.VaSeguro.data.model.Route.RouteType
 import com.VaSeguro.data.model.Routes.RoutesData
-import com.VaSeguro.data.model.Vehicle.Vehicle
 import com.VaSeguro.data.model.Vehicle.VehicleMap
 import com.VaSeguro.map.data.driver
 import kotlinx.coroutines.flow.MutableStateFlow

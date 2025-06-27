@@ -14,5 +14,6 @@ data class RoutesData (
     val status_id: RouteStatus,
     val type_id: RouteType,
     val end_date: String,
+    val encodedPolyline: String = "",
     val stopRoute: List<StopRoute>
 )

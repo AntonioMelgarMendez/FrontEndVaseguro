@@ -44,12 +44,9 @@ import androidx.compose.ui.platform.LocalContext
 import com.VaSeguro.data.model.Route.RouteStatus
 import com.VaSeguro.data.model.Route.RouteType
 import com.VaSeguro.data.model.Routes.RoutesData
-import com.VaSeguro.data.model.Vehicle.Vehicle
 import com.VaSeguro.data.model.Vehicle.VehicleMap
 import com.VaSeguro.ui.components.CustomizableOutlinedTextField
 import kotlin.random.Random
-import java.util.UUID
-
 
 
 @Composable
@@ -257,7 +254,7 @@ fun AddRouteDialog(
                         id = 2,
                         plate = "P987654",
                         model = "Toyota Hiace 2020",
-                        driver_id = 1.toString(),
+                        driver_id = 1,
                         year = "2020",
                         color = "White",
                         capacity = "20",

@@ -1,4 +1,4 @@
- import java.util.Properties
+import java.util.Properties
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -17,6 +17,8 @@ val secretsProps = Properties().apply {
     }
 }
 val mapsApiKey = secretsProps.getProperty("MAPS_API_KEY") ?: ""
+val supabaseUrl = secretsProps.getProperty("SUPABASE_URL") ?: ""
+val supabaseKey = secretsProps.getProperty("SUPABASE_ANON_KEY") ?: ""
 
 android {
     namespace = "com.VaSeguro"
@@ -34,6 +36,8 @@ android {
 
         // Agrega la API key a BuildConfig
         buildConfigField("String", "MAPS_API_KEY", "\"$mapsApiKey\"")
+        buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
+        buildConfigField("String", "SUPABASE_KEY", "\"$supabaseKey\"")
     }
 
 
@@ -101,7 +105,15 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation(libs.androidx.material3)
+    implementation(libs.supabase.kt)
     implementation(libs.realtime.kt)
+    implementation(libs.postgrest.kt)
+    implementation (libs.storage.kt)
+    implementation("io.ktor:ktor-client-android:3.0.1")
+    implementation("io.ktor:ktor-client-core:3.0.1")
+    implementation("io.ktor:ktor-client-cio:3.0.1") // Motor CIO que soporta WebSockets
+    implementation("io.ktor:ktor-client-websockets:3.0.1") // Soporte para WebSockets
+    implementation("io.ktor:ktor-utils:3.0.1")
     implementation ("com.google.accompanist:accompanist-navigation-animation:0.34.0")
     ksp(libs.room.compiler)
     implementation ("androidx.camera:camera-camera2:1.3.0")
@@ -109,3 +121,4 @@ dependencies {
     implementation ("androidx.camera:camera-view:1.3.0")
     implementation ("com.google.mlkit:barcode-scanning:17.2.0")
 }
+

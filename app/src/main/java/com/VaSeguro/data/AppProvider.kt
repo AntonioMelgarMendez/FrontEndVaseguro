@@ -25,6 +25,9 @@ import com.VaSeguro.map.repository.StopPassengerRepositoryImpl
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import androidx.core.graphics.createBitmap
+import com.VaSeguro.map.Supabase.SupabaseModule
+import com.VaSeguro.map.repository.LocationRepository
+import com.VaSeguro.map.repository.LocationRepositoryImpl
 
 private const val USER_PREFERENCE_NAME = "user_preferences"
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = USER_PREFERENCE_NAME)
@@ -42,6 +45,7 @@ class AppProvider(context: Context) {
     private val chatRepository = ChatRepositoryImpl(RetrofitInstance.chatService)
     private val stopPassengerRepository = StopPassengerRepositoryImpl()
     private val savedRoutesRepository = SavedRoutesRepositoryImpl()
+    private val LocationRepository = LocationRepositoryImpl(SupabaseModule.supabaseClient)
 
     fun provideUserPreferences() = userPreferencesRepository
     fun provideAuthRepository() = authRepository
@@ -53,5 +57,5 @@ class AppProvider(context: Context) {
     fun provideVehicleRepository() = vehicleRespository
     fun provideChildrenRepository() = childrenRespository
     fun provideChatRepository() = chatRepository
-
+    fun provideLocationRepository() = LocationRepository
 }

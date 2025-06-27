@@ -1,6 +1,5 @@
 package com.VaSeguro.map.data
 
-import com.VaSeguro.data.model.Child.Child
 import com.VaSeguro.data.model.Child.ChildMap
 import com.VaSeguro.data.model.Route.RouteStatus
 import com.VaSeguro.data.model.Route.RouteType
@@ -10,11 +9,10 @@ import com.VaSeguro.data.model.Stop.StopRoute
 import com.VaSeguro.data.model.Stop.StopType
 import com.VaSeguro.data.model.StopPassenger.StopPassenger
 import com.VaSeguro.data.model.User.UserData
+import com.VaSeguro.data.model.User.UserDataMap
 import com.VaSeguro.data.model.User.UserRole
-import com.VaSeguro.data.model.Vehicle.Vehicle
 import com.VaSeguro.data.model.Vehicle.VehicleMap
 import com.google.android.gms.maps.model.LatLng
-import java.util.UUID
 import kotlin.random.Random
 
 /**
@@ -31,8 +29,8 @@ val driverRole = UserRole(
     role_name = "Driver"
 )
 
-val driver = UserData(
-    id = "USR-001",
+val driver = UserDataMap(
+    id = 1,
     forename = "Carlos",
     surname = "Ramírez",
     email = "carlos.ramirez@example.com",

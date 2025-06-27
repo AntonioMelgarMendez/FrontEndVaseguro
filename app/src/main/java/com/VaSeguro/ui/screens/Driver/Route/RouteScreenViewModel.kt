@@ -17,7 +17,6 @@ import com.VaSeguro.data.model.Stop.StopData
 import com.VaSeguro.data.model.StopPassenger.StopPassenger
 import com.VaSeguro.data.model.Stop.StopType
 import com.VaSeguro.data.model.Stop.StopRoute
-import com.VaSeguro.data.model.Vehicle.Vehicle
 import com.VaSeguro.data.model.Vehicle.VehicleMap
 import com.VaSeguro.map.repository.StopPassengerRepository
 import com.VaSeguro.map.calculateDistance
@@ -29,6 +28,7 @@ import com.VaSeguro.map.data.RouteSegment
 import com.VaSeguro.map.data.driver
 import com.VaSeguro.map.decodePolyline
 import com.VaSeguro.map.isPointNearPolyline
+import com.VaSeguro.map.repository.LocationRepository
 import com.VaSeguro.map.repository.MapsApiRepository
 import com.VaSeguro.map.repository.RoutesApiRepository
 import com.VaSeguro.map.repository.SavedRoutesRepository
@@ -53,7 +53,8 @@ class RouteScreenViewModel(
     private val mapsApiRepository: MapsApiRepository,
     private val routesApiRepository: RoutesApiRepository,
     private val stopPassengerRepository: StopPassengerRepository,
-    private val savedRoutesRepository: SavedRoutesRepository
+    private val savedRoutesRepository: SavedRoutesRepository,
+    private val locationRepository: LocationRepository
 ) : ViewModel() {
 
     // Estados para niños y paradas
@@ -397,8 +398,15 @@ class RouteScreenViewModel(
         checkProximityToRoutePoints(location)
         updateCurrentSegmentIndex(location)
         updateAdjustedTimeEstimation()
-        if(!(routeStatus.equals(RouteStatus.NO_INIT) || routeStatus.equals(RouteStatus.FINISHED))){
 
+        // Actualizar la ubicación en la base de datos, sin pasar el objeto RouteStatus
+        viewModelScope.launch {
+            locationRepository.updateLocation(1, location.latitude, location.longitude)
+        }
+
+        // Lógica condicional basada en RouteStatus si es necesaria
+        if(!(routeStatus.equals(RouteStatus.NO_INIT) || routeStatus.equals(RouteStatus.FINISHED))){
+            // Lógica adicional para rutas activas si se necesita
         }
     }
 
@@ -1359,7 +1367,8 @@ class RouteScreenViewModel(
                     mapsApiRepository = application.appProvider.provideMapsApiRepository(),
                     routesApiRepository = application.appProvider.provideRoutesApiRepository(),
                     stopPassengerRepository = application.appProvider.provideStopPassengerRepository(),
-                    savedRoutesRepository = application.appProvider.provideSavedRoutesRepository()
+                    savedRoutesRepository = application.appProvider.provideSavedRoutesRepository(),
+                    locationRepository = application.appProvider.provideLocationRepository(),
                 )
             }
         }
