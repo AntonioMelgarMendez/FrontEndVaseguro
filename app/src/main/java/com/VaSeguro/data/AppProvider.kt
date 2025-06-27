@@ -25,6 +25,8 @@ import com.VaSeguro.map.repository.StopPassengerRepositoryImpl
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import androidx.core.graphics.createBitmap
+import com.VaSeguro.data.remote.RetrofitInstance.routeService
+import com.VaSeguro.data.repository.RouteRepository.RouteRepositoryImpl
 
 private const val USER_PREFERENCE_NAME = "user_preferences"
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = USER_PREFERENCE_NAME)
@@ -39,6 +41,7 @@ class AppProvider(context: Context) {
     private val routesApiRepository = RoutesApiRepositoryImpl(routesApiService)
     private val vehicleRespository = VehicleRepositoryImpl(RetrofitInstance.vehicleService)
     private val childrenRespository = ChildrenRepositoryImpl(RetrofitInstance.childrenService, userPreferencesRepository)
+    private val routeRepository = RouteRepositoryImpl(routeService,userPreferencesRepository)
     private val chatRepository = ChatRepositoryImpl(RetrofitInstance.chatService)
     private val stopPassengerRepository = StopPassengerRepositoryImpl()
     private val savedRoutesRepository = SavedRoutesRepositoryImpl()
@@ -52,6 +55,7 @@ class AppProvider(context: Context) {
     fun provideRequestRepository() = requestRepository
     fun provideVehicleRepository() = vehicleRespository
     fun provideChildrenRepository() = childrenRespository
+    fun provideRoutes() = routeRepository
     fun provideChatRepository() = chatRepository
 
 }

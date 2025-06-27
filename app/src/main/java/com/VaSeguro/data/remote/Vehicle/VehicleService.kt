@@ -42,5 +42,8 @@ interface VehicleService {
     ): VehicleResponse
 
     @DELETE("vehicles/{id}")
-    suspend fun deleteVehicle( @Header("Authorization") authHeader: String ,@Path("id") id: Int)
+    suspend fun deleteVehicle(
+        @Header("Authorization") authHeader: String ,
+        @Path("id") id: Int
+    )
 }
