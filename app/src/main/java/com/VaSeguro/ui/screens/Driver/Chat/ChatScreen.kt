@@ -19,6 +19,8 @@ import com.VaSeguro.ui.components.Chat.ChatMessagesList
 import com.VaSeguro.ui.components.Chat.ChatTopBar
 import com.VaSeguro.ui.navigations.ChildrenScreenNavigation
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.VaSeguro.ui.navigations.CallScreenNavigation
+import kotlin.toString
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,6 +35,9 @@ fun ChatScreen(
   val user by viewModel.user.collectAsState()
   val quickReplies = viewModel.quickReplies
   val isLoading by viewModel.isLoading.collectAsState()
+  val currentUserId by viewModel.currentUserId.collectAsState()
+  val roomName = currentUserId?.let { getRoomName(it, id) } ?: ""
+
 
   LaunchedEffect(id) {
     viewModel.loadUser(id)
@@ -115,7 +120,8 @@ fun ChatScreen(
           role_id = UserRole(id = 0, role_name = "Unknown"),
           gender = user!!.gender ?: ""
         ),
-        onBackClick = { navController.navigate(ChildrenScreenNavigation) }
+        onBackClick = { navController.navigate(ChildrenScreenNavigation) },
+        onCallClick = { navController.navigate(CallScreenNavigation(roomName = roomName, id = id)) }
       )
     },
   ) { innerPadding ->
@@ -128,4 +134,7 @@ fun ChatScreen(
       modifier = Modifier.padding(innerPadding)
     )
   }
+}
+fun getRoomName(userId1: String, userId2: String): String {
+  return listOf(userId1, userId2).sorted().joinToString("_", prefix = "chat_")
 }

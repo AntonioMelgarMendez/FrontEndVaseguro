@@ -1,6 +1,7 @@
 // com.VaSeguro.ui.navigations.MainNavigation.kt
 package com.VaSeguro.ui.navigations
 
+
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -17,6 +18,8 @@ import com.VaSeguro.ui.screens.Admin.Routes.RoutesAdminScreen
 import com.VaSeguro.ui.screens.Admin.Stops.StopsAdminScreen
 import com.VaSeguro.ui.screens.Admin.Users.UsersAdminScreen
 import com.VaSeguro.ui.screens.Admin.Vehicle.VehicleScreen
+import com.VaSeguro.ui.screens.Driver.Chat.Calls.AgoraCallScreen
+
 import com.VaSeguro.ui.screens.Driver.Chat.ChatScreen
 import com.VaSeguro.ui.screens.Driver.Route.RouteScreen
 import com.VaSeguro.ui.screens.Driver.Route.RouteScreenViewModel
@@ -99,6 +102,16 @@ fun MainNavigation(navController: NavHostController, isAdmin: Boolean) {
                 id= args.id,
             )
         }
-
+        composable<CallScreenNavigation> { backStackEntry ->
+            val args = backStackEntry.toRoute<CallScreenNavigation>()
+            AgoraCallScreen(
+                channelName = args.roomName,
+                onCallEnd = {
+                    navController.navigate(ChatScreenNavigation(args.id)) {
+                        popUpTo(CallScreenNavigation(args.roomName, args.id)) { inclusive = true }
+                    }
+                }
+            )
+        }
     }
 }

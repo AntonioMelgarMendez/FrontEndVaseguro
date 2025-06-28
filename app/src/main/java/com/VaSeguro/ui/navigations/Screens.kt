@@ -53,3 +53,8 @@ object SplashScreenNavigation
 object HomeScreenNavigation
 @Serializable
 object ChanScreenNavigation
+@Serializable
+data class CallScreenNavigation(
+    val roomName: String,
+    val id: String
+)

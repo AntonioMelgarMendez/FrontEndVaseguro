@@ -47,7 +47,9 @@ class ChatRepositoryImpl(
         message = data.getString("message"),
         created_at = data.getString("created_at")
       )
-      onMessageReceived?.invoke(message)
+      if (message.sender_id != userId) {
+        onMessageReceived?.invoke(message)
+      }
     }
 
     socket?.connect()

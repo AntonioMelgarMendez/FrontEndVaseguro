@@ -1,6 +1,5 @@
 package com.VaSeguro.ui.screens.Driver.Chat
 
-
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.HourglassEmpty
@@ -47,6 +46,15 @@ class ChatViewModel(
 
   private val _isLoading = MutableStateFlow(false)
   val isLoading: StateFlow<Boolean> = _isLoading
+  private val _currentUserId = MutableStateFlow<String?>(null)
+  val currentUserId: StateFlow<String?> = _currentUserId
+  init {
+    viewModelScope.launch {
+      val user = userPreferencesRepository.getUserData()
+      _currentUserId.value = user?.id?.toString()
+    }
+  }
+
   private fun formatTimestamp(raw: String): String {
     val formats = listOf(
       "yyyy-MM-dd'T'HH:mm:ss.SSS",

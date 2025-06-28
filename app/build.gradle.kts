@@ -19,6 +19,7 @@ val secretsProps = Properties().apply {
 val mapsApiKey = secretsProps.getProperty("MAPS_API_KEY") ?: ""
 val supabaseUrl = secretsProps.getProperty("SUPABASE_URL") ?: ""
 val supabaseKey = secretsProps.getProperty("SUPABASE_ANON_KEY") ?: ""
+val agoraAppId = secretsProps.getProperty("AGORA_APP_ID") ?: ""
 
 android {
     namespace = "com.VaSeguro"
@@ -38,6 +39,8 @@ android {
         buildConfigField("String", "MAPS_API_KEY", "\"$mapsApiKey\"")
         buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
         buildConfigField("String", "SUPABASE_KEY", "\"$supabaseKey\"")
+        buildConfigField("String", "AGORA_APP_ID", "\"$agoraAppId\"")
+
     }
 
 
@@ -121,6 +124,8 @@ dependencies {
     implementation("io.ktor:ktor-client-cio:3.0.1") // Motor CIO que soporta WebSockets
     implementation("io.ktor:ktor-client-websockets:3.0.1") // Soporte para WebSockets
     implementation("io.ktor:ktor-utils:3.0.1")
-    implementation ("io.socket:socket.io-client:2.1.0") // Usa la última versión disponible
+    implementation ("io.socket:socket.io-client:2.1.0")
+    implementation("org.jitsi.react:jitsi-meet-sdk:6.2.2")
+    implementation ("io.agora.rtc:full-sdk:4.2.6")
 }
 

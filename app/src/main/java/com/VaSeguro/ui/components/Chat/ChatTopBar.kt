@@ -30,6 +30,7 @@ fun ChatTopBar(
   user: UserData,
   onBackClick: () -> Unit,
   onCallClick: () -> Unit = {}
+
 ) {
   TopAppBar(
     title = {
