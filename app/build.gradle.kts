@@ -1,3 +1,4 @@
+
 import java.util.Properties
 plugins {
     alias(libs.plugins.android.application)
@@ -20,6 +21,7 @@ val mapsApiKey = secretsProps.getProperty("MAPS_API_KEY") ?: ""
 val supabaseUrl = secretsProps.getProperty("SUPABASE_URL") ?: ""
 val supabaseKey = secretsProps.getProperty("SUPABASE_ANON_KEY") ?: ""
 val agoraAppId = secretsProps.getProperty("AGORA_APP_ID") ?: ""
+val oneSignalAppId = secretsProps.getProperty("ONESIGNAL_APP_ID") ?: ""
 
 android {
     namespace = "com.VaSeguro"
@@ -40,7 +42,7 @@ android {
         buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
         buildConfigField("String", "SUPABASE_KEY", "\"$supabaseKey\"")
         buildConfigField("String", "AGORA_APP_ID", "\"$agoraAppId\"")
-
+        buildConfigField("String", "ONESIGNAL_APP_ID", "\"$oneSignalAppId\"")
     }
 
 
@@ -127,6 +129,8 @@ dependencies {
     implementation ("io.socket:socket.io-client:2.1.0")
     implementation("org.jitsi.react:jitsi-meet-sdk:6.2.2")
     implementation ("io.agora.rtc:full-sdk:4.2.6")
+    implementation("com.onesignal:OneSignal:5.1.8")
+
 
 }
 
