@@ -1,6 +1,7 @@
 package com.VaSeguro.ui.screens.Driver.Chat.Calls
 
 import android.content.Context
+import android.util.Log
 import io.agora.rtc2.IRtcEngineEventHandler
 import io.agora.rtc2.RtcEngine
 
@@ -9,15 +10,13 @@ class AgoraManager(context: Context, private val appId: String) {
 
     private val rtcEventHandler = object : IRtcEngineEventHandler() {
         override fun onUserJoined(uid: Int, elapsed: Int) {
-            // Called when a remote user joins
+            Log.d("Agora", "Remote user joined: $uid")
         }
-
         override fun onUserOffline(uid: Int, reason: Int) {
-            // Called when a remote user leaves
+            Log.d("Agora", "Remote user offline: $uid")
         }
-
         override fun onJoinChannelSuccess(channel: String?, uid: Int, elapsed: Int) {
-            // Called when local user joins channel
+            Log.d("Agora", "Joined channel: $channel, uid: $uid")
         }
     }
 
