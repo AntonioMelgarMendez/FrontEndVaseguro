@@ -162,6 +162,7 @@ class ChildrenAdminScreenViewModel(
                     profile_pic,
                     token
                 )
+
                 fetchAllChildren()
             } catch (e: Exception) {
                 // TODO: handle error
