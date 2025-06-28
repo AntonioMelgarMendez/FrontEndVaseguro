@@ -7,9 +7,11 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.VaSeguro.data.model.Children.Children
+import com.VaSeguro.data.model.Stop.Stops
 import com.VaSeguro.data.model.User.UserData
 import com.VaSeguro.data.repository.Children.ChildrenRepository
 import com.VaSeguro.data.repository.DriverPrefs.DriverPrefs.getDriverId
+import com.VaSeguro.data.repository.Stops.StopsRepository
 import com.VaSeguro.data.repository.UserPreferenceRepository.UserPreferencesRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,7 +24,8 @@ import java.io.ByteArrayOutputStream
 
 class ChildrenViewModel(
   private val childrenRepository: ChildrenRepository,
-  private val userPreferencesRepository: UserPreferencesRepository
+  private val userPreferencesRepository: UserPreferencesRepository,
+  private val stopsRepository: StopsRepository
 ) : ViewModel() {
 
   private val _children = MutableStateFlow<List<Children>>(emptyList())
@@ -238,4 +241,51 @@ class ChildrenViewModel(
       }
     }
   }
+  fun upsertStopsForChild(
+    childId: Int,
+    driverId: Int,
+    pickupName: String,
+    pickupLat: Double,
+    pickupLng: Double,
+    schoolName: String,
+    schoolLat: Double,
+    schoolLng: Double
+  ) {
+    viewModelScope.launch {
+      _isLoading.value = true
+      try {
+        val token = userPreferencesRepository.getAuthToken().orEmpty()
+        val allStops = stopsRepository.getAllStops(token)
+        val existingPickup = allStops.find { it.driver_id == driverId && it.name == "Home"+childId }
+        val pickupStop = Stops(
+          driver_id = driverId,
+          name = "Home"+childId,
+          latitude = pickupLat,
+          longitude = pickupLng
+        )
+        if (existingPickup != null) {
+          stopsRepository.updateStop(existingPickup.id.toString(), pickupStop, token)
+        } else {
+          stopsRepository.createStop(pickupStop, token)
+        }
+        val existingSchool = allStops.find { it.driver_id == driverId && it.name == "School"+childId }
+        val schoolStop = Stops(
+          driver_id = driverId,
+          name = "School"+childId,
+          latitude = schoolLat,
+          longitude = schoolLng
+        )
+        if (existingSchool != null) {
+          stopsRepository.updateStop(existingSchool.id.toString(), schoolStop, token)
+        } else {
+          stopsRepository.createStop(schoolStop, token)
+        }
+      } catch (e: Exception) {
+        _error.value = "Error saving stops: ${e.localizedMessage ?: "Unknown error"}"
+      } finally {
+        _isLoading.value = false
+      }
+    }
+  }
+
 }

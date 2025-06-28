@@ -50,12 +50,20 @@ import androidx.compose.material3.ModalBottomSheet
 
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.input.pointer.pointerInput
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddStopDialog(
     onDismiss: () -> Unit,
-    onConfirm: (pickupPoint: String, school: String) -> Unit
+    onConfirm: (
+        pickupPoint: String,
+        school: String,
+        pickupLat: Double,
+        pickupLng: Double,
+        schoolLat: Double,
+        schoolLng: Double
+    ) -> Unit
 ) {
     val context = LocalContext.current
     var pickupPoint by remember { mutableStateOf("") }
@@ -73,6 +81,8 @@ fun AddStopDialog(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showSuggestions by remember { mutableStateOf(false) }
     var lastQuery by remember { mutableStateOf("") }
+    var schoolLatLng by remember { mutableStateOf<LatLng?>(null) }
+    var isMapInteracting by remember { mutableStateOf(false) }
 
     // Get current location and country code
     LaunchedEffect(Unit) {
@@ -94,7 +104,11 @@ fun AddStopDialog(
 
     // Animate camera when mapPosition changes
     LaunchedEffect(mapPosition) {
-        cameraPositionState.animate(CameraUpdateFactory.newCameraPosition(CameraPosition.fromLatLngZoom(mapPosition, 15f)))
+        cameraPositionState.animate(
+            CameraUpdateFactory.newCameraPosition(
+                CameraPosition.fromLatLngZoom(mapPosition, 15f)
+            )
+        )
     }
 
     // Debounced search for schools
@@ -115,14 +129,17 @@ fun AddStopDialog(
         }
     }
 
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         dragHandle = null
     ) {
-        Column(modifier = Modifier
-            .padding(20.dp)
-            .fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .padding(20.dp)
+                .fillMaxWidth()
+        ) {
             Text("Agregar Parada", fontWeight = FontWeight.Bold, fontSize = 20.sp)
             Spacer(Modifier.height(8.dp))
             Text("Seleccione el punto de recogida en el mapa y el colegio asociado.", fontSize = 14.sp)
@@ -148,6 +165,14 @@ fun AddStopDialog(
                     .fillMaxWidth()
                     .height(200.dp)
                     .clip(RoundedCornerShape(12.dp))
+                    .pointerInput(Unit) {
+                        awaitPointerEventScope {
+                            while (true) {
+                                val event = awaitPointerEvent()
+                                isMapInteracting = event.changes.any { it.pressed }
+                            }
+                        }
+                    }
             ) {
                 GoogleMap(
                     modifier = Modifier.matchParentSize(),
@@ -170,6 +195,8 @@ fun AddStopDialog(
                 value = school,
                 onValueChange = {
                     school = it
+                    showSuggestions = false
+                    schoolLatLng = null
                 },
                 label = { Text("Colegio (buscar)") },
                 modifier = Modifier.fillMaxWidth()
@@ -193,6 +220,10 @@ fun AddStopDialog(
                                     school = prediction.getFullText(null).toString()
                                     showSuggestions = false
                                     suggestions = emptyList()
+                                    coroutineScope.launch {
+                                        val latLng = getPlaceLatLng(prediction.placeId, context)
+                                        schoolLatLng = latLng
+                                    }
                                 }
                                 .background(Color.White)
                                 .padding(12.dp)
@@ -224,13 +255,39 @@ fun AddStopDialog(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 TextButton(onClick = onDismiss) { Text("Cancelar") }
-                Button(onClick = { onConfirm(pickupPoint, school) }) { Text("Guardar") }
+                Button(
+                    onClick = {
+                        val pickupLat = latitude.toDoubleOrNull() ?: 0.0
+                        val pickupLng = longitude.toDoubleOrNull() ?: 0.0
+                        val schoolLat = schoolLatLng?.latitude ?: 0.0
+                        val schoolLng = schoolLatLng?.longitude ?: 0.0
+                        showSuggestions = false
+                        suggestions = emptyList()
+                        onConfirm(pickupPoint, school, pickupLat, pickupLng, schoolLat, schoolLng)
+                    }
+                ) { Text("Guardar") }
             }
         }
     }
 }
 
-// Update your searchSchools function to accept countryCode and set it in the request
+// Helper to get place LatLng from placeId
+suspend fun getPlaceLatLng(placeId: String, context: Context): LatLng? = suspendCancellableCoroutine { cont ->
+    val placesClient = Places.createClient(context)
+    val request = com.google.android.libraries.places.api.net.FetchPlaceRequest.builder(
+        placeId,
+        listOf(com.google.android.libraries.places.api.model.Place.Field.LAT_LNG)
+    ).build()
+    placesClient.fetchPlace(request)
+        .addOnSuccessListener { response ->
+            cont.resume(response.place.latLng?.let { LatLng(it.latitude, it.longitude) }, onCancellation = null)
+        }
+        .addOnFailureListener {
+            cont.resume(null, onCancellation = null)
+        }
+}
+
+// School search as before
 suspend fun searchSchools(query: String, context: Context, countryCode: String): List<AutocompletePrediction> {
     val placesClient = Places.createClient(context)
     val request = FindAutocompletePredictionsRequest.builder()

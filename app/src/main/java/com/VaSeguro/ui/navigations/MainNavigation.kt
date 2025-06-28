@@ -57,7 +57,7 @@ fun MainNavigation(navController: NavHostController, isAdmin: Boolean) {
         navController.navigate(RouteScreenNavigation(routeId))
     }
 
-    NavHost(navController = navController, startDestination = MapScreenNavigation) {
+    NavHost(navController = navController, startDestination = startDestination) {
         composable<MapScreenNavigation> { MapScreen() }
         composable<HistoryScreenNavigation> { HistoryScreen() }
         composable<BusScreenNavigation> { BusScreen() }

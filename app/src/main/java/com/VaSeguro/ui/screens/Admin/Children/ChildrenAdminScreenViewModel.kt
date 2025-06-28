@@ -18,6 +18,7 @@ import com.VaSeguro.data.remote.Responses.toChild
 import com.VaSeguro.data.remote.Responses.toChildrenResponse
 import com.VaSeguro.data.repository.AuthRepository.AuthRepository
 import com.VaSeguro.data.repository.Children.ChildrenRepository
+import com.VaSeguro.data.repository.Stops.StopsRepository
 import com.VaSeguro.data.repository.UserPreferenceRepository.UserPreferencesRepository
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -26,7 +27,8 @@ import okhttp3.MultipartBody
 class ChildrenAdminScreenViewModel(
     private val childrenRepository: ChildrenRepository,
     private val userPreferencesRepository: UserPreferencesRepository,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val stopsRepository: StopsRepository
 ) : ViewModel() {
     private val _children = MutableStateFlow<List<Child>>(emptyList())
     val children: StateFlow<List<Child>> = _children
@@ -196,7 +198,8 @@ class ChildrenAdminScreenViewModel(
                     ChildrenAdminScreenViewModel(
                         application.appProvider.provideChildrenRepository(),
                         application.appProvider.provideUserPreferences(),
-                        application.appProvider.provideAuthRepository()
+                        application.appProvider.provideAuthRepository(),
+                        application.appProvider.provideStopsRepository(),
                     )
                 } catch (e: Exception) {
                     e.printStackTrace()

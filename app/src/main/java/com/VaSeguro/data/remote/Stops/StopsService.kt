@@ -2,6 +2,7 @@ package com.VaSeguro.data.remote.Stops
 
 
 import com.VaSeguro.data.model.Stop.StopData
+import com.VaSeguro.data.model.Stop.StopDto
 import com.VaSeguro.data.model.Stop.Stops
 import retrofit2.http.*
 
@@ -9,7 +10,7 @@ interface StopsService {
     @GET("stops")
     suspend fun getAllStops(
         @Header("Authorization") token: String
-    ): List<Stops>
+    ): List<StopDto>
 
     @GET("stops/{id}")
     suspend fun getStopById(

@@ -25,6 +25,8 @@ import com.VaSeguro.map.repository.StopPassengerRepositoryImpl
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import androidx.core.graphics.createBitmap
+import com.VaSeguro.data.repository.Stops.StopsRepository
+import com.VaSeguro.data.repository.Stops.StopsRepositoryImpl
 import com.VaSeguro.map.Supabase.SupabaseModule
 import com.VaSeguro.map.repository.LocationRepository
 import com.VaSeguro.map.repository.LocationRepositoryImpl
@@ -49,6 +51,7 @@ class AppProvider(context: Context) {
     private val savedRoutesRepository = SavedRoutesRepositoryImpl()
     private val LocationRepository = LocationRepositoryImpl(SupabaseModule.supabaseClient)
     private val StopRouteRepository = StopRouteRepositoryImpl()
+    private val StopsRepository = StopsRepositoryImpl(RetrofitInstance.stopsService)
 
     fun provideUserPreferences() = userPreferencesRepository
     fun provideAuthRepository() = authRepository
@@ -62,5 +65,6 @@ class AppProvider(context: Context) {
     fun provideChatRepository() = chatRepository
     fun provideLocationRepository() = LocationRepository
     fun provideStopRouteRepository()=StopRouteRepository
+    fun provideStopsRepository(): StopsRepository = StopsRepository
 }
 

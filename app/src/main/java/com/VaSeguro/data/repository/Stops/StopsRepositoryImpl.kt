@@ -1,13 +1,14 @@
 package com.VaSeguro.data.repository.Stops
 
 import com.VaSeguro.data.model.Stop.StopData
+import com.VaSeguro.data.model.Stop.StopDto
 import com.VaSeguro.data.model.Stop.Stops
 import com.VaSeguro.data.remote.Stops.StopsService
 
 class StopsRepositoryImpl(
     private val stopsService: StopsService
 ) : StopsRepository {
-    override suspend fun getAllStops(token: String): List<Stops> =
+    override suspend fun getAllStops(token: String): List<StopDto> =
         stopsService.getAllStops(token)
 
     override suspend fun getStopById(id: String, token: String): Stops =

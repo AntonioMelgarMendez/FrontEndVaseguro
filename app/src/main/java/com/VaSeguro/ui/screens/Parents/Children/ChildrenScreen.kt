@@ -29,6 +29,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.VaSeguro.data.AppProvider
 import com.VaSeguro.data.model.Children.Children
+import com.VaSeguro.map.data.driver
 import com.VaSeguro.ui.components.AddDialogues.AddChildDialog
 import com.VaSeguro.ui.components.AddDialogues.AddChildDialogAdmin
 import com.VaSeguro.ui.components.Cards.ChildrenCard
@@ -45,7 +46,8 @@ fun ChildrenScreen(
                 val appProvider = AppProvider(context.applicationContext)
                 return ChildrenViewModel(
                     appProvider.provideChildrenRepository(),
-                    appProvider.provideUserPreferences()
+                    appProvider.provideUserPreferences(),
+                    appProvider.provideStopsRepository(),
                 ) as T
             }
         }
@@ -114,6 +116,18 @@ fun ChildrenScreen(
                                     }
                                     navController.navigate(
                                         ChatScreenNavigation(id = chatPartnerId)
+                                    )
+                                },
+                                onAddStop = { child, pickupPoint, school, pickupLat, pickupLng, schoolLat, schoolLng ->
+                                    viewModel.upsertStopsForChild(
+                                        childId = child.id,
+                                        pickupName = pickupPoint,
+                                        pickupLat = pickupLat,
+                                        pickupLng = pickupLng,
+                                        schoolName = school,
+                                        schoolLat = schoolLat,
+                                        schoolLng = schoolLng,
+                                        driverId = child.driver_id
                                     )
                                 }
                             )

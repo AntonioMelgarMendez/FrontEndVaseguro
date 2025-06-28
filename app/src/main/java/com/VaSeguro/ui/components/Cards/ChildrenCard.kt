@@ -39,7 +39,6 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.VaSeguro.R
 import com.VaSeguro.data.model.Children.Children
-import com.VaSeguro.ui.screens.Admin.Stops.AddStopDialog
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.libraries.places.api.Places
@@ -66,7 +65,8 @@ fun ChildrenCard(
   onEditClick: () -> Unit = {},
   onDeleteClick: () -> Unit = {},
   onToggleExpand: () -> Unit = {},
-  onChat: (chatId: String) -> Unit = {}
+  onChat: (chatId: String) -> Unit = {},
+  onAddStop: (child: Children, pickupPoint: String, school: String, pickupLat: Double, pickupLng: Double, schoolLat: Double, schoolLng: Double) -> Unit = { _, _, _, _, _, _, _ -> }
 ) {
   var isLoading by remember { mutableStateOf(true) }
   var showDialog by remember { mutableStateOf(false) }
@@ -193,6 +193,14 @@ fun ChildrenCard(
                     modifier = Modifier.size(28.dp)
                   )
                 }
+                IconButton(onClick = { showAddStopDialog = true }) {
+                  Icon(
+                    imageVector = Icons.Default.AddLocation,
+                    contentDescription = "Add Stop",
+                    tint = Color.White,
+                    modifier = Modifier.size(28.dp)
+                  )
+                }
               }
               IconButton(
                 onClick = {
@@ -209,23 +217,16 @@ fun ChildrenCard(
                 )
               }
             }
-            IconButton(onClick = { showAddStopDialog = true }) {
-              Icon(
-                imageVector = Icons.Default.AddLocation,
-                contentDescription = "Add Stop",
-                tint = Color.White,
-                modifier = Modifier.size(28.dp)
-              )
-            }
           }
         }
       }
     }
     if (showAddStopDialog) {
-      com.VaSeguro.ui.screens.Admin.Children.AddStopDialog (
+      com.VaSeguro.ui.screens.Admin.Children.AddStopDialog(
         onDismiss = { showAddStopDialog = false },
-        onConfirm = { pickupPoint, school ->
+        onConfirm = { pickupPoint, school, pickupLat, pickupLng, schoolLat, schoolLng ->
           showAddStopDialog = false
+          onAddStop(child, pickupPoint, school, pickupLat, pickupLng, schoolLat, schoolLng)
         }
       )
     }

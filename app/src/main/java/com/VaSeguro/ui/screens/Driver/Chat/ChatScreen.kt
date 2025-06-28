@@ -1,10 +1,8 @@
-
 package com.VaSeguro.ui.screens.Driver.Chat
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -20,7 +18,6 @@ import com.VaSeguro.ui.components.Chat.ChatTopBar
 import com.VaSeguro.ui.navigations.ChildrenScreenNavigation
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.VaSeguro.ui.navigations.CallScreenNavigation
-import kotlin.toString
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,6 +35,7 @@ fun ChatScreen(
   val currentUserId by viewModel.currentUserId.collectAsState()
   val roomName = currentUserId?.let { getRoomName(it, id) } ?: ""
 
+  var hasScrolledToBottom by remember { mutableStateOf(false) }
 
   LaunchedEffect(id) {
     viewModel.loadUser(id)
@@ -46,6 +44,22 @@ fun ChatScreen(
     viewModel.loadChat(currentUserId, id)
     val token = viewModel.userPreferencesRepository.getAuthToken() ?: return@LaunchedEffect
     viewModel.connectSocket(currentUserId, token)
+    hasScrolledToBottom = false
+  }
+
+  // Only scroll to the bottom on initial load
+  LaunchedEffect(messages.size) {
+    if (messages.isNotEmpty() && !hasScrolledToBottom) {
+      listState.scrollToItem(messages.lastIndex)
+      hasScrolledToBottom = true
+    }
+  }
+
+  // Load more messages when scrolled to the top
+  LaunchedEffect(listState.firstVisibleItemIndex) {
+    if (listState.firstVisibleItemIndex == 0 && messages.isNotEmpty()) {
+      viewModel.loadMoreMessages()
+    }
   }
 
   if (isLoading) {
@@ -134,9 +148,6 @@ fun ChatScreen(
       )
     },
   ) { innerPadding ->
-    LaunchedEffect(messages.size) {
-      listState.animateScrollToItem(messages.size)
-    }
     ChatMessagesList(
       messages = messages,
       listState = listState,
@@ -144,6 +155,7 @@ fun ChatScreen(
     )
   }
 }
+
 fun getRoomName(userId1: String, userId2: String): String {
   return listOf(userId1, userId2).sorted().joinToString("_", prefix = "chat_")
 }

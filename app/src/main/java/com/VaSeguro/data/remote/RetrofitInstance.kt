@@ -12,6 +12,7 @@ import com.VaSeguro.BuildConfig
 import com.VaSeguro.data.remote.Chat.ChatService
 import com.VaSeguro.data.remote.Request.RequestService
 import com.VaSeguro.data.remote.Route.RouteService
+import com.VaSeguro.data.remote.Stops.StopsService
 import com.VaSeguro.map.services.RoutesApiService
 import com.agarcia.myfirstandroidapp.data.remote.interceptor.SmartAuthInterceptor
 
@@ -90,5 +91,7 @@ object RetrofitInstance {
     val chatApiService: ChatService by lazy {
         retrofit.create(ChatService::class.java)
     }
-
+    val stopsService: StopsService by lazy {
+        retrofit.create(StopsService::class.java)
+    }
 }

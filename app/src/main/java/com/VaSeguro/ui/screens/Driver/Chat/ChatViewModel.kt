@@ -48,6 +48,9 @@ class ChatViewModel(
   val isLoading: StateFlow<Boolean> = _isLoading
   private val _currentUserId = MutableStateFlow<String?>(null)
   val currentUserId: StateFlow<String?> = _currentUserId
+  private var allMessages: List<Message> = emptyList()
+  private var visibleCount = 10
+
   init {
     viewModelScope.launch {
       val user = userPreferencesRepository.getUserData()
@@ -121,7 +124,7 @@ class ChatViewModel(
       val token = userPreferencesRepository.getAuthToken() ?: return@launch
       try {
         val chat = chatRepository.getChatBetweenUsers(user1Id, user2Id, token)
-        _messages.value = chat.map {
+        allMessages = chat.map {
           Message(
             id = it.id.toLong(),
             content = it.message,
@@ -129,9 +132,21 @@ class ChatViewModel(
             timestamp = formatTimestamp(it.created_at)
           )
         }
+        updateVisibleMessages()
       } catch (e: Exception) {
         e.printStackTrace()
       }
+    }
+  }
+  private fun updateVisibleMessages() {
+    val fromIndex = (allMessages.size - visibleCount).coerceAtLeast(0)
+    _messages.value = allMessages.subList(fromIndex, allMessages.size)
+  }
+
+  fun loadMoreMessages() {
+    if (visibleCount < allMessages.size) {
+      visibleCount += 10
+      updateVisibleMessages()
     }
   }
 
