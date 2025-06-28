@@ -41,6 +41,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.tooling.preview.Preview
+import com.VaSeguro.data.model.Child.toChildren
+import com.VaSeguro.data.model.Children.Children
 import com.VaSeguro.ui.components.AddDialogues.AddChildDialogAdmin
 import com.VaSeguro.ui.components.Cards.AdminCardItem
 import com.VaSeguro.ui.components.Container.ConfirmationDialog
@@ -58,6 +60,8 @@ fun ChildrenAdminScreen(
     var showDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var selectedIdToDelete by remember { mutableStateOf<Int?>(null) }
+    var selectedChildToEdit by remember { mutableStateOf<Children?>(null) }
+
 
     LaunchedEffect(Unit) {
         viewModel.fetchUsersForRoles()
@@ -156,13 +160,19 @@ fun ChildrenAdminScreen(
                                 "Birth" to child.birth,
                                 "Medical Info" to child.medicalInfo,
                                 "Driver" to child.driver,
-                                "Created" to child.createdAt
                             ),
                             isExpanded = expandedMap[child.id.toString()] ?: false,
                             isChecked = checkedMap[child.id.toString()] ?: false,
                             shape = shape,
                             onCheckedChange = { viewModel.setChecked(child.id.toString(), it) },
-                            onEditClick = { println("Editar ${child.fullName}") },
+                            onEditClick = {
+                                selectedChildToEdit = child.toChildren(
+                                    parents = viewModel.parents,
+                                    drivers = viewModel.drivers
+                                )
+
+                                showDialog = selectedChildToEdit != null
+                            },
                             onDeleteClick = {
                                 selectedIdToDelete = child.id
                                 showDeleteDialog = true
@@ -177,10 +187,18 @@ fun ChildrenAdminScreen(
 
     if (showDialog) {
         AddChildDialogAdmin(
-            onDismiss = { showDialog = false },
-            onSave = { showDialog = false }
+            existingChild = selectedChildToEdit,
+            onDismiss = {
+                showDialog = false
+                selectedChildToEdit = null
+            },
+            onSave = {
+                showDialog = false
+                selectedChildToEdit = null
+            }
         )
     }
+
 
     if (showDeleteDialog && selectedIdToDelete != null) {
         ConfirmationDialog(
@@ -196,7 +214,6 @@ fun ChildrenAdminScreen(
             }
         )
     }
-
 }
 
 @Preview(showBackground = true)

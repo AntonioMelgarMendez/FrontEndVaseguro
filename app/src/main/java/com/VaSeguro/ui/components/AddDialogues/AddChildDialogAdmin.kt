@@ -21,6 +21,7 @@ import androidx.compose.material3.*
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.VaSeguro.data.model.Children.Children
 import com.VaSeguro.data.remote.Auth.UserResponse
 import com.VaSeguro.ui.components.Container.DropDownSelector
 import com.VaSeguro.ui.components.Misc.CustomizableOutlinedTextField
@@ -35,26 +36,58 @@ import java.util.Locale
 fun AddChildDialogAdmin(
   viewModel: ChildrenAdminScreenViewModel = viewModel(factory = ChildrenAdminScreenViewModel.Factory),
   onDismiss: () -> Unit,
-  onSave: () -> Unit
+  onSave: () -> Unit,
+  existingChild: Children? = null
 ) {
   val context = LocalContext.current
-  var forenames by remember { mutableStateOf(TextFieldValue("")) }
-  var surnames by remember { mutableStateOf(TextFieldValue("")) }
-  var medicalInfo by remember { mutableStateOf(TextFieldValue("")) }
-  var selectedParent by remember { mutableStateOf<UserResponse?>(null) }
-  var selectedDriver by remember { mutableStateOf<UserResponse?>(null) }
-  val genderMap = mapOf(
-    "Masculino" to "M",
-    "Femenino" to "F"
-  )
-  var selectedGenderLabel by remember { mutableStateOf<String?>(null) }
+  var forenames by remember { mutableStateOf(TextFieldValue(existingChild?.forenames ?: "")) }
+  var surnames by remember { mutableStateOf(TextFieldValue(existingChild?.surnames ?: "")) }
+  var medicalInfo by remember { mutableStateOf(TextFieldValue(existingChild?.medical_info ?: "")) }
 
   val parentOptions = viewModel.parents
   val driverOptions = viewModel.drivers
+  val backendFormatter = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) }
 
-  val dateFormatter = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
-  var selectedDateMillis by remember { mutableStateOf<Long?>(null) }
-  val selectedDateText = selectedDateMillis?.let { dateFormatter.format(Date(it)) } ?: ""
+  val genderMap = mapOf("Masculino" to "M", "Femenino" to "F")
+
+  var selectedParent by remember {
+    mutableStateOf(
+      existingChild?.let { child ->
+        parentOptions.find { it.id == child.parent_id }
+      }
+    )
+  }
+
+  var selectedDriver by remember {
+    mutableStateOf(
+      existingChild?.let { child ->
+        driverOptions.find { it.id == child.driver_id }
+      }
+    )
+  }
+
+  var selectedGenderLabel by remember {
+    mutableStateOf(
+      existingChild?.let { child ->
+        genderMap.entries.find { it.value == child.gender }?.key
+      }
+    )
+  }
+
+  val displayFormatter = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
+  var selectedDateMillis by remember {
+    mutableStateOf(
+      existingChild?.birth_date?.let { dateStr ->
+        try {
+          backendFormatter.parse(dateStr)?.time
+        } catch (e: Exception) {
+          null
+        }
+      }
+    )
+  }
+
+  val selectedDateText = selectedDateMillis?.let { displayFormatter.format(Date(it)) } ?: ""
   var showDatePicker by remember { mutableStateOf(false) }
 
   fun resetForm() {
@@ -65,7 +98,9 @@ fun AddChildDialogAdmin(
 
   AlertDialog(
     onDismissRequest = onDismiss,
-    title = { Text("Add Child") },
+    title = {
+      Text(if (existingChild != null) "Editar niño" else "Agregar niño")
+    },
     text = {
       Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
 
@@ -137,7 +172,8 @@ fun AddChildDialogAdmin(
             return@Button
           }
 
-          viewModel.addChild(
+          val updatedChild = Children(
+            id = existingChild?.id ?: 0, // ← si es nuevo, id = 0 (aunque este bloque solo debería ejecutarse si es edición)
             forenames = forenames.text,
             surnames = surnames.text,
             birth_date = selectedDateText,
@@ -145,7 +181,25 @@ fun AddChildDialogAdmin(
             gender = genderMap[selectedGenderLabel]!!,
             parent_id = selectedParent!!.id,
             driver_id = selectedDriver!!.id,
+            profile_pic = existingChild?.profile_pic // opcional
           )
+
+          if (existingChild != null) {
+            viewModel.updateChild(
+              id = existingChild.id.toString(),
+              child = updatedChild
+            )
+          } else {
+            viewModel.addChild(
+              forenames = forenames.text,
+              surnames = surnames.text,
+              birth_date = selectedDateText,
+              medical_info = medicalInfo.text,
+              gender = genderMap[selectedGenderLabel]!!,
+              parent_id = selectedParent!!.id,
+              driver_id = selectedDriver!!.id
+            )
+          }
 
           onSave()
         },
@@ -154,7 +208,7 @@ fun AddChildDialogAdmin(
           containerColor = PrimaryColor
         )
       ) {
-        Text("Agregar")
+        Text(if (existingChild != null) "Guardar" else "Agregar")
       }
     },
     dismissButton = {
