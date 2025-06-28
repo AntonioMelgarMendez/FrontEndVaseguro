@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
@@ -46,6 +47,7 @@ import com.VaSeguro.data.model.Children.Children
 import com.VaSeguro.ui.components.AddDialogues.AddChildDialogAdmin
 import com.VaSeguro.ui.components.Cards.AdminCardItem
 import com.VaSeguro.ui.components.Container.ConfirmationDialog
+import com.VaSeguro.ui.theme.PrimaryColor
 import kotlin.collections.lastIndex
 
 
@@ -135,50 +137,62 @@ fun ChildrenAdminScreen(
                         .fillMaxHeight(),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator()
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(48.dp),
+                        color = PrimaryColor
+                    )
                 }
             } else {
                 LazyColumn {
-                    itemsIndexed(children) { index, child ->
-                        val isFirst = index == 0
-                        val isLast = index == children.lastIndex
+                    if (children.isNotEmpty()) {
+                        itemsIndexed(children) { index, child ->
+                            val isFirst = index == 0
+                            val isLast = index == children.lastIndex
 
-                        val shape = when {
-                            isFirst && isLast -> RoundedCornerShape(16.dp)
-                            isFirst -> RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
-                            isLast -> RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp)
-                            else -> RectangleShape
+                            val shape = when {
+                                isFirst && isLast -> RoundedCornerShape(16.dp)
+                                isFirst -> RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+                                isLast -> RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp)
+                                else -> RectangleShape
+                            }
+
+                            AdminCardItem(
+                                id = child.id.toString(),
+                                title = child.fullName,
+                                subtitle = "Age: ${child.age} | Parent: ${child.parent}",
+                                details = listOf(
+                                    "Forenames" to child.forenames,
+                                    "Surnames" to child.surnames,
+                                    "Birth" to child.birth,
+                                    "Medical Info" to child.medicalInfo,
+                                    "Driver" to child.driver,
+                                ),
+                                isExpanded = expandedMap[child.id.toString()] == true,
+                                isChecked = checkedMap[child.id.toString()] == true,
+                                shape = shape,
+                                onCheckedChange = { viewModel.setChecked(child.id.toString(), it) },
+                                onEditClick = {
+                                    selectedChildToEdit = child.toChildren(
+                                        parents = viewModel.parents,
+                                        drivers = viewModel.drivers
+                                    )
+
+                                    showDialog = selectedChildToEdit != null
+                                },
+                                onDeleteClick = {
+                                    selectedIdToDelete = child.id
+                                    showDeleteDialog = true
+                                },
+                                onToggleExpand = { viewModel.toggleExpand(child.id.toString()) }
+                            )
                         }
-
-                        AdminCardItem(
-                            id = child.id.toString(),
-                            title = child.fullName,
-                            subtitle = "Age: ${child.age} | Parent: ${child.parent}",
-                            details = listOf(
-                                "Forenames" to child.forenames,
-                                "Surnames" to child.surnames,
-                                "Birth" to child.birth,
-                                "Medical Info" to child.medicalInfo,
-                                "Driver" to child.driver,
-                            ),
-                            isExpanded = expandedMap[child.id.toString()] ?: false,
-                            isChecked = checkedMap[child.id.toString()] ?: false,
-                            shape = shape,
-                            onCheckedChange = { viewModel.setChecked(child.id.toString(), it) },
-                            onEditClick = {
-                                selectedChildToEdit = child.toChildren(
-                                    parents = viewModel.parents,
-                                    drivers = viewModel.drivers
-                                )
-
-                                showDialog = selectedChildToEdit != null
-                            },
-                            onDeleteClick = {
-                                selectedIdToDelete = child.id
-                                showDeleteDialog = true
-                            },
-                            onToggleExpand = { viewModel.toggleExpand(child.id.toString()) }
-                        )
+                    } else {
+                        item {
+                            Text(
+                                "Click 'Add' to create a new child.",
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
                     }
                 }
             }

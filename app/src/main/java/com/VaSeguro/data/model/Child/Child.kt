@@ -24,7 +24,7 @@ fun Child.toChildren(
     val parentId = parents.find { "${it.forenames} ${it.surnames}" == this.parent }?.id
     val driverId = drivers.find { "${it.forenames} ${it.surnames}" == this.driver }?.id
 
-    if (parentId == null || driverId == null) return null // no se puede convertir si no encuentra ambos
+    if (parentId == null || driverId == null) return null
 
     return Children(
         id = this.id,
@@ -34,7 +34,7 @@ fun Child.toChildren(
         medical_info = this.medicalInfo,
         parent_id = parentId,
         driver_id = driverId,
-        gender = "M", // 🔁 si tenés el género en `Child`, reemplazá esto correctamente
+        gender = "M",
         profile_pic = this.profilePic
     )
 }
