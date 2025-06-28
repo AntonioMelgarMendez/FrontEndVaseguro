@@ -43,6 +43,11 @@ fun AddChildDialogAdmin(
   var medicalInfo by remember { mutableStateOf(TextFieldValue("")) }
   var selectedParent by remember { mutableStateOf<UserResponse?>(null) }
   var selectedDriver by remember { mutableStateOf<UserResponse?>(null) }
+  val genderMap = mapOf(
+    "Masculino" to "M",
+    "Femenino" to "F"
+  )
+  var selectedGenderLabel by remember { mutableStateOf<String?>(null) }
 
   val parentOptions = viewModel.parents
   val driverOptions = viewModel.drivers
@@ -87,6 +92,13 @@ fun AddChildDialogAdmin(
           )
         )
 
+        DropDownSelector(
+          label = "Género",
+          options = genderMap.keys.toList(),
+          selectedOption = selectedGenderLabel,
+          onOptionSelected = { selectedGenderLabel = it }
+        )
+
         CustomizableOutlinedTextField(medicalInfo, { medicalInfo = it }, "Medical Info")
 
         DropDownSelector(
@@ -118,7 +130,8 @@ fun AddChildDialogAdmin(
             selectedDateText.isBlank() ||
             medicalInfo.text.isBlank() ||
             selectedParent == null ||
-            selectedDriver == null
+            selectedDriver == null ||
+            selectedGenderLabel == null
           ) {
             Toast.makeText(context, "Por favor completa todos los campos.", Toast.LENGTH_SHORT).show()
             return@Button
@@ -129,7 +142,7 @@ fun AddChildDialogAdmin(
             surnames = surnames.text,
             birth_date = selectedDateText,
             medical_info = medicalInfo.text,
-            gender = "N/A",
+            gender = genderMap[selectedGenderLabel]!!,
             parent_id = selectedParent!!.id,
             driver_id = selectedDriver!!.id,
           )
