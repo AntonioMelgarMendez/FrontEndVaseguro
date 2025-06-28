@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 
-class StopsAdminScreenViewModel : ViewModel() {
+class   StopsAdminScreenViewModel : ViewModel() {
 
     private val _stops = MutableStateFlow(
         listOf(
@@ -15,7 +15,7 @@ class StopsAdminScreenViewModel : ViewModel() {
                 id = 1,
                 name = "Parada El Centro",
                 latitude = 13.700,
-                longitude = -89.210
+                longitude = -89.210,
             ),
             StopData(
                 id = 2,

@@ -121,7 +121,16 @@ fun ChatScreen(
           gender = user!!.gender ?: ""
         ),
         onBackClick = { navController.navigate(ChildrenScreenNavigation) },
-        onCallClick = { navController.navigate(CallScreenNavigation(roomName = roomName, id = id)) }
+        onCallClick = {
+          navController.navigate(
+            CallScreenNavigation(
+              roomName = roomName,
+              id = id,
+              personName = (user!!.forenames ?: "") + " " + (user!!.surnames ?: ""),
+              personPhotoUrl = user!!.profile_pic
+            )
+          )
+        }
       )
     },
   ) { innerPadding ->

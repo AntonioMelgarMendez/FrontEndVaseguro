@@ -1,5 +1,7 @@
 package com.VaSeguro.ui.components.Cards
 
+import android.content.Context
+import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -9,6 +11,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AddLocation
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
@@ -36,9 +39,24 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.VaSeguro.R
 import com.VaSeguro.data.model.Children.Children
+import com.VaSeguro.ui.screens.Admin.Stops.AddStopDialog
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.libraries.places.api.Places
+import com.google.android.libraries.places.api.model.AutocompletePrediction
+import com.google.android.libraries.places.api.model.PlaceTypes
+import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest
+import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.MarkerState
+import com.google.maps.android.compose.rememberCameraPositionState
+import kotlinx.coroutines.suspendCancellableCoroutine
+
 import java.time.LocalDate
 import java.time.Period
 import java.time.format.DateTimeFormatter
+import kotlin.compareTo
+import kotlin.toString
 
 @Composable
 fun ChildrenCard(
@@ -53,6 +71,7 @@ fun ChildrenCard(
   var isLoading by remember { mutableStateOf(true) }
   var showDialog by remember { mutableStateOf(false) }
   val medicalInfo = child.medical_info.ifEmpty { "No hay informacion " }
+  var showAddStopDialog by remember { mutableStateOf(false) }
 
   Card(
     modifier = Modifier.fillMaxWidth()  .clickable { onToggleExpand() },
@@ -190,9 +209,25 @@ fun ChildrenCard(
                 )
               }
             }
+            IconButton(onClick = { showAddStopDialog = true }) {
+              Icon(
+                imageVector = Icons.Default.AddLocation,
+                contentDescription = "Add Stop",
+                tint = Color.White,
+                modifier = Modifier.size(28.dp)
+              )
+            }
           }
         }
       }
+    }
+    if (showAddStopDialog) {
+      com.VaSeguro.ui.screens.Admin.Children.AddStopDialog (
+        onDismiss = { showAddStopDialog = false },
+        onConfirm = { pickupPoint, school ->
+          showAddStopDialog = false
+        }
+      )
     }
     if (showDialog) {
       Dialog(onDismissRequest = { showDialog = false }) {

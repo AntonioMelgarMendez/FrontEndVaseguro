@@ -56,5 +56,7 @@ object ChanScreenNavigation
 @Serializable
 data class CallScreenNavigation(
     val roomName: String,
-    val id: String
+    val id: String,
+    val personName: String,
+    val personPhotoUrl: String? = null
 )

@@ -93,8 +93,11 @@ fun GeneralScaffold(navControllerx: NavController) {
     fun isChatRoute(route: String?): Boolean {
         return route?.contains("ChatScreenNavigation") == true
     }
+    fun isCallRoute(route: String?): Boolean {
+        return route?.contains("CallScreenNavigation") == true
+    }
 
-    if (!isChatRoute(currentRoute)) {
+    if (!isChatRoute(currentRoute) && !isCallRoute(currentRoute)) {
     Scaffold(
         containerColor = Color.White,
         topBar = {

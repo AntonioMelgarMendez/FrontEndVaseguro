@@ -127,5 +127,6 @@ dependencies {
     implementation ("io.socket:socket.io-client:2.1.0")
     implementation("org.jitsi.react:jitsi-meet-sdk:6.2.2")
     implementation ("io.agora.rtc:full-sdk:4.2.6")
+
 }
 
