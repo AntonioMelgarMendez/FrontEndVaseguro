@@ -23,6 +23,7 @@ import com.VaSeguro.map.repository.RoutesApiRepositoryImpl
 import com.VaSeguro.map.repository.SavedRoutesRepositoryImpl
 import com.VaSeguro.map.repository.StopPassengerRepositoryImpl
 import androidx.core.graphics.createBitmap
+import androidx.room.Room
 import com.VaSeguro.data.repository.RouteRepository.RouteRepositoryImpl
 import com.VaSeguro.data.repository.Stops.StopsRepository
 import com.VaSeguro.data.repository.Stops.StopsRepositoryImpl
@@ -52,7 +53,11 @@ class AppProvider(context: Context) {
     private val StopRouteRepository = StopRouteRepositoryImpl()
     private val StopsRepository = StopsRepositoryImpl(RetrofitInstance.stopsService)
     private val RoutesRepository= RouteRepositoryImpl(routeService=RetrofitInstance.routeService)
-
+    private val appDatabase = Room.databaseBuilder(
+        context.applicationContext,
+        AppDatabase::class.java,
+        "va_seguro_db"
+    ).fallbackToDestructiveMigration().build()
     fun provideUserPreferences() = userPreferencesRepository
     fun provideAuthRepository() = authRepository
     fun provideMapsApiRepository() = mapsApiRepository
@@ -67,5 +72,11 @@ class AppProvider(context: Context) {
     fun provideStopRouteRepository()=StopRouteRepository
     fun provideStopsRepository(): StopsRepository = StopsRepository
     fun provideRoutesRepository(): RouteRepositoryImpl = RoutesRepository
+    fun provideAppDatabase() = appDatabase
+    fun provideUserDao() = appDatabase.userDao()
+    fun provideChildDao() = appDatabase.childDao()
+    fun provideRouteDao() = appDatabase.routeDao()
+    fun provideStopDao() = appDatabase.stopDao()
+    fun provideVehicleDao() = appDatabase.vehicleDao()
 }
 

@@ -2,21 +2,22 @@ package com.VaSeguro.ui.screens.Admin.Stops
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.VaSeguro.data.Dao.Stops.StopDao
+import com.VaSeguro.data.Entitys.Stops.StopEntity
 import com.VaSeguro.data.model.Stop.StopData
 import com.VaSeguro.data.model.Stop.StopDto
 import com.VaSeguro.data.model.Stop.Stops
-import com.VaSeguro.data.repository.DriverPrefs.DriverPrefs
 import com.VaSeguro.data.repository.Stops.StopsRepository
 import com.VaSeguro.data.repository.UserPreferenceRepository.UserPreferencesRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlin.toString
 
 class StopsAdminScreenViewModel(
     private val stopsRepository: StopsRepository,
-    private val userPreferencesRepository: UserPreferencesRepository
+    private val userPreferencesRepository: UserPreferencesRepository,
+    private val stopsDao: StopDao
 ) : ViewModel() {
 
     private val _stops = MutableStateFlow<List<StopData>>(emptyList())
@@ -31,6 +32,8 @@ class StopsAdminScreenViewModel(
     private val _loading = MutableStateFlow(true)
     val loading: StateFlow<Boolean> = _loading
 
+    private val CACHE_EXPIRATION_MS = 1 * 60 * 1000L
+
     init {
         fetchStops()
     }
@@ -38,6 +41,19 @@ class StopsAdminScreenViewModel(
     fun fetchStops() {
         viewModelScope.launch {
             _loading.value = true
+            // 1. Read from Room
+            val cached = stopsDao.getAllStops()
+            if (cached.isNotEmpty()) {
+                _stops.value = cached.map { it.toStopData() }
+            }
+            // 2. Check cache expiration
+            val lastFetch = userPreferencesRepository.getLastStopsFetchTime()
+            val now = System.currentTimeMillis()
+            if (lastFetch != null && now - lastFetch < CACHE_EXPIRATION_MS) {
+                _loading.value = false
+                return@launch
+            }
+            // 3. Fetch from API and update Room
             try {
                 val token = userPreferencesRepository.getAuthToken().orEmpty()
                 val stopDtos: List<StopDto> = stopsRepository.getAllStops(token)
@@ -50,8 +66,11 @@ class StopsAdminScreenViewModel(
                     )
                 }
                 _stops.value = stopDataList
+                stopsDao.clearStops()
+                stopsDao.insertStops(stopDtos.map { it.toEntity() })
+                userPreferencesRepository.setLastStopsFetchTime(now)
             } catch (e: Exception) {
-                _stops.value = emptyList()
+                // Handle error
             } finally {
                 _loading.value = false
             }
@@ -63,12 +82,13 @@ class StopsAdminScreenViewModel(
             try {
                 val token = userPreferencesRepository.getAuthToken().orEmpty()
                 stopsRepository.deleteStop(stopId, token)
-                _stops.update { it.filterNot { stop -> stop.id.toString() == stopId } }
-                _expandedMap.update { it - stopId }
-                _checkedMap.update { it - stopId }
+                fetchStops()
             } catch (_: Exception) { }
+            _expandedMap.update { it - stopId }
+            _checkedMap.update { it - stopId }
         }
     }
+
     fun editStop(stop: StopData, driverId: Int?) {
         viewModelScope.launch {
             try {
@@ -84,6 +104,7 @@ class StopsAdminScreenViewModel(
             } catch (_: Exception) { }
         }
     }
+
     fun toggleExpand(stopId: String) {
         _expandedMap.update { map ->
             map.toMutableMap().apply {
@@ -99,4 +120,20 @@ class StopsAdminScreenViewModel(
             }
         }
     }
+
+    // Conversion helpers
+    private fun StopDto.toEntity() = StopEntity(
+        id = this.id,
+        name = this.name,
+        latitude = this.latitude,
+        longitude = this.longitude,
+        driver_id = this.driver_id,
+    )
+
+    private fun StopEntity.toStopData() = StopData(
+        id = this.id,
+        name = this.name,
+        latitude = this.latitude,
+        longitude = this.longitude
+    )
 }

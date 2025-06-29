@@ -43,7 +43,9 @@ fun HomeAdminScreen() {
                 return HomeAdminViewModel(
                     appProvider.provideAuthRepository(),
                     appProvider.provideUserPreferences(),
-                    appProvider.provideRequestRepository()
+                    appProvider.provideRequestRepository(),
+                    appProvider.provideUserDao(),
+                    appProvider.provideChildrenRepository()
                 ) as T
             }
         }

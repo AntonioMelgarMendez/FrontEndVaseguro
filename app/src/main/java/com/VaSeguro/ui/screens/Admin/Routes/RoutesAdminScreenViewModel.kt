@@ -7,6 +7,8 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.VaSeguro.MyApplication
+import com.VaSeguro.data.Dao.Route.RouteDao
+import com.VaSeguro.data.Entitys.Routes.RouteEntity
 import com.VaSeguro.data.model.Route.RouteStatus
 import com.VaSeguro.data.model.Route.RouteType
 import com.VaSeguro.data.model.Vehicle.Vehicle
@@ -26,7 +28,8 @@ class RoutesAdminScreenViewModel(
     private val routeRepository: RouteRepository,
     private val vehicleRepository: VehicleRepository,
     private val userPreferencesRepository: UserPreferencesRepository,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val routeDao: RouteDao
 ) : ViewModel() {
     private val _routes = MutableStateFlow<List<RouteResponse>>(emptyList())
     val routes: StateFlow<List<RouteResponse>> = _routes
@@ -43,6 +46,8 @@ class RoutesAdminScreenViewModel(
     private val _vehicles = MutableStateFlow<List<Vehicle>>(emptyList())
     val vehicles: StateFlow<List<Vehicle>> = _vehicles
 
+    private val CACHE_EXPIRATION_MS = 1 * 60 * 1000L
+
     var name: String = ""
     var start_date: String = ""
     var vehicleId: Int? = null
@@ -53,17 +58,11 @@ class RoutesAdminScreenViewModel(
     var routeName: String = ""
     var routeStatus: String = ""
 
-    fun updateRouteName(routeName: String) {
-        name = routeName
-    }
-    fun updateRouteStartDate(startDate: String) {
-        start_date = startDate
-    }
+    fun updateRouteName(routeName: String) { name = routeName }
+    fun updateRouteStartDate(startDate: String) { start_date = startDate }
     fun updateRouteVehicleId(plate: String) {
         val vehicle = vehicles.value.find { it.plate == plate }
-        vehicle?.let {
-            vehicleId = it.id.toIntOrNull()
-        }
+        vehicle?.let { vehicleId = it.id.toIntOrNull() }
         this.plate = plate
     }
     fun updateStatusId(value: RouteStatus) {
@@ -74,7 +73,6 @@ class RoutesAdminScreenViewModel(
         typeId = value.id.toInt()
         routeName = value.name
     }
-
     fun resetForm() {
         name = ""
         start_date = ""
@@ -85,7 +83,6 @@ class RoutesAdminScreenViewModel(
         statusId = null
         typeId = null
     }
-
     fun areFieldsValid(): Boolean {
         return name.isNotBlank() &&
                 start_date.isNotBlank() &&
@@ -94,9 +91,7 @@ class RoutesAdminScreenViewModel(
                 typeId != null
     }
 
-    init {
-        loadVehicles()
-    }
+    init { loadVehicles() }
 
     private fun loadVehicles() {
         viewModelScope.launch {
@@ -111,9 +106,7 @@ class RoutesAdminScreenViewModel(
                         println("Error al cargar vehículos: ${resource.message}")
                         _loading.value = false
                     }
-                    Resource.Loading -> {
-                        _loading.value = true
-                    }
+                    Resource.Loading -> { _loading.value = true }
                 }
             }
         }
@@ -122,17 +115,51 @@ class RoutesAdminScreenViewModel(
     fun fetchAllRoutes() {
         viewModelScope.launch {
             _loading.value = true
+            val cached = routeDao.getAllRoutes()
+            if (cached.isNotEmpty()) {
+                _routes.value = cached.map { it.toRouteResponse() }
+            }
+            val lastFetch = userPreferencesRepository.getLastRoutesFetchTime()
+            val now = System.currentTimeMillis()
+            if (lastFetch != null && now - lastFetch < CACHE_EXPIRATION_MS) {
+                _loading.value = false
+                return@launch
+            }
+            // 3. Fetch from API and update Room
             try {
                 val token = userPreferencesRepository.getAuthToken().orEmpty()
                 val routeResponses = routeRepository.getRoutes(token)
                 _routes.value = routeResponses
+                routeDao.clearRoutes()
+                routeDao.insertRoutes(routeResponses.map { it.toEntity() })
+                userPreferencesRepository.setLastRoutesFetchTime(now)
             } catch (e: Exception) {
-                _routes.value = emptyList()
+                // Handle error
             } finally {
                 _loading.value = false
             }
         }
     }
+
+    // Conversion helpers
+    private fun RouteResponse.toEntity() = RouteEntity(
+        id = this.id,
+        name = this.name,
+        start_date = this.start_date,
+        end_date = this.end_date,
+        vehicle_id = this.vehicle_id,
+        status_id = this.status_id,
+        type_id = this.type_id
+    )
+    private fun RouteEntity.toRouteResponse() = RouteResponse(
+        id = this.id,
+        name = this.name,
+        start_date = this.start_date,
+        end_date = this.end_date,
+        vehicle_id = this.vehicle_id,
+        status_id = this.status_id,
+        type_id = this.type_id
+    )
 
     fun deleteRoute(routeId: Int) {
         viewModelScope.launch {
@@ -217,7 +244,8 @@ class RoutesAdminScreenViewModel(
                         application.appProvider.provideRoutesRepository(),
                         application.appProvider.provideVehicleRepository(),
                         application.appProvider.provideUserPreferences(),
-                        application.appProvider.provideAuthRepository()
+                        application.appProvider.provideAuthRepository(),
+                        application.appProvider.provideRouteDao()
                     )
                 } catch (e: Exception) {
                     e.printStackTrace()

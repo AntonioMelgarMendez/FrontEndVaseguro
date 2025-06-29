@@ -8,6 +8,8 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.VaSeguro.MyApplication
+import com.VaSeguro.data.Dao.Children.ChildDao
+import com.VaSeguro.data.Entitys.Children.ChildEntity
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import com.VaSeguro.data.model.Child.Child
@@ -20,6 +22,8 @@ import com.VaSeguro.data.repository.AuthRepository.AuthRepository
 import com.VaSeguro.data.repository.Children.ChildrenRepository
 import com.VaSeguro.data.repository.Stops.StopsRepository
 import com.VaSeguro.data.repository.UserPreferenceRepository.UserPreferencesRepository
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import okhttp3.MultipartBody
@@ -28,7 +32,8 @@ class ChildrenAdminScreenViewModel(
     private val childrenRepository: ChildrenRepository,
     private val userPreferencesRepository: UserPreferencesRepository,
     private val authRepository: AuthRepository,
-    private val stopsRepository: StopsRepository
+    private val stopsRepository: StopsRepository,
+    private val childDao: ChildDao
 ) : ViewModel() {
     private val _children = MutableStateFlow<List<Child>>(emptyList())
     val children: StateFlow<List<Child>> = _children
@@ -53,6 +58,16 @@ class ChildrenAdminScreenViewModel(
 
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage
+    val localChildren: StateFlow<List<ChildEntity>> = childDao.getAllChildren()
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+    // Save children to Room
+    fun cacheChildren(children: List<ChildEntity>) {
+        viewModelScope.launch {
+            childDao.insertChildren(children)
+        }
+    }
+
 
     fun fetchUsersForRoles() {
         viewModelScope.launch {
@@ -88,16 +103,49 @@ class ChildrenAdminScreenViewModel(
                 val childrenBackend: List<Children> = childrenRepository.getChildren(token)
                 Log.d("ChildrenDebug", "Children fetched: ${childrenBackend.size}")
 
+                // Map and cache to Room
+                val entities = childrenBackend.map { child ->
+                    ChildEntity(
+                        id = child.id,
+                        forenames = child.forenames,
+                        surnames = child.surnames,
+                        birthDate = child.birth_date,
+                        medicalInfo = child.medical_info,
+                        gender = child.gender,
+                        parentId = child.parent_id,
+                        driverId = child.driver_id,
+                        profilePic = child.profile_pic
+                    )
+                }
+                cacheChildren(entities)
+
                 val uiChildren = childrenBackend.map { child ->
                     child.toChildrenResponse().toChild(
                         parentName = getParentNameById(child.parent_id),
                         driverName = getDriverNameById(child.driver_id)
                     )
                 }
-
                 _children.value = uiChildren
             } catch (e: Exception) {
-                _errorMessage.value = "Error al cargar niños: ${e.localizedMessage ?: "Error desconocido"}"
+                // If backend fails, load from Room
+                val local = localChildren.value.map { entity ->
+                    // Map ChildEntity to your UI model (Child)
+                    Child(
+                        id = entity.id,
+                        forenames = entity.forenames,
+                        surnames = entity.surnames,
+                        birth = entity.birthDate,
+                        medicalInfo = entity.medicalInfo,
+                        parent = entity.parentId.toString(),
+                        driver = entity.driverId.toString(),
+                        profilePic = entity.profilePic,
+                        fullName = entity.forenames+entity.surnames,
+                        age=1,
+                        createdAt = "",
+                    )
+                }
+                _children.value = local
+                _errorMessage.value = "Error al cargar niños desde backend, mostrando datos locales: ${e.localizedMessage ?: "Error desconocido"}"
             } finally {
                 _loading.value = false
             }
@@ -201,6 +249,7 @@ class ChildrenAdminScreenViewModel(
                         application.appProvider.provideUserPreferences(),
                         application.appProvider.provideAuthRepository(),
                         application.appProvider.provideStopsRepository(),
+                        application.appProvider.provideChildDao()
                     )
                 } catch (e: Exception) {
                     e.printStackTrace()

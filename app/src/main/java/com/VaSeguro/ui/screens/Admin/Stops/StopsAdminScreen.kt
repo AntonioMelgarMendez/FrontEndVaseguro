@@ -37,7 +37,8 @@ fun StopsAdminScreen() {
                 val appProvider = AppProvider(context.applicationContext)
                 return StopsAdminScreenViewModel(
                     appProvider.provideStopsRepository(),
-                    appProvider.provideUserPreferences()
+                    appProvider.provideUserPreferences(),
+                    appProvider.provideStopDao()
                 ) as T
             }
         }

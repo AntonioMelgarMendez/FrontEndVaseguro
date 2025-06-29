@@ -1,4 +1,3 @@
-
 package com.VaSeguro.ui.components.Container.GeneralScaffold
 
 import androidx.compose.foundation.layout.Box
@@ -70,7 +69,7 @@ fun GeneralScaffold(navControllerx: NavController) {
         )
         4 -> listOf(
             MapScreenNavigation,
-            HistoryScreenNavigation, // "Mis Rutas" mapped to History
+            HistoryScreenNavigation,
             BusDriverScreenNavigation,
             ChildrenDriverScreenNavigation
         )
@@ -87,13 +86,17 @@ fun GeneralScaffold(navControllerx: NavController) {
     )
     val coroutineScope = rememberCoroutineScope()
 
+    var pagerEnabled by remember { mutableStateOf(true) }
+
     // Sync bottom bar and pager
     fun onItemSelected(currentItem: String) {
         val pageIndex = navItems.indexOf(currentItem)
         selectedItem = currentItem
         title = currentItem
         coroutineScope.launch {
+            pagerEnabled = false
             pagerState.animateScrollToPage(pageIndex)
+            pagerEnabled = true
         }
         navController.navigate(navRoutes[pageIndex]) {
             popUpTo(navController.graph.startDestinationId) { saveState = true }
@@ -104,6 +107,8 @@ fun GeneralScaffold(navControllerx: NavController) {
 
     // Sync pager swipe with navigation and bottom bar
     LaunchedEffect(pagerState.currentPage) {
+        pagerEnabled = false
+        pagerEnabled = true
         val newItem = navItems[pagerState.currentPage]
         if (selectedItem != newItem) {
             selectedItem = newItem
@@ -148,6 +153,7 @@ fun GeneralScaffold(navControllerx: NavController) {
             content = { innerPadding ->
                 HorizontalPager(
                     state = pagerState,
+                    userScrollEnabled = pagerEnabled,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding)

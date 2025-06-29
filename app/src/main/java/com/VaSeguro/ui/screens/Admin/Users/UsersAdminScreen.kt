@@ -56,7 +56,8 @@ fun UsersAdminScreen() {
                 val appProvider = AppProvider(context.applicationContext)
                 return UsersAdminScreenViewModel(
                     appProvider.provideAuthRepository(),
-                    appProvider.provideUserPreferences()
+                    appProvider.provideUserPreferences(),
+                    appProvider.provideUserDao()
                 ) as T
             }
         }

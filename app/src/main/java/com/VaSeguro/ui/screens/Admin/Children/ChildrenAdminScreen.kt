@@ -41,7 +41,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import com.VaSeguro.data.AppProvider
 import com.VaSeguro.data.model.Child.toChildren
 import com.VaSeguro.data.model.Children.Children
 import com.VaSeguro.ui.components.AddDialogues.AddChildDialogAdmin
@@ -52,9 +56,22 @@ import kotlin.collections.lastIndex
 
 
 @Composable
-fun ChildrenAdminScreen(
-    viewModel: ChildrenAdminScreenViewModel = viewModel(factory = ChildrenAdminScreenViewModel.Factory)
-) {
+fun ChildrenAdminScreen() {
+    val context = LocalContext.current
+    val viewModel: ChildrenAdminScreenViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                val appProvider = AppProvider(context.applicationContext)
+                return ChildrenAdminScreenViewModel(
+                    appProvider.provideChildrenRepository(),
+                    appProvider.provideUserPreferences(),
+                    appProvider.provideAuthRepository(),
+                    appProvider.provideStopsRepository(),
+                    appProvider.provideChildDao(),
+                ) as T
+            }
+        }
+    )
     val children = viewModel.children.collectAsState().value
     val expandedMap = viewModel.expandedMap.collectAsState().value
     val checkedMap = viewModel.checkedMap.collectAsState().value

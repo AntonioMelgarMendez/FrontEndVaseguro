@@ -2,6 +2,8 @@ package com.VaSeguro.ui.screens.Admin.Users
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.VaSeguro.data.Dao.User.UserDao
+import com.VaSeguro.data.Entitys.User.UserEntity
 import com.VaSeguro.data.model.User.UserData
 import com.VaSeguro.data.model.User.UserRole
 import com.VaSeguro.data.remote.Auth.UserResponse
@@ -15,7 +17,8 @@ import okhttp3.MultipartBody
 
 class UsersAdminScreenViewModel(
     private val authRepository: AuthRepository,
-    private val userPreferencesRepository: UserPreferencesRepository
+    private val userPreferencesRepository: UserPreferencesRepository,
+    private val userDao:UserDao
 ) : ViewModel() {
     private val _users = MutableStateFlow<List<UserData>>(emptyList())
     val users: StateFlow<List<UserData>> = _users
@@ -28,14 +31,29 @@ class UsersAdminScreenViewModel(
 
     private val _loading = MutableStateFlow(false)
     val loading: StateFlow<Boolean> = _loading
+    private val CACHE_EXPIRATION_MS = 1 * 60 * 1000L
 
     fun fetchAllUsers() {
         viewModelScope.launch {
             _loading.value = true
+            // 1. Leer de Room
+            val cached = userDao.getAllUsers()
+            if (cached.isNotEmpty()) {
+                _users.value = cached.map { it.toUserData() }
+            }
+
+            // 2. Verificar expiración de caché
+            val lastFetch = userPreferencesRepository.getLastUsersFetchTime()
+            val now = System.currentTimeMillis()
+            if (lastFetch != null && now - lastFetch < CACHE_EXPIRATION_MS) {
+                _loading.value = false
+                return@launch
+            }
+
+            // 3. Llamar a la API y actualizar Room
             try {
-                val userResponses: List<UserResponse> = authRepository.getAllUsers(
-                    userPreferencesRepository.getAuthToken().toString()
-                )
+                val token = userPreferencesRepository.getAuthToken().orEmpty()
+                val userResponses = authRepository.getAllUsers(token)
                 val userDataList = userResponses.map {
                     UserData(
                         id = it.id.toString(),
@@ -49,6 +67,9 @@ class UsersAdminScreenViewModel(
                     )
                 }
                 _users.value = userDataList
+                userDao.clearUsers()
+                userDao.insertUsers(userResponses.map { it.toEntity() })
+                userPreferencesRepository.setLastUsersFetchTime(now)
             } catch (e: Exception) {
                 // Handle error
             } finally {
@@ -57,6 +78,28 @@ class UsersAdminScreenViewModel(
         }
     }
 
+    private fun UserResponse.toEntity() = UserEntity(
+        id = this.id,
+        forename = this.forenames,
+        surname = this.surnames,
+        email = this.email,
+        phoneNumber = this.phone_number ?: "",
+        profilePic = this.profile_pic,
+        roleId = this.role_id,
+        gender = this.gender
+    )
+
+    // Conversión de UserEntity a UserData
+    private fun UserEntity.toUserData() = UserData(
+        id = this.id.toString(),
+        forename = this.forename,
+        surname = this.surname,
+        email = this.email,
+        phoneNumber = this.phoneNumber,
+        profilePic = this.profilePic,
+        role_id = UserRole(this.roleId, ""),
+        gender = this.gender
+    )
     fun deleteUser(userId: String) {
         viewModelScope.launch {
             _loading.value = true

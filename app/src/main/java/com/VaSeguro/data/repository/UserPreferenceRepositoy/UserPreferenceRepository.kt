@@ -18,4 +18,12 @@ interface UserPreferencesRepository {
     suspend fun getUserData(): UserResponse?
     suspend fun userDataFlow(): Flow<UserResponse?>
     suspend fun clearUserData()
+    suspend fun getLastUsersFetchTime(): Long?
+    suspend fun setLastUsersFetchTime(time: Long)
+    suspend fun getLastRoutesFetchTime(): Long?
+    suspend fun setLastRoutesFetchTime(time: Long)
+    suspend fun getLastStopsFetchTime(): Long?
+    suspend fun setLastStopsFetchTime(time: Long)
+    suspend fun getLastVehiclesFetchTime(): Long?
+    suspend fun setLastVehiclesFetchTime(time: Long)
 }
