@@ -1,5 +1,6 @@
 package com.VaSeguro.data.repository.AuthRepository
 
+import android.util.Log
 import com.VaSeguro.data.remote.Auth.AuthService
 import com.VaSeguro.data.remote.Auth.Login.LoginRequest
 import com.VaSeguro.data.remote.Auth.Login.LoginResponse
@@ -8,13 +9,22 @@ import com.VaSeguro.data.remote.Auth.UserResponse
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
+import com.onesignal.OneSignal
 
 class AuthRepositoryImpl(
     private val authService: AuthService
 ) : AuthRepository {
-
+    private fun getOneSignalPlayerId(): String? {
+        return OneSignal.User.onesignalId
+    }
     override suspend fun login(email: String, password: String): LoginResponse {
-        return authService.login(LoginRequest(email, password))
+        val playerId = getOneSignalPlayerId()
+        Log.d("AuthRepositoryImpl", "OneSignal Player ID: $playerId")
+        return if (playerId != null) {
+            authService.login(LoginRequest(email, password, playerId))
+        } else {
+            authService.login(LoginRequest(email, password))
+        }
     }
 
     override suspend fun register(
@@ -27,6 +37,7 @@ class AuthRepositoryImpl(
         role_id: Int,
         profile_pic: MultipartBody.Part?
     ): LoginResponse {
+        val playerId = getOneSignalPlayerId()
         return authService.register(
             RegisterRequest(
                 forenames = forenames,
@@ -36,7 +47,7 @@ class AuthRepositoryImpl(
                 phone_number = phone_number,
                 gender = gender,
                 role_id = role_id,
-                profile_pic = profile_pic
+                profile_pic = profile_pic,
             )
         )
     }
@@ -60,6 +71,7 @@ class AuthRepositoryImpl(
         profile_pic: MultipartBody.Part?
     ): LoginResponse {
         fun String.toRequestBody() = okhttp3.RequestBody.create("text/plain".toMediaTypeOrNull(), this)
+        val playerId = getOneSignalPlayerId()
         return authService.registerMultipart(
             forenames = forenames.toRequestBody(),
             surnames = surnames.toRequestBody(),
@@ -68,8 +80,9 @@ class AuthRepositoryImpl(
             phoneNumber = phone_number.toRequestBody(),
             gender = gender.toRequestBody(),
             roleId = role_id.toString().toRequestBody(),
-            profile_pic = profile_pic
-        )
+            profile_pic = profile_pic,
+            onesignalPlayerId = playerId?.toRequestBody(
+        ))
     }
     override suspend fun getAllUsers(token: String): List<UserResponse> {
         return authService.getAllUsers("Bearer $token")
