@@ -15,7 +15,7 @@ class AuthRepositoryImpl(
     private val authService: AuthService
 ) : AuthRepository {
     private fun getOneSignalPlayerId(): String? {
-        return OneSignal.User.onesignalId
+        return OneSignal.User.pushSubscription?.id
     }
     override suspend fun login(email: String, password: String): LoginResponse {
         val playerId = getOneSignalPlayerId()
