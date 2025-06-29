@@ -1,67 +1,61 @@
 package com.VaSeguro.data.repository.RouteRepository
 
-import com.VaSeguro.data.model.Route.RouteStatus
-import com.VaSeguro.data.model.Route.RouteType
-import com.VaSeguro.data.model.Routes.RoutesData
-import com.VaSeguro.data.model.Vehicle.VehicleMap
+import com.VaSeguro.data.model.Routes.RouteResponse
 import com.VaSeguro.data.remote.Route.RouteService
-import com.VaSeguro.data.repository.UserPreferenceRepository.UserPreferencesRepository
-import okhttp3.RequestBody
-import okhttp3.MultipartBody
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 
 class RouteRepositoryImpl(
-    private val routeService: RouteService,
-    private val userPreferencesRepository: UserPreferencesRepository
+    private val routeService: RouteService
 ) : RouteRepository {
-
-    private suspend fun getAuthHeader(): String =
-        "Bearer ${userPreferencesRepository.getAuthToken().orEmpty()}"
 
     private fun String.toPart(): RequestBody =
         this.toRequestBody("text/plain".toMediaTypeOrNull())
 
-    override suspend fun getRoutes(): List<RoutesData> {
-        return routeService.getRoutes(getAuthHeader())
+    override suspend fun getRoutes(token: String): List<RouteResponse> {
+        return routeService.getRoutes("Bearer $token")
     }
 
-    override suspend fun getRouteById(id: Int): RoutesData {
-        return routeService.getRouteById(getAuthHeader(), id.toString())
+    override suspend fun getRouteById(token: String, id: Int): RouteResponse {
+        return routeService.getRouteById("Bearer $token", id.toString())
     }
 
     override suspend fun createRoute(
+        token: String,
         name: String,
         startDate: String,
-        vehicleId: VehicleMap,
-        statusId: RouteStatus,
-        typeId: RouteType,
-    ): RoutesData {
+        vehicleId: Int,
+        statusId: Int,
+        typeId: Int,
+    ): RouteResponse {
         return routeService.createRoute(
             name = name.toPart(),
             startDate = startDate.toPart(),
-            vehicleId = vehicleId.id.toString().toPart(),
-            statusId = statusId.id.toString().toPart(),
-            typeId = typeId.id.toString().toPart(),
-            authHeader = getAuthHeader()
+            vehicleId = vehicleId.toString().toPart(),
+            statusId = statusId.toString().toPart(),
+            typeId = typeId.toString().toPart(),
+            authHeader = "Bearer $token"
         )
     }
 
     override suspend fun updateRoute(
+        token: String,
         id: Int,
-        data: RoutesData
-    ): RoutesData {
+        data: RouteResponse
+    ): RouteResponse {
         return routeService.updateRoute(
             id = id.toString(),
-            name = data.name.toRequestBody("text/plain".toMediaTypeOrNull()),
-            startDate = data.start_date.toRequestBody("text/plain".toMediaTypeOrNull()),
-            vehicleId = data.vehicle_id.id.toString().toRequestBody("text/plain".toMediaTypeOrNull()),
-            statusId = data.status_id.id.toString().toRequestBody("text/plain".toMediaTypeOrNull()),
-            typeId = data.type_id.id.toString().toRequestBody("text/plain".toMediaTypeOrNull()),
-            authHeader = getAuthHeader()
+            name = data.name.toPart(),
+            startDate = data.start_date.toPart(),
+            vehicleId = data.vehicle_id.toString().toPart(),
+            statusId = data.status_id.toString().toPart(),
+            typeId = data.type_id.toString().toPart(),
+            authHeader = "Bearer $token"
         )
     }
-    override suspend fun deleteRoute(id: Int) {
-        routeService.deleteRoute(id.toString(), getAuthHeader())
+
+    override suspend fun deleteRoute(token: String, id: Int) {
+        routeService.deleteRoute(id.toString(), "Bearer $token")
     }
 }

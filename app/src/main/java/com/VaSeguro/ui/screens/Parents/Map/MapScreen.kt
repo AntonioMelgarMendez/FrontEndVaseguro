@@ -271,7 +271,6 @@ fun MapScreen(
                             println("No se pudo configurar política de memoria: ${e.message}")
                         }
 
-                        map.snapshot { /* No hacer nada, solo para forzar actualización */ }
                     }
 
                     // NUEVO: Mostrar el polyline de la ruta si hay una ruta activa

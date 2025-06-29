@@ -1,28 +1,22 @@
 package com.VaSeguro.data.repository.RouteRepository
 
-import com.VaSeguro.data.model.Route.RouteStatus
-import com.VaSeguro.data.model.Route.RouteType
-import com.VaSeguro.data.model.Routes.RoutesData
-import com.VaSeguro.data.model.Stop.StopRoute
-import com.VaSeguro.data.model.Vehicle.VehicleMap
-import com.VaSeguro.data.remote.Responses.RouteResponse
-import com.VaSeguro.helpers.Resource
-import com.VaSeguro.map.data.Route
-import kotlinx.coroutines.flow.Flow
+import com.VaSeguro.data.model.Routes.RouteResponse
 
 interface RouteRepository {
-    suspend fun getRoutes(): List<RoutesData>
-    suspend fun getRouteById(id: Int): RoutesData
+    suspend fun getRoutes(token: String): List<RouteResponse>
+    suspend fun getRouteById(token: String, id: Int): RouteResponse
     suspend fun createRoute(
+        token: String,
         name: String,
         startDate: String,
-        vehicleId: VehicleMap,
-        statusId: RouteStatus,
-        typeId: RouteType,
-    ): RoutesData
+        vehicleId: Int,
+        statusId: Int,
+        typeId: Int,
+    ): RouteResponse
     suspend fun updateRoute(
+        token: String,
         id: Int,
-        data: RoutesData
-    ): RoutesData
-    suspend fun deleteRoute(id: Int)
+        data: RouteResponse
+    ): RouteResponse
+    suspend fun deleteRoute(token: String, id: Int)
 }
