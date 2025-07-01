@@ -1,5 +1,6 @@
 package com.VaSeguro.data.repository.VehicleRepository
 
+import com.VaSeguro.data.Entitys.Vehicle.VehicleEntity
 import com.VaSeguro.data.model.Vehicle.VehicleMap
 import com.VaSeguro.data.remote.Vehicle.VehicleResponse
 import com.VaSeguro.helpers.Resource
@@ -37,4 +38,5 @@ interface VehicleRepository
         carPic: MultipartBody.Part?
     ): Flow<Resource<VehicleResponse>>
     suspend fun deleteVehicle(id: Int,token: String): Flow<Resource<Boolean>>
+    suspend fun updateVehicleInRoom(vehicle: VehicleEntity)
 }

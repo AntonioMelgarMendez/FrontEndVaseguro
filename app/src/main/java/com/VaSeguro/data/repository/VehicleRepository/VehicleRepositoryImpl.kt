@@ -1,8 +1,12 @@
 package com.VaSeguro.data.repository.VehicleRepository
 
+import com.VaSeguro.data.Dao.Vehicle.VehicleDao
+import com.VaSeguro.data.Entitys.Vehicle.VehicleEntity
 import com.VaSeguro.data.model.Vehicle.VehicleMap
 import com.VaSeguro.data.remote.Vehicle.VehicleResponse
 import com.VaSeguro.data.remote.Vehicle.VehicleService
+import com.VaSeguro.data.remote.Vehicle.toEntity
+import com.VaSeguro.data.remote.Vehicle.toResponse
 import com.VaSeguro.helpers.Resource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -12,25 +16,76 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 
 class VehicleRepositoryImpl(
+    private val vehicleDao: VehicleDao,
     private val vehicleService: VehicleService
 ) : VehicleRepository {
 
+//    override suspend fun getAllVehicles(token: String): Flow<Resource<List<VehicleResponse>>> = flow {
+//        emit(Resource.Loading)
+//        try {
+//            val vehicles = vehicleService.getAllVehicles("Bearer $token")
+//            emit(Resource.Success(vehicles))
+//        } catch (e: Exception) {
+//            emit(Resource.Error(e.message ?: "Error al obtener vehículos"))
+//        }
+//    }
+
     override suspend fun getAllVehicles(token: String): Flow<Resource<List<VehicleResponse>>> = flow {
-        emit(Resource.Loading)
+        emit(Resource.Loading) // Emitir estado de carga
+
         try {
-            val vehicles = vehicleService.getAllVehicles("Bearer $token")
-            emit(Resource.Success(vehicles))
+            // Intentar obtener vehículos de la base de datos
+            val localVehicles = vehicleDao.getAllVehicles().map { it.toResponse() }
+
+            // Si los vehículos locales están disponibles, los emitimos como éxito
+            if (localVehicles.isNotEmpty()) {
+                emit(Resource.Success(localVehicles))
+            } else {
+                // Si no hay vehículos en la base de datos, intentamos obtenerlos desde la API
+                val remoteVehicles = vehicleService.getAllVehicles("Bearer $token")
+
+                // Guardamos los vehículos obtenidos en la base de datos local
+                vehicleDao.insertVehicles(remoteVehicles.map { it.toEntity() })
+
+                // Emitimos el resultado de la API como éxito
+                emit(Resource.Success(remoteVehicles))
+            }
         } catch (e: Exception) {
+            // Si ocurre algún error, emitimos el estado de error
             emit(Resource.Error(e.message ?: "Error al obtener vehículos"))
         }
     }
+
+
+
+//    override suspend fun getVehicleById(id: Int, token: String): Flow<Resource<VehicleResponse>> = flow {
+//        emit(Resource.Loading)
+//        try {
+//            val vehicle = vehicleService.getVehicleById(id, "Bearer $token")
+//            emit(Resource.Success(vehicle))
+//        } catch (e: Exception) {
+//            emit(Resource.Error(e.message ?: "Error al obtener vehículo"))
+//        }
+//    }
+
     override suspend fun getVehicleById(id: Int, token: String): Flow<Resource<VehicleResponse>> = flow {
-        emit(Resource.Loading)
+        emit(Resource.Loading) // Emitir estado de carga
+
         try {
-            val vehicle = vehicleService.getVehicleById(id, "Bearer $token")
-            emit(Resource.Success(vehicle))
+            // Intentamos obtener el vehículo de la base de datos local (Room)
+            val localVehicle = vehicleDao.getVehicleById(id)?.toResponse()
+
+            if (localVehicle != null) {
+                emit(Resource.Success(localVehicle))
+            } else {
+                // Si no está en la base de datos, obtenemos el vehículo de la API
+                val remoteVehicle = vehicleService.getVehicleById(id, "Bearer $token")
+                // Guardamos el vehículo en la base de datos local (Room)
+                vehicleDao.insertVehicle(remoteVehicle.toEntity())
+                emit(Resource.Success(remoteVehicle))
+            }
         } catch (e: Exception) {
-            emit(Resource.Error(e.message ?: "Error al obtener vehículo"))
+            emit(Resource.Error(e.message ?: "Error al obtener el vehículo"))
         }
     }
 
@@ -61,6 +116,7 @@ class VehicleRepositoryImpl(
             emit(Resource.Error(e.message ?: "Error al crear vehículo"))
         }
     }
+
     override suspend fun updateVehicle(
         token: String,
         id: Int,
@@ -74,6 +130,7 @@ class VehicleRepositoryImpl(
     ): Flow<Resource<VehicleResponse>> = flow {
         emit(Resource.Loading)
         try {
+            // Realizamos la actualización en la API
             val updated = vehicleService.updateVehicle(
                 "Bearer $token",
                 id,
@@ -85,6 +142,11 @@ class VehicleRepositoryImpl(
                 capacity.toRequestBody("text/plain".toMediaTypeOrNull()),
                 carPic
             )
+
+            // Actualizar el vehículo también en Room (base de datos local)
+            val updatedVehicleEntity = updated.toEntity()  // Convertimos de VehicleResponse a VehicleEntity
+            vehicleDao.updateVehicle(updatedVehicleEntity)  // Actualizar en Room
+
             emit(Resource.Success(updated))
         } catch (e: Exception) {
             emit(Resource.Error(e.message ?: "Error al actualizar vehículo"))
@@ -94,11 +156,20 @@ class VehicleRepositoryImpl(
     override suspend fun deleteVehicle(id: Int, token: String): Flow<Resource<Boolean>> = flow {
         emit(Resource.Loading)
         try {
+            // Eliminar el vehículo de la API
             vehicleService.deleteVehicle("Bearer $token", id)
+
+            // Eliminar el vehículo también en Room (base de datos local)
+            vehicleDao.deleteVehicle(id)  // Eliminar en Room
+
             emit(Resource.Success(true))
         } catch (e: Exception) {
             emit(Resource.Error(e.message ?: "Error al eliminar vehículo"))
         }
+    }
+
+    override suspend fun updateVehicleInRoom(vehicle: VehicleEntity) {
+        vehicleDao.updateVehicle(vehicle)  // Actualiza el vehículo en la base de datos local (Room)
     }
 
     private val mockVehicles = listOf(
