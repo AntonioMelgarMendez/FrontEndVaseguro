@@ -1,5 +1,6 @@
 package com.VaSeguro.map.repository
 
+import com.VaSeguro.data.model.Route.RouteStatus
 import com.VaSeguro.map.data.ApiPlaceResult
 import com.VaSeguro.map.data.Geometry
 import com.VaSeguro.map.data.Location
@@ -99,7 +100,7 @@ class LocationRepositoryImpl(
             route_active = routeActive,
             route_progress = routeProgress,
             current_segment = currentSegment,
-            route_status = routeStatus
+            route_status = RouteStatus.fromId(routeStatus!!).status // Convertir Int a String
         )
 
         client.postgrest.from("location").upsert(locationUpdate)
@@ -216,7 +217,7 @@ class LocationRepositoryImpl(
                             route_active = record["route_active"]?.toString()?.toBooleanStrictOrNull() ?: false,
                             route_progress = record["route_progress"]?.toString()?.toFloatOrNull() ?: 0.0f,
                             current_segment = record["current_segment"]?.toString()?.toIntOrNull() ?: 0,
-                            route_status = record["route_status"]?.toString()?.toIntOrNull() // null es válido
+                            route_status = record["route_status"]?.toString() // Dejar como String, no convertir a Int
                         )
 
                         println("Datos completos recibidos: $updatedData")
@@ -269,5 +270,5 @@ data class LocationDriverAddress(
     val route_active: Boolean = false,
     val route_progress: Float = 0.0f,
     val current_segment: Int = 0,
-    val route_status: Int? = null
+    val route_status: String? = null
 )

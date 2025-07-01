@@ -32,14 +32,13 @@ import com.VaSeguro.ui.screens.Parents.History.HistoryScreen
 import com.VaSeguro.ui.screens.Parents.Map.MapScreen
 
 @Composable
-fun MainNavigation(navController: NavHostController, isAdmin: Boolean) {
-    val startDestination = if (isAdmin) HomeAdminScreenNavigation else MapScreenNavigation
+fun MainNavigation(navController: NavHostController, isAdmin: Boolean, isDriver: Boolean = false) {
+    val startDestination = if (isAdmin) HomeAdminScreenNavigation else if(isDriver) RouteScreenNavigation else MapScreenNavigation
 
     // Compartimos el ViewModel para la pantalla de rutas guardadas
     val savedRoutesViewModel: SavedRoutesViewModel = viewModel(
         factory = SavedRoutesViewModel.Factory
     )
-
 
     // Definimos las acciones de navegación
     val onNavigateToSavedRoutes = {

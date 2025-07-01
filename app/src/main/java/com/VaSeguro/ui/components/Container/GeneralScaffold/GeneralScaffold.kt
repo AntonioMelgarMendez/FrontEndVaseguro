@@ -44,11 +44,11 @@ fun GeneralScaffold(navControllerx: NavController) {
     if (user == null) return
 
     val isAdmin = user?.role_id == 2
-
+    val isDriver = user?.role_id == 4
     val navItems = when (user?.role_id) {
         2 -> listOf("Inicio", "Hijos", "Rutas", "Paradas", "Usuarios", "Buses")
         3 -> listOf("Mapa", "Historial", "Bus", "Hijo")
-        4 -> listOf("Mapa", "Mis Rutas", "Mi Bus", "Clientes")
+        4 -> listOf("Ruta", "Mis Rutas", "Mi Bus", "Clientes")
         else -> listOf("Map")
     }
 
@@ -68,7 +68,7 @@ fun GeneralScaffold(navControllerx: NavController) {
             ChildrenScreenNavigation
         )
         4 -> listOf(
-            MapScreenNavigation,
+            RouteScreenNavigation,
             HistoryScreenNavigation,
             BusDriverScreenNavigation,
             ChildrenDriverScreenNavigation
@@ -181,7 +181,7 @@ fun GeneralScaffold(navControllerx: NavController) {
                         .fillMaxSize()
                         .padding(innerPadding)
                 ) {
-                    MainNavigation(navController = navController, isAdmin = isAdmin)
+                    MainNavigation(navController = navController, isAdmin = isAdmin, isDriver = isDriver)
                 }
             }
         )

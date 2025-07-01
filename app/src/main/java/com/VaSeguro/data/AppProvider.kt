@@ -1,4 +1,3 @@
-
 package com.VaSeguro.data
 
 import android.content.Context
@@ -89,4 +88,3 @@ class AppProvider(context: Context) {
     fun provideStopDao() = appDatabase.stopDao()
     fun provideVehicleDao() = appDatabase.vehicleDao()
 }
-

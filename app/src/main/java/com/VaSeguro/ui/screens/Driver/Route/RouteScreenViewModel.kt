@@ -1,6 +1,7 @@
 package com.VaSeguro.ui.screens.Driver.Route
 
 import android.content.Context
+import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
@@ -237,17 +238,20 @@ class RouteScreenViewModel(
         viewModelScope.launch {
             val user = userPreferencesRepository.getUserData()
             val token = userPreferencesRepository.getAuthToken()
-            val idToUse = when (user?.role_id) {
-                3 -> DriverPrefs.getDriverId(context)
-                4 -> user.id
-                else -> null
-            }
-            vehicleRepository.getVehicleById(idToUse!!, token!!).collectLatest { vehicleResource ->
-                if (vehicleResource is Resource.Success) {
-                    setVehicleId(vehicleResource.data.id)
-                    setDriverId(vehicleResource.data.driverId)
+            val idToUse = user?.id
+
+            if(idToUse!=null){
+                vehicleRepository.getVehicleById(idToUse!!, token!!).collectLatest { vehicleResource ->
+                    if (vehicleResource is Resource.Success) {
+                        setVehicleId(vehicleResource.data.id)
+                        setDriverId(vehicleResource.data.driverId)
+                    }
                 }
+            } else {
+                Log.d("DRIVER", "No se pudo obtener el driverID: ${DriverPrefs.getDriverId(context).toString()}")
+
             }
+
         }
 
         // Cargar los datos de niños y sus paradas al iniciar
