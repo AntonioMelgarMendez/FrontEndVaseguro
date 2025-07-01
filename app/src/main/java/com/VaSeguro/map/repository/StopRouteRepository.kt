@@ -13,10 +13,5 @@ import kotlinx.coroutines.flow.flow
 
 interface StopRouteRepository {
 
-
-    /**
-     * Obtiene StopPassenger para un niño específico
-     */
     fun getStopRoutesByChild(childId: Int): Flow<List<StopRoute>>
-
 }

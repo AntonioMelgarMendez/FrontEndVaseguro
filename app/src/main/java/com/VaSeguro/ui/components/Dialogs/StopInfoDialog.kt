@@ -132,7 +132,7 @@ fun ChildStopItem(
     stopPassenger: StopPassenger,
     isCompleted: Boolean,
     onStateChanged: (Boolean) -> Unit,
-    routeType: RouteType = RouteType.INBOUND // Parámetro por defecto para el tipo de ruta
+    routeType: RouteType = RouteType.INBOUND
 ) {
     Card(
         modifier = Modifier

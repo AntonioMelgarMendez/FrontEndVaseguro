@@ -15,7 +15,7 @@ interface StopPassengerRepository {
     /**
      * Obtiene todos los StopPassenger disponibles
      */
-    fun getAllStopPassengers(): Flow<List<StopPassenger>>
+    fun getAllStopPassengers(driverId: Int): Flow<List<StopPassenger>>
 
     /**
      * Obtiene StopPassenger filtrados por tipo (HOME o INSTITUTION)
@@ -32,8 +32,35 @@ interface StopPassengerRepository {
      */
     fun stopPassengerToLatLng(stopPassenger: StopPassenger): LatLng
 
+
     /**
-     * Obtiene el driver asignado
+     * NUEVA: Actualiza el estado de un StopRoute basado en un StopPassenger
+     * @param stopPassengerId ID del StopPassenger que se está actualizando
+     * @param routeId ID de la ruta actual
+     * @param isCompleted Estado completado del StopPassenger
+     * @param driverId ID del conductor actual
      */
-    fun getDriver(): Driver
+    suspend fun updateStopRouteState(
+        stopPassengerId: Int,
+        routeId: Int,
+        isCompleted: Boolean,
+    ): Boolean
+
+    /**
+     * NUEVA: Obtiene el StopRoute asociado a un StopPassenger en una ruta específica
+     * @param stopPassengerId ID del StopPassenger
+     * @param routeId ID de la ruta
+     */
+    suspend fun getStopRouteByStopPassenger(
+        stopPassengerId: Int,
+        routeId: Int
+    ): com.VaSeguro.data.model.Stop.StopRoute?
+
+    /**
+     * NUEVA: Notifica cambios de estado de StopPassenger al backend
+     * @param stopPassengerUpdate Mapa con los datos del cambio de estado
+     */
+    suspend fun notifyStopPassengerStateChange(
+        stopPassengerUpdate: Map<String, Any>
+    ): Boolean
 }

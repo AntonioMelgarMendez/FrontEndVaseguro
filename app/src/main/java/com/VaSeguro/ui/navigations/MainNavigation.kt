@@ -34,11 +34,6 @@ import com.VaSeguro.ui.screens.Parents.Map.MapScreen
 @Composable
 fun MainNavigation(navController: NavHostController, isAdmin: Boolean) {
     val startDestination = if (isAdmin) HomeAdminScreenNavigation else MapScreenNavigation
-    // Creamos un repositorio compartido para las rutas guardadas
-    val savedRoutesRepository = remember { SavedRoutesRepositoryImpl() }
-
-    // Compartimos un ViewModel para la pantalla principal de Rutas
-    val routeViewModel: RouteScreenViewModel = viewModel(factory = RouteScreenViewModel.Factory)
 
     // Compartimos el ViewModel para la pantalla de rutas guardadas
     val savedRoutesViewModel: SavedRoutesViewModel = viewModel(

@@ -21,7 +21,7 @@ interface LocationRepository {
         routeActive: Boolean,
         routeProgress: Float,
         currentSegment: Int,
-        routeStatus: String?
+        routeStatus: Int?
     )
 
     // Método para obtener la última ubicación conocida de un conductor

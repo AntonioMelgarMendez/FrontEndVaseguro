@@ -29,9 +29,7 @@ import kotlinx.coroutines.launch
 
 class MapViewModel(
     private val locationRepository: LocationRepository,
-    private val savedRoutesRepository: SavedRoutesRepository,
-    private val stopPassengerRepository: StopPassengerRepository,
-    private val stopRouteRepository: StopRouteRepository // NUEVO: Repositorio para StopRoute
+    private val stopRouteRepository: StopRouteRepository
 ) : ViewModel() {
 
     // Estado para la posición actual del conductor
@@ -63,11 +61,11 @@ class MapViewModel(
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
     // Estado para el ID del conductor que se está siguiendo (por defecto 1)
-    private val _driverId = MutableStateFlow(1)
+    private val _driverId = MutableStateFlow(77)
     val driverId: StateFlow<Int> = _driverId.asStateFlow()
 
     // NUEVO: Estado para el ID del padre actual
-    private val _childId = MutableStateFlow(1) // Por defecto child con ID 1
+    private val _childId = MutableStateFlow(48) // Por defecto child con ID 1
     val child_id: StateFlow<Int> = _childId.asStateFlow()
 
     // Estado para controlar si la ruta está activa
@@ -145,7 +143,7 @@ class MapViewModel(
                 // Actualizar estados de ruta
                 _isRouteActive.value = initialLocation.route_active
                 _routeProgress.value = initialLocation.route_progress
-                _routeStatus.value = initialLocation.route_status
+                _routeStatus.value = initialLocation.route_status.toString()
 
                 // Decodificar y actualizar polyline si existe
                 initialLocation.encoded_polyline?.let { polyline ->
@@ -167,12 +165,12 @@ class MapViewModel(
     }
 
     /**
-     * NUEVO: Carga las paradas usando StopRoute como fuente de verdad
+     * Carga las paradas usando StopRoute como fuente de verdad
      */
     private fun loadParentChildrenStops() {
         viewModelScope.launch {
             try {
-                // Cargar StopRoutes primero (fuente de verdad)
+
                 stopRouteRepository.getStopRoutesByChild(_childId.value).collectLatest { stopRoutes ->
                     _parentChildrenStopRoutes.value = stopRoutes
 
@@ -205,7 +203,7 @@ class MapViewModel(
                     // Actualizar estados de ruta
                     _isRouteActive.value = locationData.route_active
                     _routeProgress.value = locationData.route_progress
-                    _routeStatus.value = locationData.route_status
+                    _routeStatus.value = locationData.route_status.toString()
 
                     // NUEVO: Verificar proximidad a paradas de mis hijos
                     checkProximityToMyChildrenStops(LatLng(locationData.latitude, locationData.longitude))
@@ -280,7 +278,7 @@ class MapViewModel(
                 val originalStopRoutes = _parentChildrenStopRoutes.value
                 if (originalStopRoutes.isEmpty()) return@launch
 
-                // Obtener StopRoutes actualizados desde el repositorio
+                // CORREGIDO: Obtener StopRoutes actualizados desde el repositorio usando el método correcto
                 val updatedStopRoutes = stopRouteRepository.getStopRoutesByChild(_childId.value).first()
 
                 // Comparar estado por estado para detectar cambios
@@ -443,9 +441,7 @@ class MapViewModel(
                 val application = this[APPLICATION_KEY] as MyApplication
                 MapViewModel(
                     locationRepository = application.appProvider.provideLocationRepository(),
-                    savedRoutesRepository = application.appProvider.provideSavedRoutesRepository(),
-                    stopPassengerRepository = application.appProvider.provideStopPassengerRepository(),
-                    stopRouteRepository = application.appProvider.provideStopRouteRepository() // NUEVO
+                    stopRouteRepository = application.appProvider.provideStopRouteRepository()
                 )
             }
         }

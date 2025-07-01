@@ -27,6 +27,9 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.VaSeguro.R
@@ -76,8 +79,6 @@ fun RouteScreen(
     val errorMessage by remember { derivedStateOf { viewModel.errorMessage } }
     val currentLocation by viewModel.currentLocation.collectAsStateWithLifecycle()
     val routeProgress by viewModel.routeProgress.collectAsStateWithLifecycle()
-    val isProximityAlertVisible by viewModel.isProximityAlertVisible.collectAsStateWithLifecycle()
-    val currentPointName by viewModel.currentPointName.collectAsStateWithLifecycle()
 
     // Estados para controlar la navegación y el estado de la ruta
     val currentRouteId by viewModel.currentRouteId.collectAsStateWithLifecycle()
@@ -127,6 +128,7 @@ fun RouteScreen(
             // `currentLocation` se actualice, y la carga se intentará de nuevo.
         }
     }
+
 
     // Estados de UI
     val cameraPositionState = rememberCameraPositionState()
@@ -300,6 +302,35 @@ fun RouteScreen(
         }
     }
 
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+// Manejar eventos del ciclo de vida
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_PAUSE -> {
+                    // App va a segundo plano
+                    viewModel.pauseRouteOnAppBackground()
+                }
+                Lifecycle.Event.ON_RESUME -> {
+                    // App vuelve al primer plano
+                    viewModel.resumeRouteOnAppForeground()
+                }
+                Lifecycle.Event.ON_DESTROY -> {
+                    // App se cierra
+                    viewModel.finalizeRouteOnAppDestroy()
+                }
+                else -> {}
+            }
+        }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
     // NUEVO: Dialog para mostrar información de paradas cercanas
     val isStopInfoDialogVisible by viewModel.isStopInfoDialogVisible.collectAsStateWithLifecycle()
     val nearbyStop by viewModel.currentNearbyStop.collectAsStateWithLifecycle()
@@ -427,7 +458,7 @@ fun RouteScreen(
         onDismiss = { showStartRouteConfirmation = false }
     )
 
-    // Scaffold para organizar la UI con Snackbar
+    // Scaffold para organizar la UI with Snackbar
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { paddingValues ->
@@ -869,7 +900,7 @@ fun RouteScreen(
                                 text = "Con Problemas",
                                 icon = Icons.Default.Warning,
                                 isActive = isFinishedActive,
-                                activeColor = Color(0xFF2196F3), // Azul
+                                activeColor = Color(0xFFF44336), // Rojo para problemas
                                 onClick = {
                                     viewModel.updateRouteStatus(RouteStatus.PROBLEMS.id)
                                 }
@@ -897,6 +928,7 @@ fun RouteScreen(
                     confirmButtonText = "Borrar",
                     onConfirm = {
                         viewModel.clearRoute()
+                        viewModel.clearSelections() // Limpiar selección de niños
                         isRouteStarted = false
                         hasBeenClearedOnThisRoute = true
                         showDeleteConfirmation = false
@@ -915,7 +947,7 @@ fun RouteScreen(
                     confirmButtonText = "Pausar",
                     onConfirm = {
                         isRouteStarted = false // pausar la ruta
-                        viewModel.updateRouteStatus(RouteStatus.STOPED.toString())
+                        viewModel.updateRouteStatus(RouteStatus.STOPED.id) // CORREGIDO: usar .id en lugar de .toString()
                         showPauseConfirmation = false
                         coroutineScope.launch {
                             snackbarHostState.showSnackbar("Ruta pausada correctamente")
@@ -953,7 +985,13 @@ fun RouteScreen(
                 // Si hay una ruta seleccionada pero no iniciada, mostrar botón de inicio
                 if (selectedRoute != null && !isRouteStarted) {
                     FloatingActionButton(
-                        onClick = { showStartRouteConfirmation = true },
+                        onClick = {
+                            // Llamar al nuevo método para crear la ruta en el backend
+                            val success = viewModel.startNewRoute()
+                            if (success) {
+                                showStartRouteConfirmation = true
+                            }
+                        },
                         containerColor = MaterialTheme.colorScheme.primaryContainer,
                         contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                         elevation = FloatingActionButtonDefaults.elevation()
@@ -982,6 +1020,7 @@ fun RouteScreen(
                                 2 -> showBottomSheet = true
                                 3 -> {
                                     viewModel.clearRoute()
+                                    viewModel.clearSelections() // Limpiar selección de niños
                                     hasBeenClearedOnThisRoute = true // Marcamos que esta ruta ha sido borrada.
                                     coroutineScope.launch {
                                         snackbarHostState.showSnackbar("Ruta limpiada correctamente")
@@ -1198,25 +1237,19 @@ fun RouteMenuBottomSheetContent(
     onDismiss: () -> Unit
 ) {
     // Estados para la sección de niños
-    val childrenSearchQuery = viewModel.searchQuery.collectAsStateWithLifecycle()
-    val filteredChildren = viewModel.filteredChildren.collectAsStateWithLifecycle()
-    val selectedChildIds = viewModel.selectedChildIds.collectAsStateWithLifecycle()
-    val currentRouteId = viewModel.currentRouteId.collectAsStateWithLifecycle()
+    val childrenSearchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val filteredChildren by viewModel.filteredChildren.collectAsStateWithLifecycle()
+    val selectedChildIds by viewModel.selectedChildIds.collectAsStateWithLifecycle()
+    val currentRouteId by viewModel.currentRouteId.collectAsStateWithLifecycle()
 
     // Obtenemos el estado de la ruta seleccionada
     val selectedRoute = viewModel.selectedRoute
 
-    // Estado local para forzar actualizaciones de la UI
-    var selectionUpdateTrigger by remember { mutableStateOf(0) }
-
     // Verificar si hay una ruta activa (cargada desde guardadas O planificada)
-    val hasActiveRoute = currentRouteId.value != null || selectedRoute != null
+    val hasActiveRoute = currentRouteId != null || selectedRoute != null
 
     // Estado para mostrar advertencia
     var showDisabledSelectionInfo by remember { mutableStateOf(false) }
-
-    // Coroutine scope para mostrar snackbar
-    val coroutineScope = rememberCoroutineScope()
 
     Column(
         modifier = Modifier
@@ -1296,13 +1329,13 @@ fun RouteMenuBottomSheetContent(
 
         // Buscador de niños
         OutlinedTextField(
-            value = childrenSearchQuery.value,
+            value = childrenSearchQuery,
             onValueChange = { viewModel.updateSearchQuery(it) },
             modifier = Modifier.fillMaxWidth(),
             placeholder = { Text("Buscar niños...") },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
             trailingIcon = {
-                if (childrenSearchQuery.value.isNotEmpty()) {
+                if (childrenSearchQuery.isNotEmpty()) {
                     IconButton(onClick = { viewModel.updateSearchQuery("") }) {
                         Icon(Icons.Default.Close, contentDescription = "Limpiar")
                     }
@@ -1323,40 +1356,26 @@ fun RouteMenuBottomSheetContent(
             userScrollEnabled = true
         ) {
             items(
-                items = filteredChildren.value,
-                key = { child -> child.id }  // Usamos ID como clave estable
+                items = filteredChildren,
+                key = { child -> "${child.id}_${selectedChildIds.contains(child.id)}" }
             ) { child ->
-                val isChildSelected = selectedChildIds.value.contains(child.id)
-
-                // La modificación del trigger aquí asegura que el componente se recomponga cuando cambie
-                val currentTrigger by remember { derivedStateOf { selectionUpdateTrigger } }
-
-                // Forzamos la recomposición al detectar cambios en el trigger
-                LaunchedEffect(currentTrigger) {
-                    // Este efecto solo se usa para forzar recomposiciones
-                }
+                val isChildSelected = selectedChildIds.contains(child.id)
 
                 ChildSelectionCard(
                     child = child,
                     isSelected = isChildSelected,
                     onToggleSelection = {
                         if (!hasActiveRoute) {
-                            // Primero actualizamos el estado de selección en el viewModel
-                            viewModel.toggleChildSelection(child.id)
+                            // Llamamos a la función que devuelve el nuevo estado y lo usamos directamente
+                            val isNowSelected = viewModel.toggleChildSelection(child.id)
 
-                            // Determinamos si estamos seleccionando o deseleccionando
-                            val willBeSelected = !isChildSelected
-
-                            if (willBeSelected) {
+                            if (isNowSelected) {
                                 // Añadir paradas, sin calcular ruta automáticamente
                                 viewModel.addChildStopsToRoute(child.id, false)
                             } else {
                                 // Si se deselecciona, limpiar sus paradas
                                 viewModel.removeChildStops(child.id)
                             }
-
-                            // Forzamos una actualización de la UI
-                            selectionUpdateTrigger++
                         } else {
                             // Si hay una ruta cargada, mostrar recordatorio
                             showDisabledSelectionInfo = true
@@ -1381,13 +1400,13 @@ fun RouteMenuBottomSheetContent(
                 )
 
                 // Badge con el número de niños seleccionados
-                if (selectedChildIds.value.isNotEmpty()) {
+                if (selectedChildIds.isNotEmpty()) {
                     Badge(
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary
                     ) {
                         Text(
-                            text = "${selectedChildIds.value.size} ${if (selectedChildIds.value.size == 1) "niño" else "niños"} seleccionado${if (selectedChildIds.value.size != 1) "s" else ""}",
+                            text = "${selectedChildIds.size} ${if (selectedChildIds.size == 1) "niño" else "niños"} seleccionado${if (selectedChildIds.size != 1) "s" else ""}",
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                         )
@@ -1598,4 +1617,3 @@ fun RouteStatusButton(
         Text(text, style = MaterialTheme.typography.bodySmall)
     }
 }
-

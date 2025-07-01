@@ -22,10 +22,10 @@ import com.VaSeguro.map.repository.MapsApiRepositoryImpl
 import com.VaSeguro.map.repository.RoutesApiRepositoryImpl
 import com.VaSeguro.map.repository.SavedRoutesRepositoryImpl
 import com.VaSeguro.map.repository.StopPassengerRepositoryImpl
+import com.google.android.gms.maps.model.BitmapDescriptor
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import androidx.core.graphics.createBitmap
 import androidx.room.Room
-import com.VaSeguro.data.repository.RouteRepository.RouteRepositoryImpl
-import com.VaSeguro.data.repository.Stops.StopsRepository
 import com.VaSeguro.data.repository.Stops.StopsRepositoryImpl
 import com.VaSeguro.map.Supabase.SupabaseModule
 import com.VaSeguro.map.repository.LocationRepository
@@ -41,6 +41,7 @@ class AppProvider(context: Context) {
     private val authRepository = AuthRepositoryImpl(RetrofitInstance.authService)
     private val mapsApiService = RetrofitInstance.mapsApiService
     private val routesApiService = RetrofitInstance.routesApiService
+    private val savedRoutesService = RetrofitInstance.savedRoutesSevcie
     private val requestRepository= RequestRepositoryImpl(RetrofitInstance.requestService)
     private val mapsApiRepository = MapsApiRepositoryImpl(mapsApiService)
     private val routesApiRepository = RoutesApiRepositoryImpl(routesApiService)
@@ -48,9 +49,16 @@ class AppProvider(context: Context) {
     private val childrenRespository = ChildrenRepositoryImpl(RetrofitInstance.childrenService)
     private val chatRepository = ChatRepositoryImpl(RetrofitInstance.chatService,"https://sonoradinamita.live/")
     private val stopPassengerRepository = StopPassengerRepositoryImpl()
-    private val savedRoutesRepository = SavedRoutesRepositoryImpl()
     private val LocationRepository = LocationRepositoryImpl(SupabaseModule.supabaseClient)
-    private val StopRouteRepository = StopRouteRepositoryImpl()
+
+    private val StopRouteRepository = StopRouteRepositoryImpl(
+        RetrofitInstance.stopRouteService,
+        userPreferencesRepository
+    )
+
+    private val savedRoutesRepository = SavedRoutesRepositoryImpl(savedRoutesService, userPreferencesRepository)
+
+
     private val StopsRepository = StopsRepositoryImpl(RetrofitInstance.stopsService)
     private val RoutesRepository= RouteRepositoryImpl(routeService=RetrofitInstance.routeService)
     private val appDatabase = Room.databaseBuilder(

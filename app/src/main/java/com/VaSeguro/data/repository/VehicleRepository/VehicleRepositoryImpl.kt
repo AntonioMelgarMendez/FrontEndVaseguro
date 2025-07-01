@@ -1,5 +1,6 @@
 package com.VaSeguro.data.repository.VehicleRepository
 
+import com.VaSeguro.data.model.Vehicle.VehicleMap
 import com.VaSeguro.data.remote.Vehicle.VehicleResponse
 import com.VaSeguro.data.remote.Vehicle.VehicleService
 import com.VaSeguro.helpers.Resource
@@ -98,5 +99,58 @@ class VehicleRepositoryImpl(
         } catch (e: Exception) {
             emit(Resource.Error(e.message ?: "Error al eliminar vehículo"))
         }
+    }
+
+    private val mockVehicles = listOf(
+        VehicleMap(
+            id = 1,
+            plate = "ABC123",
+            driver_id = 1,
+            model = "Honda CR-V 2021",
+            brand = "Honda",
+            year = "2021",
+            color = "Blue",
+            capacity = "15",
+            updated_at = "2025-06-28T08:00:00",
+            carPic = "https://example.com/honda_crv_2021.jpg",
+            created_at = "2025-06-15T10:00:00"
+        ),
+        VehicleMap(
+            id = 2,
+            plate = "P987654",
+            driver_id = 1,
+            model = "Toyota Hiace 2020",
+            brand = "Toyota",
+            year = "2020",
+            color = "White",
+            capacity = "20",
+            updated_at = "2025-06-16T09:00:00",
+            carPic = "https://example.com/toyota_hiace_2020.jpg",
+            created_at = "2025-06-16T09:00:00"
+        ),
+        VehicleMap(
+            id = 3,
+            plate = "XYZ789",
+            driver_id = 2,
+            model = "Ford Transit 2022",
+            brand = "Ford",
+            year = "2022",
+            color = "Red",
+            capacity = "18",
+            updated_at = "2025-06-20T11:30:00",
+            carPic = "https://example.com/ford_transit_2022.jpg",
+            created_at = "2025-06-20T11:30:00"
+        )
+    )
+    override suspend fun getVehicleById(vehicleId: Int): VehicleMap? {
+        return mockVehicles.find { it.id == vehicleId }
+    }
+
+    override suspend fun getAllVehicles(): List<VehicleMap> {
+        return mockVehicles
+    }
+
+    override suspend fun getVehiclesByDriverId(driverId: Int): List<VehicleMap> {
+        return mockVehicles.filter { it.driver_id == driverId }
     }
 }

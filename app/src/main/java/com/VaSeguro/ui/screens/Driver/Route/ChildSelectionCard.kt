@@ -29,17 +29,6 @@ fun ChildSelectionCard(
     // Haptic feedback para mejorar experiencia táctil
     val haptic = LocalHapticFeedback.current
 
-    // Estado local para forzar actualización inmediata de la UI
-    var localIsSelected by remember { mutableStateOf(isSelected) }
-
-    // Se actualiza el estado local cuando cambia el estado externo
-    LaunchedEffect(isSelected) {
-        localIsSelected = isSelected
-    }
-
-    // Estado para debounce de clics
-    var lastClickTime by remember { mutableStateOf(0L) }
-
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -47,18 +36,8 @@ fun ChildSelectionCard(
             .clickable(
                 enabled = isEnabled,
                 onClick = {
-                    // Prevenir doble clic accidental
-                    val currentTime = System.currentTimeMillis()
-                    if (currentTime - lastClickTime > 300) {
-                        lastClickTime = currentTime
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-
-                        // Actualizar estado local inmediatamente para feedback visual instantáneo
-                        localIsSelected = !localIsSelected
-
-                        // Llamar a la función externa
-                        onToggleSelection()
-                    }
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onToggleSelection()
                 }
             )
             .alpha(if (isEnabled) 1f else 0.6f)
@@ -74,7 +53,7 @@ fun ChildSelectionCard(
                 modifier = Modifier
                     .size(40.dp)
                     .background(
-                        color = if (localIsSelected)
+                        color = if (isSelected)
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
                         else
                             MaterialTheme.colorScheme.surfaceVariant,
@@ -85,7 +64,7 @@ fun ChildSelectionCard(
                 Icon(
                     imageVector = Icons.Default.Person,
                     contentDescription = null,
-                    tint = if (localIsSelected)
+                    tint = if (isSelected)
                         MaterialTheme.colorScheme.primary
                     else
                         MaterialTheme.colorScheme.onSurfaceVariant
@@ -121,7 +100,7 @@ fun ChildSelectionCard(
                 modifier = Modifier.size(24.dp),
                 contentAlignment = Alignment.Center
             ) {
-                if (localIsSelected) {
+                if (isSelected) {
                     Icon(
                         imageVector = Icons.Default.CheckCircle,
                         contentDescription = "Seleccionado",
