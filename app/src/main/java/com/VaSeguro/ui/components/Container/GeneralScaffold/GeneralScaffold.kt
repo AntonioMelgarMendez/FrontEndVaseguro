@@ -68,7 +68,7 @@ fun GeneralScaffold(navControllerx: NavController) {
             ChildrenScreenNavigation
         )
         4 -> listOf(
-            MapScreenNavigation,
+            RouteScreenNavigation(routeId = 0),
             HistoryScreenNavigation,
             BusDriverScreenNavigation,
             ChildrenDriverScreenNavigation
@@ -161,7 +161,7 @@ fun GeneralScaffold(navControllerx: NavController) {
                     Box(Modifier.fillMaxSize()) {
                         MainNavigation(
                             navController = navController,
-                            isAdmin = isAdmin
+                            userRole = user?.role_id ?: 0,
                         )
                     }
                 }
@@ -181,7 +181,7 @@ fun GeneralScaffold(navControllerx: NavController) {
                         .fillMaxSize()
                         .padding(innerPadding)
                 ) {
-                    MainNavigation(navController = navController, isAdmin = isAdmin)
+                    MainNavigation(navController = navController, userRole = user?.role_id ?: 0)
                 }
             }
         )
