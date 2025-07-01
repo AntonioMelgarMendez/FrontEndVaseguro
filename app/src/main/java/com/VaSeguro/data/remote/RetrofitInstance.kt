@@ -11,6 +11,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import com.VaSeguro.BuildConfig
 import com.VaSeguro.data.remote.Chat.ChatService
 import com.VaSeguro.data.remote.Request.RequestService
+import com.VaSeguro.data.remote.Route.RouteService
 import com.VaSeguro.map.services.RoutesApiService
 import com.VaSeguro.map.services.SavedRoutesService
 import com.VaSeguro.map.services.StopPassengerService
@@ -101,5 +102,7 @@ object RetrofitInstance {
     val stopRouteService: StopRouteService by lazy {
         retrofit.create(StopRouteService::class.java)
     }
-
+    val stopsService: com.VaSeguro.data.remote.Stops.StopsService by lazy {
+        retrofit.create(com.VaSeguro.data.remote.Stops.StopsService::class.java)
+    }
 }

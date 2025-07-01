@@ -26,6 +26,8 @@ import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import androidx.core.graphics.createBitmap
 import androidx.room.Room
+import com.VaSeguro.data.repository.RouteRepository.RouteRepositoryImpl
+import com.VaSeguro.data.repository.Stops.StopsRepository
 import com.VaSeguro.data.repository.Stops.StopsRepositoryImpl
 import com.VaSeguro.map.Supabase.SupabaseModule
 import com.VaSeguro.map.repository.LocationRepository
@@ -48,7 +50,7 @@ class AppProvider(context: Context) {
     private val vehicleRespository = VehicleRepositoryImpl(RetrofitInstance.vehicleService)
     private val childrenRespository = ChildrenRepositoryImpl(RetrofitInstance.childrenService)
     private val chatRepository = ChatRepositoryImpl(RetrofitInstance.chatService,"https://sonoradinamita.live/")
-    private val stopPassengerRepository = StopPassengerRepositoryImpl()
+    private val stopPassengerRepository = StopPassengerRepositoryImpl(RetrofitInstance.stopPassengerService, userPreferencesRepository)
     private val LocationRepository = LocationRepositoryImpl(SupabaseModule.supabaseClient)
 
     private val StopRouteRepository = StopRouteRepositoryImpl(
