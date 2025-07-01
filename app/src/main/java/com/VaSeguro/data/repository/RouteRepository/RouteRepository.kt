@@ -1,25 +1,23 @@
+
 package com.VaSeguro.data.repository.RouteRepository
 
-import com.VaSeguro.data.model.Route.RouteStatus
-import com.VaSeguro.data.model.Route.RouteType
-import com.VaSeguro.data.model.Routes.RoutesData
-import com.VaSeguro.data.model.Routes.CreateFullRouteRequest
-import com.VaSeguro.data.model.Vehicle.VehicleMap
+import com.VaSeguro.data.model.Routes.RouteResponse
 
 interface RouteRepository {
-    suspend fun getRoutes(): List<RoutesData>
-    suspend fun getRouteById(id: Int): RoutesData
+    suspend fun getRoutes(token: String): List<RouteResponse>
+    suspend fun getRouteById(token: String, id: Int): RouteResponse
     suspend fun createRoute(
+        token: String,
         name: String,
         startDate: String,
-        vehicleId: VehicleMap,
-        statusId: RouteStatus,
-        typeId: RouteType,
-    ): RoutesData
+        vehicleId: Int,
+        statusId: Int,
+        typeId: Int,
+    ): RouteResponse
     suspend fun updateRoute(
+        token: String,
         id: Int,
-        data: RoutesData
-    ): RoutesData
-    suspend fun deleteRoute(id: Int)
-    suspend fun createFullRoute(request: CreateFullRouteRequest): RoutesData
+        data: RouteResponse
+    ): RouteResponse
+    suspend fun deleteRoute(token: String, id: Int)
 }

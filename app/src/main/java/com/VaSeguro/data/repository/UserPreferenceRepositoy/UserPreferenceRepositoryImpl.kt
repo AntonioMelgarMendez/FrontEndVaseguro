@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.VaSeguro.data.remote.Auth.UserResponse
 import kotlinx.coroutines.flow.Flow
@@ -15,10 +16,12 @@ import kotlinx.coroutines.flow.map
 import java.io.IOException
 import kotlin.text.clear
 import kotlin.text.get
+import kotlin.text.set
 
 class UserPreferencesRepositoryImpl(
     private val dataStore: DataStore<Preferences>
 ) : UserPreferencesRepository {
+
 
     private companion object {
         val IS_LINEAR_LAYOUT = booleanPreferencesKey("IS_LINEAR_LAYOUT")
@@ -33,6 +36,10 @@ class UserPreferencesRepositoryImpl(
         val USER_ROLE = intPreferencesKey("USER_ROLE")
         val USER_PROFILE_PIC = stringPreferencesKey("USER_PROFILE_PIC")
         val USER_CREATED_AT = stringPreferencesKey("USER_CREATED_AT")
+        val LAST_USERS_FETCH_TIME = longPreferencesKey("LAST_USERS_FETCH_TIME")
+        val LAST_ROUTES_FETCH_TIME = longPreferencesKey("LAST_ROUTES_FETCH_TIME")
+        val LAST_STOPS_FETCH_TIME = longPreferencesKey("LAST_STOPS_FETCH_TIME")
+        val LAST_VEHICLES_FETCH_TIME = longPreferencesKey("LAST_VEHICLES_FETCH_TIME") // <-
     }
 
     override val isLinearLayout: Flow<Boolean> = dataStore.data
@@ -157,5 +164,51 @@ class UserPreferencesRepositoryImpl(
             preferences.clear()
         }
     }
+    override suspend fun getLastUsersFetchTime(): Long? {
+        return dataStore.data.map { preferences ->
+            preferences[LAST_USERS_FETCH_TIME]
+        }.firstOrNull()
+    }
+
+    override suspend fun setLastUsersFetchTime(time: Long) {
+        dataStore.edit { preferences ->
+            preferences[LAST_USERS_FETCH_TIME] = time
+        }
+    }
+    override suspend fun getLastRoutesFetchTime(): Long? {
+        return dataStore.data.map { preferences ->
+            preferences[LAST_ROUTES_FETCH_TIME]
+        }.firstOrNull()
+    }
+
+    override suspend fun setLastRoutesFetchTime(time: Long) {
+        dataStore.edit { preferences ->
+            preferences[LAST_ROUTES_FETCH_TIME] = time
+        }
+    }
+    override suspend fun getLastStopsFetchTime(): Long? {
+        return dataStore.data.map { preferences ->
+            preferences[LAST_STOPS_FETCH_TIME]
+        }.firstOrNull()
+    }
+
+    override suspend fun setLastStopsFetchTime(time: Long) {
+        dataStore.edit { preferences ->
+            preferences[LAST_STOPS_FETCH_TIME] = time
+        }
+    }
+    override suspend fun getLastVehiclesFetchTime(): Long? {
+        return dataStore.data.map { preferences ->
+            preferences[LAST_VEHICLES_FETCH_TIME]
+        }.firstOrNull()
+    }
+
+    override suspend fun setLastVehiclesFetchTime(time: Long) {
+        dataStore.edit { preferences ->
+            preferences[LAST_VEHICLES_FETCH_TIME] = time
+        }
+    }
+
+
 
 }

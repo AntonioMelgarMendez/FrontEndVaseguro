@@ -32,7 +32,8 @@ interface AuthService {
         @Part("phone_number") phoneNumber: RequestBody,
         @Part("gender") gender: RequestBody,
         @Part("role_id") roleId: RequestBody,
-        @Part profile_pic: MultipartBody.Part?
+        @Part profile_pic: MultipartBody.Part?,
+        @Part("onesignal_player_id") onesignalPlayerId: RequestBody?
     ): LoginResponse
 
     @POST("users/logout")

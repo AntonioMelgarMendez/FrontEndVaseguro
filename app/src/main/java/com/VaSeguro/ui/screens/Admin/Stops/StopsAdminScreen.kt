@@ -1,67 +1,57 @@
 package com.VaSeguro.ui.screens.Admin.Stops
 
-import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.VaSeguro.data.AppProvider
 import com.VaSeguro.data.model.Stop.StopData
-import com.VaSeguro.data.model.Stop.StopType
-import com.VaSeguro.ui.components.Container.ConfirmationDialog
-import com.VaSeguro.ui.components.Container.DropDownSelector
-import com.VaSeguro.ui.theme.PrimaryColor
 import com.VaSeguro.ui.components.Cards.AdminCardItem
-import com.VaSeguro.ui.components.Misc.CustomizableOutlinedTextField
+import com.VaSeguro.ui.components.Container.ConfirmationDialog
 
 @Composable
-fun StopsAdminScreen(
-    viewModel: StopsAdminScreenViewModel = viewModel()
-) {
-
-    var showDeleteDialog by remember { mutableStateOf(false) }
-    var selectedIdToDelete by remember { mutableStateOf<String?>(null) }
-
+fun StopsAdminScreen() {
+    val context = LocalContext.current
+    val viewModel: StopsAdminScreenViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                val appProvider = AppProvider(context.applicationContext)
+                return StopsAdminScreenViewModel(
+                    appProvider.provideStopsRepository(),
+                    appProvider.provideUserPreferences(),
+                    appProvider.provideStopDao()
+                ) as T
+            }
+        }
+    )
     val stops = viewModel.stops.collectAsState().value
     val expandedMap = viewModel.expandedMap.collectAsState().value
     val checkedMap = viewModel.checkedMap.collectAsState().value
-    var showDialog by remember { mutableStateOf(false) }
+    val isLoading = viewModel.loading.collectAsState().value
+
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var selectedIdToDelete by remember { mutableStateOf<String?>(null) }
+    var showEditDialog by remember { mutableStateOf(false) }
+    var stopToEdit by remember { mutableStateOf<StopData?>(null) }
 
     Box(
         modifier = Modifier
@@ -85,10 +75,10 @@ fun StopsAdminScreen(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.Start,
             ) {
                 Button(
-                    onClick = { },
+                    onClick = { /* No filter action yet */ },
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.outlinedButtonColors(
                         containerColor = Color.Transparent,
@@ -103,72 +93,63 @@ fun StopsAdminScreen(
                         Icon(Icons.Default.FilterList, contentDescription = "Filter")
                     }
                 }
-
-                Button(
-                    onClick = { showDialog = true },
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF7367F0),
-                        contentColor = Color.White
-                    ),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(text = "Add")
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Icon(Icons.Default.Add, contentDescription = "Add")
-                    }
-                }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            LazyColumn {
-                itemsIndexed(stops) { index, stop ->
-                    val isFirst = index == 0
-                    val isLast = index == stops.lastIndex
+            if (isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            } else {
+                LazyColumn {
+                    itemsIndexed(stops) { index, stop ->
+                        val isFirst = index == 0
+                        val isLast = index == stops.lastIndex
 
-                    val shape = when {
-                        isFirst && isLast -> RoundedCornerShape(16.dp)
-                        isFirst -> RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
-                        isLast -> RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp)
-                        else -> RectangleShape
+                        val shape = when {
+                            isFirst && isLast -> RoundedCornerShape(16.dp)
+                            isFirst -> RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+                            isLast -> RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp)
+                            else -> RectangleShape
+                        }
+
+                        AdminCardItem(
+                            id = stop.id.toString(),
+                            title = stop.name,
+                            subtitle = "",
+                            details = listOf(
+                                "Latitude" to stop.latitude.toString(),
+                                "Longitude" to stop.longitude.toString()
+                            ),
+                            isExpanded = expandedMap[stop.id.toString()] ?: false,
+                            isChecked = checkedMap[stop.id.toString()] ?: false,
+                            shape = shape,
+                            onCheckedChange = { viewModel.setChecked(stop.id.toString(), it) },
+                            onEditClick = {
+                                stopToEdit = stop
+                                showEditDialog = true
+                            },
+                            onDeleteClick = {
+                                selectedIdToDelete = stop.id.toString()
+                                showDeleteDialog = true
+                            },
+                            onToggleExpand = { viewModel.toggleExpand(stop.id.toString()) }
+                        )
                     }
-
-                    AdminCardItem(
-                        id = stop.id.toString(),
-                        title = stop.name,
-                        subtitle = "",
-                        details = listOf(
-                            "Latitude" to stop.latitude.toString(),
-                            "Longitude" to stop.longitude.toString()
-                        ),
-                        isExpanded = expandedMap[stop.id.toString()] ?: false,
-                        isChecked = checkedMap[stop.id.toString()] ?: false,
-                        shape = shape,
-                        onCheckedChange = { viewModel.setChecked(stop.id.toString(), it) },
-                        onEditClick = { println("Editar ${stop.name}") },
-                        onDeleteClick = {
-                            selectedIdToDelete = stop.id.toString()
-                            showDeleteDialog = true
-                        },
-                        onToggleExpand = { viewModel.toggleExpand(stop.id.toString()) }
-                    )
                 }
             }
         }
     }
 
-    if (showDialog) {
-        AddStopDialog(
-            onDismiss = { showDialog = false },
-            onSave = { showDialog = false }
-        )
-    }
-
     if (showDeleteDialog && selectedIdToDelete != null) {
         ConfirmationDialog(
-            message = "Are you sure you want to delete this item?",
+            message = "Are you sure you want to delete this stop?",
             onConfirm = {
                 viewModel.deleteStop(selectedIdToDelete!!)
                 showDeleteDialog = false
@@ -181,96 +162,74 @@ fun StopsAdminScreen(
         )
     }
 
+    if (showEditDialog && stopToEdit != null) {
+        EditStopDialog(
+            stop = stopToEdit!!,
+            onDismiss = { showEditDialog = false },
+            onSave = { updatedStop, driverId ->
+                viewModel.editStop(updatedStop, driverId)
+                showEditDialog = false
+            }
+        )
+    }
 }
 
 @Composable
-fun AddStopDialog(
-    viewModel: StopsAdminScreenViewModel = viewModel(),
+fun EditStopDialog(
+    stop: StopData,
     onDismiss: () -> Unit,
-    onSave: () -> Unit
+    onSave: (StopData, Int?) -> Unit
 ) {
-
-    val context = LocalContext.current
-
-    var name by remember { mutableStateOf(TextFieldValue("")) }
-    var latitude by remember { mutableStateOf(TextFieldValue("")) }
-    var longitude by remember { mutableStateOf(TextFieldValue("")) }
-    var stopType by remember { mutableStateOf<StopType?>(null) }
-    var driver by remember { mutableStateOf<String?>(null) }
-
-    val drivers = listOf("Juan Mendoza", "Pedro Torres")
-
-    fun resetForm() {
-        name = TextFieldValue("")
-        latitude = TextFieldValue("")
-        longitude = TextFieldValue("")
-        stopType = null
-        driver = null
-    }
+    var name by remember { mutableStateOf(TextFieldValue(stop.name)) }
+    var latitude by remember { mutableStateOf(TextFieldValue(stop.latitude.toString())) }
+    var longitude by remember { mutableStateOf(TextFieldValue(stop.longitude.toString())) }
+    var driverId by remember { mutableStateOf(TextFieldValue("")) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add Stop") },
+        title = { Text("Edit Stop") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                CustomizableOutlinedTextField(value = name, onValueChange = { name = it }, label = "Name")
-                CustomizableOutlinedTextField(value = latitude, onValueChange = { latitude = it }, label = "Latitude")
-                CustomizableOutlinedTextField(value = longitude, onValueChange = { longitude = it }, label = "Longitude")
-
-//                DropDownSelector("Stop Type", stopTypes.map { it.type }, stopType?.type) { selectedType ->
-//                    stopType = stopTypes.find { it.type == selectedType }
-//                }
-                DropDownSelector("Driver", drivers, driver) { driver = it }
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Name") }
+                )
+                OutlinedTextField(
+                    value = latitude,
+                    onValueChange = { latitude = it },
+                    label = { Text("Latitude") }
+                )
+                OutlinedTextField(
+                    value = longitude,
+                    onValueChange = { longitude = it },
+                    label = { Text("Longitude") }
+                )
+                OutlinedTextField(
+                    value = driverId,
+                    onValueChange = { driverId = it },
+                    label = { Text("Driver ID") }
+                )
             }
         },
         confirmButton = {
             Button(
                 onClick = {
-
-                    if (name.text.isBlank() ||
-                        latitude.text.isBlank() ||
-                        longitude.text.isBlank() ||
-                        stopType == null ||
-                        driver.isNullOrBlank()
-                    ) {
-                        Toast.makeText(context, "Por favor completa todos los campos.", Toast.LENGTH_SHORT).show()
-                        return@Button
-                    }
-
-                    if (stopType != null && driver != null) {
-                        val newStop = StopData(
-                            id = (1000..9999).random(),
-                            name = name.text,
-                            latitude = latitude.text.toDouble(),
-                            longitude = longitude.text.toDouble(),
-//                            stopType = stopType!!,
-//                            driver = driver!!
-                        )
-                        viewModel.addStop(newStop)
-                        resetForm()
-                        onSave()
-                    }
-                },
-                colors = ButtonDefaults.buttonColors(
-                    contentColor = Color.White,
-                    containerColor = PrimaryColor
-                )
+                    val updatedStop = stop.copy(
+                        name = name.text,
+                        latitude = latitude.text.toDoubleOrNull() ?: stop.latitude,
+                        longitude = longitude.text.toDoubleOrNull() ?: stop.longitude
+                    )
+                    val driverIdValue = driverId.text.toIntOrNull()
+                    onSave(updatedStop, driverIdValue)
+                }
             ) {
-                Text("Agregar")
+                Text("Save")
             }
         },
         dismissButton = {
-            OutlinedButton(
-                onClick = {
-                    resetForm()
-                    onDismiss()
-                },
-                border = BorderStroke(2.dp, PrimaryColor),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = PrimaryColor
-                )
-            ) {
-                Text("Cancelar")
+            OutlinedButton(onClick = onDismiss) {
+                Text("Cancel")
             }
         }
     )

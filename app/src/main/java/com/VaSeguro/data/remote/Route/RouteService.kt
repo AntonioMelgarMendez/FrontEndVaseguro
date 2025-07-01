@@ -1,3 +1,4 @@
+
 package com.VaSeguro.data.remote.Route
 
 import com.VaSeguro.data.model.Routes.RoutesData
@@ -15,17 +16,23 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 
 
+package com.VaSeguro.data.remote.Route
+
+import com.VaSeguro.data.model.Routes.RouteResponse
+import okhttp3.RequestBody
+import retrofit2.http.*
+
 interface RouteService {
-    @GET ("routes")
+    @GET("routes")
     suspend fun getRoutes(
         @Header("Authorization") authHeader: String
-    ): List<RoutesData>
+    ): List<RouteResponse>
 
     @GET("routes/{id}")
     suspend fun getRouteById(
         @Header("Authorization") authHeader: String,
         @Path("id") id: String
-    ): RoutesData
+    ): RouteResponse
 
     @Multipart
     @POST("routes/")
@@ -36,7 +43,7 @@ interface RouteService {
         @Part("status_id") statusId: RequestBody,
         @Part("type_id") typeId: RequestBody,
         @Header("Authorization") authHeader: String
-    ): RoutesData
+    ): RouteResponse
 
     @Multipart
     @PUT("routes/{id}")
@@ -48,24 +55,11 @@ interface RouteService {
         @Part("status_id") statusId: RequestBody,
         @Part("type_id") typeId: RequestBody,
         @Header("Authorization") authHeader: String
-    ): RoutesData
+    ): RouteResponse
 
     @DELETE("routes/{id}")
     suspend fun deleteRoute(
         @Path("id") id: String,
         @Header("Authorization") authHeader: String
     )
-
-    @GET("routes/active")
-    suspend fun getActiveRouteByDriver(
-        @Header("Authorization") authHeader: String,
-        @Query("driver_id") driverId: Int
-    ): RoutesData?
-
-    @POST("routes/full")
-    suspend fun createFullRoute(
-        @Body request: CreateFullRouteRequest,
-        @Header("Authorization") authHeader: String
-    ): RoutesData
-
 }

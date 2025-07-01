@@ -10,6 +10,7 @@ enum class RouteType(val id: Int, val type: String) {
     OUTBOUND(2, "Vuelta"),
     SPECIAL(3, "Especial");
 
+
     companion object {
         fun fromString(value: String): RouteType {
             return when (value.lowercase()) {

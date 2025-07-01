@@ -1,12 +1,14 @@
 // com.VaSeguro.ui.navigations.MainNavigation.kt
 package com.VaSeguro.ui.navigations
 
+
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.toRoute
 import com.VaSeguro.map.repository.SavedRoutesRepository
 import com.VaSeguro.map.repository.SavedRoutesRepositoryImpl
 import com.VaSeguro.ui.screens.Admin.Account.AccountAdminScreen
@@ -16,6 +18,9 @@ import com.VaSeguro.ui.screens.Admin.Routes.RoutesAdminScreen
 import com.VaSeguro.ui.screens.Admin.Stops.StopsAdminScreen
 import com.VaSeguro.ui.screens.Admin.Users.UsersAdminScreen
 import com.VaSeguro.ui.screens.Admin.Vehicle.VehicleScreen
+import com.VaSeguro.ui.screens.Driver.Chat.Calls.AgoraCallScreen
+
+import com.VaSeguro.ui.screens.Driver.Chat.ChatScreen
 import com.VaSeguro.ui.screens.Driver.Route.RouteScreen
 import com.VaSeguro.ui.screens.Driver.Route.RouteScreenViewModel
 import com.VaSeguro.ui.screens.Driver.SavedRoutes.SavedRoutesScreen
@@ -51,7 +56,7 @@ fun MainNavigation(navController: NavHostController, isAdmin: Boolean) {
         composable<MapScreenNavigation> { MapScreen() }
         composable<HistoryScreenNavigation> { HistoryScreen() }
         composable<BusScreenNavigation> { BusScreen() }
-        composable<ChildrenScreenNavigation> { ChildrenScreen() }
+        composable<ChildrenScreenNavigation> { ChildrenScreen(navController) }
         composable<ConfigurationScreenNavigation> { ConfigurationScreen() }
         //ADMIN SCREENS
         composable <HomeAdminScreenNavigation>{ HomeAdminScreen() }
@@ -73,7 +78,7 @@ fun MainNavigation(navController: NavHostController, isAdmin: Boolean) {
             )
         }
         composable<BusDriverScreenNavigation>{ BusScreen() }
-        composable<ChildrenDriverScreenNavigation>{ ChildrenScreen() }
+        composable<ChildrenDriverScreenNavigation>{ ChildrenScreen(navController) }
         composable<HistoryScreenNavigation>{ HistoryScreen() }
 
         composable<SavedRoutesScreenNavigation> {
@@ -82,6 +87,27 @@ fun MainNavigation(navController: NavHostController, isAdmin: Boolean) {
                 navController = navController,
                 viewModel = savedRoutesViewModel,
                 onRunRoute = onRunRoute,
+            )
+        }
+        composable<ChatScreenNavigation> { backStackEntry ->
+            val args = backStackEntry.toRoute<ChatScreenNavigation>()
+
+            ChatScreen(
+                navController = navController,
+                id= args.id,
+            )
+        }
+        composable<CallScreenNavigation> { backStackEntry ->
+            val args = backStackEntry.toRoute<CallScreenNavigation>()
+            AgoraCallScreen(
+                channelName = args.roomName,
+                personName = args.personName,
+                personPhotoUrl = args.personPhotoUrl,
+                onCallEnd = {
+                    navController.navigate(ChatScreenNavigation(args.id)) {
+                        popUpTo(CallScreenNavigation(args.roomName, args.id, args.personName, args.personPhotoUrl)) { inclusive = true }
+                    }
+                }
             )
         }
     }

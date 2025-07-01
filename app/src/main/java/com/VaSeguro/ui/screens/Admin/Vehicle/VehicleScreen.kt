@@ -40,7 +40,8 @@ fun VehicleScreen() {
         val appProvider = AppProvider(context.applicationContext)
         return VehicleViewModel(
           appProvider.provideVehicleRepository(),
-          appProvider.provideUserPreferences()
+          appProvider.provideUserPreferences(),
+            appProvider.provideVehicleDao()
         ) as T
       }
     }

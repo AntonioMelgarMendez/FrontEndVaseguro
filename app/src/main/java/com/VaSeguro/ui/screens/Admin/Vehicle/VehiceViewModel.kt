@@ -3,6 +3,8 @@ package com.VaSeguro.ui.screens.Admin.Vehicle
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.VaSeguro.data.Dao.Vehicle.VehicleDao
+import com.VaSeguro.data.Entitys.Vehicle.VehicleEntity
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -10,6 +12,7 @@ import com.VaSeguro.data.model.Vehicle.Vehicle
 import com.VaSeguro.data.model.User.UserData
 import com.VaSeguro.data.model.User.UserRole
 import com.VaSeguro.data.remote.Vehicle.toDomain
+import com.VaSeguro.data.remote.Vehicle.toEntity
 import com.VaSeguro.data.repository.UserPreferenceRepository.UserPreferencesRepository
 import com.VaSeguro.data.repository.VehicleRepository.VehicleRepository
 import com.VaSeguro.helpers.Resource
@@ -18,7 +21,8 @@ import okhttp3.MultipartBody
 
 class VehicleViewModel(
   private val vehicleRepository: VehicleRepository,
-  private val userPreferencesRepository: UserPreferencesRepository
+  private val userPreferencesRepository: UserPreferencesRepository,
+  private val vehicleDao: VehicleDao
 ) : ViewModel() {
 
   private val _drivers = MutableStateFlow<List<UserData>>(emptyList())
@@ -35,7 +39,7 @@ class VehicleViewModel(
   private val _isLoading = MutableStateFlow(false)
   val isLoading: StateFlow<Boolean> = _isLoading
 
-
+  private val CACHE_EXPIRATION_MS = 1 * 60 * 1000L
   init {
     loadVehicles()
   }
@@ -43,24 +47,56 @@ class VehicleViewModel(
   private fun loadVehicles() {
     viewModelScope.launch {
       _isLoading.value = true
-      vehicleRepository.getAllVehicles(userPreferencesRepository.getAuthToken().toString()).collect { resource ->
-        when (resource) {
-          is Resource.Success -> {
-            _vehicles.value = resource.data.map { it.toDomain() }
-            _isLoading.value = false
-          }
-          is Resource.Error -> {
-            println("Error al cargar vehículos: ${resource.message}")
-            _isLoading.value = false
-          }
-          Resource.Loading -> {
-            _isLoading.value = true
+      // 1. Read from Room
+      val cached = vehicleDao.getAllVehicles()
+      if (cached.isNotEmpty()) {
+        _vehicles.value = cached.map { it.toDomain() }
+      }
+      // 2. Check cache expiration
+      val lastFetch = userPreferencesRepository.getLastVehiclesFetchTime()
+      val now = System.currentTimeMillis()
+      if (lastFetch != null && now - lastFetch < CACHE_EXPIRATION_MS) {
+        _isLoading.value = false
+        return@launch
+      }
+      // 3. Fetch from API and update Room
+      try {
+        val token = userPreferencesRepository.getAuthToken().orEmpty()
+        val apiVehicles = vehicleRepository.getAllVehicles(token)
+        apiVehicles.collect { resource ->
+          when (resource) {
+            is com.VaSeguro.helpers.Resource.Success -> {
+              val vehicles = resource.data.map { it.toDomain() }
+              _vehicles.value = vehicles
+              vehicleDao.clearVehicles()
+              vehicleDao.insertVehicles(resource.data.map { it.toEntity() })
+              userPreferencesRepository.setLastVehiclesFetchTime(now)
+            }
+            is com.VaSeguro.helpers.Resource.Error -> {
+              // Optionally handle error
+            }
+            com.VaSeguro.helpers.Resource.Loading -> {
+              _isLoading.value = true
+            }
           }
         }
-      }
+      } catch (_: Exception) { }
+      _isLoading.value = false
     }
   }
-
+  private fun Vehicle.toEntity() = VehicleEntity(
+    id = id.toInt(),
+    plate = plate,
+    driver_id = driver_id.toInt(),
+    model = model,
+    brand = brand,
+    year = year,
+    color = color,
+    capacity = capacity,
+    updated_at = updated_at,
+    carPic = carPic,
+    created_at = created_at
+  )
 
   fun toggleExpand(vehicleId: String) {
     _expandedMap.update { current ->

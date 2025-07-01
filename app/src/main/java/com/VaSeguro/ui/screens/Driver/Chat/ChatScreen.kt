@@ -1,33 +1,29 @@
 package com.VaSeguro.ui.screens.Driver.Chat
 
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.wrapContentSize
-import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.runtime.getValue
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.graphics.Color
+import androidx.navigation.NavController
 import com.VaSeguro.data.model.User.UserData
 import com.VaSeguro.data.model.User.UserRole
 import com.VaSeguro.ui.components.Chat.ChatBottomBar
-import com.VaSeguro.ui.components.Chat.ChatTopBar
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.VaSeguro.ui.components.Chat.ChatMessagesList
-
-data class QuickReply(
-  val text: String,
-  val onClick: () -> Unit = {}
-)
+import com.VaSeguro.ui.components.Chat.ChatTopBar
+import com.VaSeguro.ui.navigations.ChildrenScreenNavigation
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.VaSeguro.ui.navigations.CallScreenNavigation
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(
+  navController: NavController,
+  id: String,
   viewModel: ChatViewModel = viewModel(factory = ChatViewModel.Factory)
 ) {
   val text by viewModel.text.collectAsState()
@@ -35,22 +31,74 @@ fun ChatScreen(
   val listState = rememberLazyListState()
   val user by viewModel.user.collectAsState()
   val quickReplies = viewModel.quickReplies
+  val isLoading by viewModel.isLoading.collectAsState()
+  val currentUserId by viewModel.currentUserId.collectAsState()
+  val roomName = currentUserId?.let { getRoomName(it, id) } ?: ""
+
+  var hasScrolledToBottom by remember { mutableStateOf(false) }
+
+  LaunchedEffect(id) {
+    viewModel.loadUser(id)
+    val currentUser = viewModel.userPreferencesRepository.getUserData()
+    val currentUserId = currentUser?.id?.toString() ?: return@LaunchedEffect
+    viewModel.loadChat(currentUserId, id)
+    val token = viewModel.userPreferencesRepository.getAuthToken() ?: return@LaunchedEffect
+    viewModel.connectSocket(currentUserId, token)
+    hasScrolledToBottom = false
+  }
+
+  // Only scroll to the bottom on initial load
+  LaunchedEffect(messages.size) {
+    if (messages.isNotEmpty() && !hasScrolledToBottom) {
+      listState.scrollToItem(messages.lastIndex)
+      hasScrolledToBottom = true
+    }
+  }
+
+  // Load more messages when scrolled to the top
+  LaunchedEffect(listState.firstVisibleItemIndex) {
+    if (listState.firstVisibleItemIndex == 0 && messages.isNotEmpty()) {
+      viewModel.loadMoreMessages()
+    }
+  }
+
+  if (isLoading) {
+    Scaffold(
+      topBar = {
+        TopAppBar(
+          title = {},
+          navigationIcon = {
+            IconButton(onClick = { navController.navigate(ChildrenScreenNavigation) }) {
+              Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+            }
+          },
+          colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+        )
+      }
+    ) { innerPadding ->
+      Box(
+        modifier = Modifier
+          .padding(innerPadding)
+          .fillMaxSize(),
+        contentAlignment = Alignment.Center
+      ) {
+        CircularProgressIndicator()
+      }
+    }
+    return
+  }
 
   if (user == null) {
     Scaffold(
       topBar = {
-        ChatTopBar(
-          user = UserData(
-            id = "0",
-            forename = "Desconocido",
-            surname = "",
-            email = "",
-            phoneNumber = "",
-            profilePic = "",
-            role_id = UserRole(id = 0, role_name = "Unknown"),
-            gender = ""
-          ),
-          onBackClick = { /* TODO */ }
+        TopAppBar(
+          title = {},
+          navigationIcon = {
+            IconButton(onClick = { navController.navigate(ChildrenScreenNavigation) }) {
+              Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+            }
+          },
+          colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
         )
       }
     ) { innerPadding ->
@@ -71,32 +119,43 @@ fun ChatScreen(
         quickReplies = quickReplies,
         text = text,
         onTextChange = viewModel::onTextChange,
-        onSendClick = viewModel::sendMessage
+        onSendClick = { viewModel.sendMessage(id) }
       )
     },
     topBar = {
       ChatTopBar(
-        user = user!!,
-        onBackClick = { /* TODO */ }
+        user = UserData(
+          id = user!!.id.toString(),
+          forename = user!!.forenames ?: "",
+          surname = user!!.surnames ?: "",
+          email = user!!.email ?: "",
+          phoneNumber = user!!.phone_number ?: "",
+          profilePic = user!!.profile_pic ?: "",
+          role_id = UserRole(id = 0, role_name = "Unknown"),
+          gender = user!!.gender ?: ""
+        ),
+        onBackClick = { navController.navigate(ChildrenScreenNavigation) },
+        onCallClick = {
+          navController.navigate(
+            CallScreenNavigation(
+              roomName = roomName,
+              id = id,
+              personName = (user!!.forenames ?: "") + " " + (user!!.surnames ?: ""),
+              personPhotoUrl = user!!.profile_pic
+            )
+          )
+        }
       )
     },
   ) { innerPadding ->
-
-    LaunchedEffect(messages.size) {
-      listState.animateScrollToItem(messages.size)
-    }
-
     ChatMessagesList(
       messages = messages,
       listState = listState,
       modifier = Modifier.padding(innerPadding)
     )
   }
-
 }
 
-@Preview(showBackground = true)
-@Composable
-fun ChatScreenPreview() {
-  ChatScreen()
+fun getRoomName(userId1: String, userId2: String): String {
+  return listOf(userId1, userId2).sorted().joinToString("_", prefix = "chat_")
 }

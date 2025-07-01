@@ -1,8 +1,12 @@
 package com.VaSeguro.ui.screens.Start.Login
 
+import android.content.Context
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.VaSeguro.data.repository.AuthRepository.AuthRepository
+import com.VaSeguro.data.repository.Children.ChildrenRepository
+import com.VaSeguro.data.repository.DriverPrefs.DriverPrefs
 import com.VaSeguro.data.repository.UserPreferenceRepository.UserPreferencesRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -14,7 +18,9 @@ import retrofit2.HttpException
 
 class LoginViewModel(
     private val authRepository: AuthRepository,
-    private val userPreferencesRepository: UserPreferencesRepository
+    private val userPreferencesRepository: UserPreferencesRepository,
+    private val childrenRepository: ChildrenRepository,
+    private val context: Context
 ) : ViewModel() {
 
     private val _email = MutableStateFlow("")
@@ -76,6 +82,13 @@ class LoginViewModel(
                     if (rememberMe.value) {
                         userPreferencesRepository.saveUserEmail(response.user.email)
                         userPreferencesRepository.saveRememberMePreference(true)
+                    }
+                    Log.d("Role_id", "Role ID: ${response.user.role_id}")
+                    if (response.user.role_id == 3) {
+
+                        val child = childrenRepository.getChild(response.user.id.toString(), response.token)
+                        val driverId = child.driver_id
+                        DriverPrefs.saveDriverId(context, driverId)
                     }
 
                     onSuccess()

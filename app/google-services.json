@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1041867587204",
+    "project_id": "vaseguro-ef893",
+    "storage_bucket": "vaseguro-ef893.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1041867587204:android:763911e0c7f8a155568cd1",
+        "android_client_info": {
+          "package_name": "com.vaseguro.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDvgY5GwU5QO0nMIdLRUTr41awtqtJj76U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

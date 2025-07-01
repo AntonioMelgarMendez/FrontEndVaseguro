@@ -1,33 +1,28 @@
 package com.VaSeguro.ui.components.Container.GeneralScaffold
 
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import com.VaSeguro.data.AppProvider
 import com.VaSeguro.ui.components.Container.BottomBar.BottomBar
 import com.VaSeguro.ui.components.Container.TopBarContainer.TopBar
 import com.VaSeguro.ui.navigations.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.pager.PagerState
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.*
-import androidx.compose.ui.graphics.Color
-
 import kotlinx.coroutines.launch
-import kotlin.comparisons.then
 
 @Composable
 fun GeneralScaffold(navControllerx: NavController) {
@@ -57,63 +52,138 @@ fun GeneralScaffold(navControllerx: NavController) {
         else -> listOf("Map")
     }
 
-    // Set initial selected item and title based on role
-    val initialSelected = when (user?.role_id) {
-        2 -> "Inicio"
-        3 -> "Mapa"
-        4 -> "Mapa"
-        else -> "Map"
+    val navRoutes = when (user?.role_id) {
+        2 -> listOf(
+            HomeAdminScreenNavigation,
+            ChildrenAdminScreenNavigation,
+            RoutesAdminScreenNavigation,
+            StopsAdminScreenNavigation,
+            UsersAdminScreenNavigation,
+            VehiclesAdminScreenNavigation
+        )
+        3 -> listOf(
+            MapScreenNavigation,
+            HistoryScreenNavigation,
+            BusScreenNavigation,
+            ChildrenScreenNavigation
+        )
+        4 -> listOf(
+            MapScreenNavigation,
+            HistoryScreenNavigation,
+            BusDriverScreenNavigation,
+            ChildrenDriverScreenNavigation
+        )
+        else -> listOf(MapScreenNavigation)
     }
+
+    val initialSelected = navItems.first()
     var selectedItem by remember { mutableStateOf(initialSelected) }
     var title by remember { mutableStateOf(initialSelected) }
 
+    val pagerState = rememberPagerState(
+        pageCount = { navItems.size },
+        initialPage = navItems.indexOf(initialSelected)
+    )
+    val coroutineScope = rememberCoroutineScope()
+
+    var pagerEnabled by remember { mutableStateOf(true) }
+
+    // Sync bottom bar and pager
     fun onItemSelected(currentItem: String) {
+        val pageIndex = navItems.indexOf(currentItem)
         selectedItem = currentItem
         title = currentItem
-        when (currentItem) {
-            "Mapa" -> navController.navigate(MapScreenNavigation)
-            "Historial" -> navController.navigate(HistoryScreenNavigation)
-            "Mi Bus" -> navController.navigate(BusDriverScreenNavigation)
-            "Bus" -> navController.navigate(BusScreenNavigation)
-            "Hijos" -> navController.navigate(ChildrenAdminScreenNavigation)
-            "Hijo" -> navController.navigate(ChildrenScreenNavigation)
-            "Clientes" -> navController.navigate(ChildrenDriverScreenNavigation)
-            "Inicio" -> navController.navigate(HomeAdminScreenNavigation)
-            "Rutas" -> navController.navigate(RoutesAdminScreenNavigation)
-            "Mis Rutas" -> navController.navigate(HistoryScreenNavigation)
-            "Paradas" -> navController.navigate(StopsAdminScreenNavigation)
-            "Usuarios" -> navController.navigate(UsersAdminScreenNavigation)
-            "Buses" -> navController.navigate(VehiclesAdminScreenNavigation)
+        coroutineScope.launch {
+            pagerEnabled = false
+            pagerState.animateScrollToPage(pageIndex)
+            pagerEnabled = true
+        }
+        navController.navigate(navRoutes[pageIndex]) {
+            popUpTo(navController.graph.startDestinationId) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
         }
     }
 
-    Scaffold(
-        containerColor = Color.White,
-        topBar = {
-            TopBar(
-                title = title,
-                navController = navControllerx,
-                navControllerx = navController
-            )
-        },
-        bottomBar = {
-            BottomBar(
-                selectedItem = selectedItem,
-                onItemSelected = { onItemSelected(it) },
-                navItems = navItems
-            )
-        },
-        snackbarHost = {
-            SnackbarHost(hostState = snackbarHostState)
-        },
-        content = { innerPadding ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-            ) {
-                MainNavigation(navController = navController, isAdmin = isAdmin)
+    // Sync pager swipe with navigation and bottom bar
+    LaunchedEffect(pagerState.currentPage) {
+        pagerEnabled = false
+        pagerEnabled = true
+        val newItem = navItems[pagerState.currentPage]
+        if (selectedItem != newItem) {
+            selectedItem = newItem
+            title = newItem
+            navController.navigate(navRoutes[pagerState.currentPage]) {
+                popUpTo(navController.graph.startDestinationId) { saveState = true }
+                launchSingleTop = true
+                restoreState = true
             }
         }
-    )
+    }
+
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+    fun isChatRoute(route: String?): Boolean {
+        return route?.contains("ChatScreenNavigation") == true
+    }
+    fun isCallRoute(route: String?): Boolean {
+        return route?.contains("CallScreenNavigation") == true
+    }
+
+    if (!isChatRoute(currentRoute) && !isCallRoute(currentRoute)) {
+        Scaffold(
+            containerColor = Color.White,
+            topBar = {
+                TopBar(
+                    title = title,
+                    navController = navControllerx,
+                    navControllerx = navController
+                )
+            },
+            bottomBar = {
+                BottomBar(
+                    selectedItem = selectedItem,
+                    onItemSelected = { onItemSelected(it) },
+                    navItems = navItems
+                )
+            },
+            snackbarHost = {
+                SnackbarHost(hostState = snackbarHostState)
+            },
+            content = { innerPadding ->
+                HorizontalPager(
+                    state = pagerState,
+                    userScrollEnabled = pagerEnabled,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                ) { page ->
+                    Box(Modifier.fillMaxSize()) {
+                        MainNavigation(
+                            navController = navController,
+                            isAdmin = isAdmin
+                        )
+                    }
+                }
+            }
+        )
+    } else {
+        Scaffold(
+            containerColor = Color.White,
+            topBar = {},
+            bottomBar = {},
+            snackbarHost = {
+                SnackbarHost(hostState = snackbarHostState)
+            },
+            content = { innerPadding ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                ) {
+                    MainNavigation(navController = navController, isAdmin = isAdmin)
+                }
+            }
+        )
+    }
 }

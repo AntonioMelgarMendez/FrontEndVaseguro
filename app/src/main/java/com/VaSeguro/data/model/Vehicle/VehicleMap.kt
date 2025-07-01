@@ -13,3 +13,17 @@ data class VehicleMap (
   val carPic: String,
   val created_at:String
 )
+
+fun Vehicle.toVehicleMap(): VehicleMap = VehicleMap(
+  id = this.id.toInt(),
+  plate = this.plate,
+  driver_id = this.driver_id.toInt(),
+  model = this.model,
+  brand = this.brand,
+  year = this.year,
+  color = this.color,
+  capacity = this.capacity,
+  updated_at = this.updated_at,
+  carPic = this.carPic,
+  created_at = this.created_at
+)

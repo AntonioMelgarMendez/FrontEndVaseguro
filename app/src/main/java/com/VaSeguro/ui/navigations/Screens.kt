@@ -20,8 +20,9 @@ data class RouteScreenNavigation(val routeId: Int = -1)
 object SavedRoutesScreenNavigation
 @Serializable
 object RouteMenuScreenNavigation
+
 @Serializable
-object ChatScreenNavigation
+data class  ChatScreenNavigation(val id: String)
 @Serializable
 object BusDriverScreenNavigation
 @Serializable
@@ -50,4 +51,12 @@ object StopsScreenNavigation
 object SplashScreenNavigation
 @Serializable
 object HomeScreenNavigation
-
+@Serializable
+object ChanScreenNavigation
+@Serializable
+data class CallScreenNavigation(
+    val roomName: String,
+    val id: String,
+    val personName: String,
+    val personPhotoUrl: String? = null
+)

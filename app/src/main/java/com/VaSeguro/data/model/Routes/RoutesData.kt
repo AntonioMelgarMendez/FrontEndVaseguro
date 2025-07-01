@@ -62,3 +62,4 @@ data class UpdateRouteRequest(
     val status_id: Int,
     val end_date: String? = null
 )
+

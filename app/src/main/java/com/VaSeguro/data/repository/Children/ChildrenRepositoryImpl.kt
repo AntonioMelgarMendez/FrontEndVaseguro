@@ -2,25 +2,20 @@ package com.VaSeguro.data.repository.Children
 
 import com.VaSeguro.data.model.Children.Children
 import com.VaSeguro.data.remote.Children.ChildrenService
-import com.VaSeguro.data.remote.Responses.ChildrenResponse
-import com.VaSeguro.data.repository.UserPreferenceRepository.UserPreferencesRepository
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
+import kotlin.toString
 
+// ChildrenRepositoryImpl.kt
 class ChildrenRepositoryImpl(
-  private val childrenService: ChildrenService,
-  private val userPreferencesRepository: UserPreferencesRepository
+  private val childrenService: ChildrenService
 ) : ChildrenRepository {
-  override suspend fun getChildren(): List<ChildrenResponse> {
-    val token = userPreferencesRepository.getAuthToken().orEmpty()
-    return childrenService.getChildren("Bearer $token")
-  }
+  override suspend fun getChildren(token: String) =
+    childrenService.getChildren("Bearer $token")
 
-  override suspend fun getChild(id: String): Children {
-    val token = userPreferencesRepository.getAuthToken().orEmpty()
-    return childrenService.getChild(id, "Bearer $token")
-  }
+  override suspend fun getChild(id: String, token: String) =
+    childrenService.getChild(id, "Bearer $token")
 
   override suspend fun create(
     forenames: String,
@@ -44,13 +39,24 @@ class ChildrenRepositoryImpl(
     "Bearer $token"
   )
 
-  override suspend fun update(id: String, child: Children, profilePic: MultipartBody.Part?): Children {
-    val token = userPreferencesRepository.getAuthToken().orEmpty()
-    return childrenService.update(id, child, profilePic, "Bearer $token")
-  }
+  override suspend fun update(
+    id: String,
+    child: Children,
+    profilePic: MultipartBody.Part?,
+    token: String
+  ): Children = childrenService.update(
+    id = id,
+    forenames = child.forenames.toRequestBody("text/plain".toMediaTypeOrNull()),
+    surnames = child.surnames.toRequestBody("text/plain".toMediaTypeOrNull()),
+    medicalInfo = child.medical_info.toRequestBody("text/plain".toMediaTypeOrNull()),
+    gender = child.gender.toRequestBody("text/plain".toMediaTypeOrNull()),
+    parentId = child.parent_id.toString().toRequestBody("text/plain".toMediaTypeOrNull()),
+    driverId = child.driver_id.toString().toRequestBody("text/plain".toMediaTypeOrNull()),
+    profilePic = profilePic,
+    birthDate = child.birth_date.toRequestBody("text/plain".toMediaTypeOrNull()),
+    token = "Bearer $token"
+  )
 
-  override suspend fun remove(id: String) {
-    val token = userPreferencesRepository.getAuthToken().orEmpty()
-    return childrenService.remove(id, "Bearer $token")
-  }
+  override suspend fun remove(id: String, token: String) =
+    childrenService.remove(id, "Bearer $token")
 }
