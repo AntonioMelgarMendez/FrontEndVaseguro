@@ -158,7 +158,7 @@ fun ChildApiResponse.toChildMap(): ChildMap {
         id = this.id,
         forenames = this.forenames,
         surnames = this.surnames,
-        birth = this.birth_date,
+        birthDate = this.birth_date,
         driverId = this.driver_id,
         parentId = this.parent_id,
         medicalInfo = this.medical_info,

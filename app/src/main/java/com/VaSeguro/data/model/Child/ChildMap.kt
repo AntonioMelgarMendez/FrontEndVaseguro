@@ -8,7 +8,7 @@ data class ChildMap(
     val forenames: String,
     val surnames: String,
     @SerializedName("birth_date")
-    val birth: String,
+    val birthDate: String, // Cambiar de 'birth' a 'birthDate' para consistencia
     val age: Int = 0,
     @SerializedName("driver_id")
     val driverId: Int,
@@ -27,7 +27,11 @@ data class ChildMap(
         get() = if (fullName.isNotEmpty()) fullName else "$forenames $surnames"
 
     val calculatedAge: Int
-        get() = if (age > 0) age else calculateAgeFromBirthDate(birth)
+        get() = if (age > 0) age else calculateAgeFromBirthDate(birthDate) // Usar birthDate
+
+    // Propiedad de compatibilidad para código que usa 'birth'
+    val birth: String
+        get() = birthDate
 
     private fun calculateAgeFromBirthDate(birthDate: String): Int {
         return try {

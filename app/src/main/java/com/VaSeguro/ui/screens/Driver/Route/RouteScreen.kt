@@ -1329,13 +1329,13 @@ fun RouteMenuBottomSheetContent(
 
         // Buscador de niños
         OutlinedTextField(
-            value = childrenSearchQuery,
+            value = childrenSearchQuery ?: "", // Proteger contra null
             onValueChange = { viewModel.updateSearchQuery(it) },
             modifier = Modifier.fillMaxWidth(),
             placeholder = { Text("Buscar niños...") },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
             trailingIcon = {
-                if (childrenSearchQuery.isNotEmpty()) {
+                if (!childrenSearchQuery.isNullOrEmpty()) { // Usar isNullOrEmpty
                     IconButton(onClick = { viewModel.updateSearchQuery("") }) {
                         Icon(Icons.Default.Close, contentDescription = "Limpiar")
                     }
@@ -1451,7 +1451,7 @@ fun RouteMenuBottomSheetContent(
                             Spacer(modifier = Modifier.width(8.dp))
 
                             Text(
-                                text = if (point.name.isNotEmpty()) point.name else "Punto sin nombre",
+                                text = if (!point.name.isNullOrEmpty()) point.name else "Punto sin nombre", // Usar isNullOrEmpty
                                 style = MaterialTheme.typography.bodyMedium,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,

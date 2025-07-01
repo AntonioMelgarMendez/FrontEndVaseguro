@@ -241,10 +241,15 @@ class RouteScreenViewModel(
             val idToUse = user?.id
 
             if(idToUse!=null){
+                Log.d("DRIVER", "driverID: ${idToUse}")
+
                 vehicleRepository.getVehicleById(idToUse!!, token!!).collectLatest { vehicleResource ->
                     if (vehicleResource is Resource.Success) {
                         setVehicleId(vehicleResource.data.id)
                         setDriverId(vehicleResource.data.driverId)
+
+                        // Cargar los datos de niños DESPUÉS de establecer el driverId
+                        loadChildrenData()
                     }
                 }
             } else {
@@ -254,8 +259,6 @@ class RouteScreenViewModel(
 
         }
 
-        // Cargar los datos de niños y sus paradas al iniciar
-        loadChildrenData()
         // Iniciar observador para filtrado de niños
         viewModelScope.launch {
             // Combinar estado de niños y búsqueda para filtrar
@@ -308,7 +311,7 @@ class RouteScreenViewModel(
             allChildren
         } else {
             allChildren.filter { child ->
-                child.fullName.lowercase().contains(query) ||
+                child.calculatedFullName.lowercase().contains(query) ||
                         child.forenames.lowercase().contains(query) ||
                         child.surnames.lowercase().contains(query)
             }
@@ -369,7 +372,7 @@ class RouteScreenViewModel(
         // Convertir StopPassenger a RoutePoint y agregar a la ruta
         childStops.forEach { stop ->
             val latLng = LatLng(stop.stop.latitude, stop.stop.longitude)
-            val name = "${stop.child.fullName} - ${stop.stop.name} (${stop.stopType.name})"
+            val name = "${stop.child.calculatedFullName} - ${stop.stop.name} (${stop.stopType.name})"
             addRoutePoint(latLng, name, stop.stopType)
         }
 
@@ -390,7 +393,7 @@ class RouteScreenViewModel(
 
         // Creamos un conjunto con los nombres de las paradas del niño para búsqueda eficiente
         val childStopNames = childStops.map { stop ->
-            "${stop.child.fullName} - ${stop.stop.name} (${stop.stopType.name})"
+            "${stop.child.calculatedFullName} - ${stop.stop.name} (${stop.stopType.name})"
         }.toSet()
 
         // Eliminamos los puntos que corresponden a este niño
@@ -1532,7 +1535,7 @@ class RouteScreenViewModel(
                                 stopRoute.stopPassenger.stop.latitude,
                                 stopRoute.stopPassenger.stop.longitude
                             )
-                            val pointName = "${stopRoute.stopPassenger.child.fullName} - ${stopRoute.stopPassenger.stop.name}"
+                            val pointName = "${stopRoute.stopPassenger.child.calculatedFullName} - ${stopRoute.stopPassenger.stop.name}"
 
                             addRoutePoint(stopLocation, pointName, stopRoute.stopPassenger.stopType)
 

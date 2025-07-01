@@ -13,11 +13,15 @@ data class StopPassenger (
     @SerializedName("stop_id")
     val stop_id: Int,
     @SerializedName("type_id")
-    val type_id: Int,
+    val type_id: Int?,  // Cambiar a nullable
     @SerializedName("child_id")
     val child_id: Int
 ) {
     // Propiedad calculada para compatibilidad con código existente
     val stopType: StopType
-        get() = StopType.fromId(type_id.toString())
+        get() = when (type_id) {
+            1 -> StopType.HOME
+            2 -> StopType.INSTITUTION
+            else -> StopType.HOME // Valor por defecto si type_id es null o desconocido
+        }
 }
