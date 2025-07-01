@@ -106,6 +106,8 @@ fun MainNavigation(navController: NavHostController, userRole: Int?) {
             val args = backStackEntry.toRoute<CallScreenNavigation>()
             AgoraCallScreen(
                 channelName = args.roomName,
+                personName = args.personName,
+                personPhotoUrl = args.personPhotoUrl,
                 onCallEnd = {
                     navController.navigate(ChatScreenNavigation(args.id)) {
                         popUpTo(CallScreenNavigation(args.roomName, args.id, args.personName, args.personPhotoUrl)) { inclusive = true }
