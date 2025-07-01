@@ -1,4 +1,3 @@
-
 package com.VaSeguro.data
 
 import android.content.Context
@@ -25,6 +24,7 @@ import com.VaSeguro.map.repository.StopPassengerRepositoryImpl
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import androidx.core.graphics.createBitmap
+import com.VaSeguro.data.repository.RouteRepository.RouteRepositoryImpl
 import com.VaSeguro.map.Supabase.SupabaseModule
 import com.VaSeguro.map.repository.LocationRepository
 import com.VaSeguro.map.repository.LocationRepositoryImpl
@@ -39,16 +39,24 @@ class AppProvider(context: Context) {
     private val authRepository = AuthRepositoryImpl(RetrofitInstance.authService)
     private val mapsApiService = RetrofitInstance.mapsApiService
     private val routesApiService = RetrofitInstance.routesApiService
+    private val savedRoutesService = RetrofitInstance.savedRoutesSevcie
     private val requestRepository= RequestRepositoryImpl(RetrofitInstance.requestService)
     private val mapsApiRepository = MapsApiRepositoryImpl(mapsApiService)
     private val routesApiRepository = RoutesApiRepositoryImpl(routesApiService)
+    private val routesRepository = RouteRepositoryImpl(RetrofitInstance.routeService, userPreferencesRepository)
     private val vehicleRespository = VehicleRepositoryImpl(RetrofitInstance.vehicleService)
     private val childrenRespository = ChildrenRepositoryImpl(RetrofitInstance.childrenService, userPreferencesRepository)
     private val chatRepository = ChatRepositoryImpl(RetrofitInstance.chatService)
-    private val stopPassengerRepository = StopPassengerRepositoryImpl()
-    private val savedRoutesRepository = SavedRoutesRepositoryImpl()
+    private val stopPassengerRepository = StopPassengerRepositoryImpl(RetrofitInstance.stopPassengerService, userPreferencesRepository)
     private val LocationRepository = LocationRepositoryImpl(SupabaseModule.supabaseClient)
-    private val StopRouteRepository = StopRouteRepositoryImpl()
+
+    private val StopRouteRepository = StopRouteRepositoryImpl(
+        RetrofitInstance.stopRouteService,
+        userPreferencesRepository
+    )
+
+    private val savedRoutesRepository = SavedRoutesRepositoryImpl(savedRoutesService, userPreferencesRepository)
+
 
     fun provideUserPreferences() = userPreferencesRepository
     fun provideAuthRepository() = authRepository
@@ -61,6 +69,6 @@ class AppProvider(context: Context) {
     fun provideChildrenRepository() = childrenRespository
     fun provideChatRepository() = chatRepository
     fun provideLocationRepository() = LocationRepository
-    fun provideStopRouteRepository()=StopRouteRepository
+    fun provideStopRouteRepository() = StopRouteRepository
+    fun provideRoutesRepository() = routesRepository
 }
-

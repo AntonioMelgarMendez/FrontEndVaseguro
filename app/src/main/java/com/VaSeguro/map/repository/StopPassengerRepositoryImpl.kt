@@ -4,220 +4,68 @@ import com.VaSeguro.data.model.Child.Child
 import com.VaSeguro.data.model.Child.ChildMap
 import com.VaSeguro.data.model.Driver.Driver
 import com.VaSeguro.data.model.Stop.StopData
+import com.VaSeguro.data.model.Stop.StopRoute
 import com.VaSeguro.data.model.Stop.StopType
 import com.VaSeguro.data.model.StopPassenger.StopPassenger
+import com.VaSeguro.data.repository.UserPreferenceRepository.UserPreferencesRepository
+import com.VaSeguro.map.services.StopPassengerService
+import com.VaSeguro.map.services.StopRouteService
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
 /**
  * Repositorio para obtener datos de StopPassenger
- * Por el momento utiliza datos quemados
+ * Actualizado para usar el servicio real del servidor
  */
-class StopPassengerRepositoryImpl: StopPassengerRepository {
+class StopPassengerRepositoryImpl(
+    private val stopPassengerService: StopPassengerService,
+    private val userPreferencesRepository: UserPreferencesRepository,
+): StopPassengerRepository {
 
-    // Driver quemado para las rutas
-    private val driver = Driver(
-        id = 1,
-        name = "Juan Pérez",
-        phoneNumber = "7777-7777",
-        address = "Santa Tecla, La Libertad",
-        user_id = "driver_123"
-    )
-
-    // Children quemados para las paradas
-    private val children = listOf(
-        ChildMap(
-            id = 1,
-            fullName = "Ana García",
-            forenames = "Ana",
-            surnames = "García",
-            birth = "2016-05-10",
-            age = 8,
-            driverId = 1,
-            parentId = 1,
-            medicalInfo = "Sin alergias",
-            createdAt = "2023-01-15",
-            profilePic = null
-        ),
-        ChildMap(
-            id = 2,
-            fullName = "Carlos López",
-            forenames = "Carlos",
-            surnames = "López",
-            birth = "2014-08-20",
-            age = 10,
-            driverId = 1,
-            parentId = 2,
-            medicalInfo = "Alergia a mariscos",
-            createdAt = "2023-01-15",
-            profilePic = null
-        ),
-        ChildMap(
-            id = 3,
-            fullName = "María Rodríguez",
-            forenames = "María",
-            surnames = "Rodríguez",
-            birth = "2017-03-12",
-            age = 7,
-            driverId = 1,
-            parentId = 3,
-            medicalInfo = "Asma leve",
-            createdAt = "2023-01-15",
-            profilePic = null
-        )
-    )
-
-    // Datos quemados de StopPassenger
-    private val mockStopPassengerList = listOf(
-        // Child 1
-        StopPassenger(
-            id = 1,
-            stop = StopData(
-                id = 1,
-                name = "Casa 1",
-                latitude = 13.727814745719943,
-                longitude = -89.20637232229953
-            ),
-            child = children[0],
-            stopType = StopType.HOME
-        ),
-        StopPassenger(
-            id = 2,
-            stop = StopData(
-                id = 2,
-                name = "UCA",
-                latitude = 13.68114721119151,
-                longitude = -89.2360115785806
-            ),
-            child = children[0],
-            stopType = StopType.INSTITUTION
-        ),
-
-        // Child 2
-        StopPassenger(
-            id = 3,
-            stop = StopData(
-                id = 3,
-                name = "Hogar Carlos López",
-                latitude = 13.732546595398654,
-                longitude = -89.2043012490677
-            ),
-            child = children[1],
-            stopType = StopType.HOME
-        ),
-        StopPassenger(
-            id = 4,
-            stop = StopData(
-                id = 4,
-                name = "Little sisa picsa picsa",
-                latitude = 13.68401102231903,
-                longitude = -89.23577743059397
-            ),
-            child = children[1],
-            stopType = StopType.INSTITUTION
-        ),
-
-        // Child 3
-        StopPassenger(
-            id = 5,
-            stop = StopData(
-                id = 5,
-                name = "Hogar María",
-                latitude = 13.722552347893282,
-                longitude = -89.22408033312668
-            ),
-            child = children[2],
-            stopType = StopType.HOME
-        ),
-        StopPassenger(
-            id = 6,
-            stop = StopData(
-                id = 6,
-                name = "Walmart",
-                latitude = 13.736171873258105,
-                longitude = -89.21656426992779
-            ),
-            child = children[2],
-            stopType = StopType.INSTITUTION
-        ),
-        // Puntos 100% válidos en El Salvador para pruebas
-        StopPassenger(
-            id = 7,
-            stop = StopData(
-                id = 7,
-                name = "Divino Salvador del Mundo",
-                latitude = 13.6989,
-                longitude = -89.2244
-            ),
-            child = children[0],
-            stopType = StopType.HOME
-        ),
-        StopPassenger(
-            id = 8,
-            stop = StopData(
-                id = 8,
-                name = "Plaza Futura",
-                latitude = 13.7130,
-                longitude = -89.2426
-            ),
-            child = children[1],
-            stopType = StopType.INSTITUTION
-        ),
-        StopPassenger(
-            id = 9,
-            stop = StopData(
-                id = 9,
-                name = "UES",
-                latitude = 13.7054,
-                longitude = -89.2032
-            ),
-            child = children[2],
-            stopType = StopType.INSTITUTION
-        ),
-        StopPassenger(
-            id = 10,
-            stop = StopData(
-                id = 10,
-                name = "Multiplaza",
-                latitude = 13.6761,
-                longitude = -89.2542
-            ),
-            child = children[0],
-            stopType = StopType.HOME
-        ),
-        StopPassenger(
-            id = 11,
-            stop = StopData(
-                id = 11,
-                name = "Aeropuerto",
-                latitude = 13.4406,
-                longitude = -89.0557
-            ),
-            child = children[1],
-            stopType = StopType.INSTITUTION
-        )
-    ).distinctBy { Pair(it.stop.latitude, it.stop.longitude) }
+    private suspend fun getAuthHeader(): String =
+        "Bearer ${userPreferencesRepository.getAuthToken().orEmpty()}"
 
     /**
-     * Obtiene todos los StopPassenger disponibles
+     * Obtiene todos los StopPassenger disponibles desde el servidor
+     * Con fallback a datos locales en caso de error
      */
-    override fun getAllStopPassengers(): Flow<List<StopPassenger>> = flow {
-        emit(mockStopPassengerList)
+    override fun getAllStopPassengers(driverId: Int): Flow<List<StopPassenger>> = flow {
+        try {
+            println("DEBUG: Intentando obtener StopPassengers del servidor para driver: $driverId")
+            val response = stopPassengerService.getStopPassengersByDriver(driverId, authHeader = getAuthHeader())
+
+            if (response.isSuccessful && response.body() != null) {
+                val serverData = response.body()!!
+                println("DEBUG: Datos obtenidos del servidor: ${serverData.size} StopPassengers")
+                emit(serverData)
+            } else {
+                println("DEBUG: API call failed with code: ${response.code()}, using mock data")
+            }
+        } catch (e: Exception) {
+            println("DEBUG: Error al obtener StopPassengers del servidor: ${e.message}")
+            e.printStackTrace()
+
+        }
     }
 
     /**
      * Obtiene StopPassenger filtrados por tipo
      */
     override fun getStopPassengersByType(type: StopType): Flow<List<StopPassenger>> = flow {
-        emit(mockStopPassengerList.filter { it.stopType == type })
+        getAllStopPassengers(1).collect { stopPassengers ->
+            emit(stopPassengers.filter { it.stopType == type })
+        }
     }
+
 
     /**
      * Obtiene StopPassenger para un niño específico
      */
     override fun getStopPassengersByChild(childId: Int): Flow<List<StopPassenger>> = flow {
-        emit(mockStopPassengerList.filter { it.child.id == childId })
+        getAllStopPassengers(1).collect { stopPassengers ->
+            emit(stopPassengers.filter { it.child.id == childId })
+        }
     }
 
     /**
@@ -227,8 +75,52 @@ class StopPassengerRepositoryImpl: StopPassengerRepository {
         return LatLng(stopPassenger.stop.latitude, stopPassenger.stop.longitude)
     }
 
-    /**
-     * Obtiene el driver asignado
-     */
-    override fun getDriver(): Driver = driver
+
+
+    override suspend fun updateStopRouteState(
+        stopPassengerId: Int,
+        routeId: Int,
+        isCompleted: Boolean,
+    ): Boolean {
+        return try {
+            println("DEBUG: Actualizando StopRoute - StopPassengerId: $stopPassengerId, RouteId: $routeId, Estado: $isCompleted")
+
+            // Crear el body del request con el estado
+            val stateUpdate = mapOf("state" to isCompleted)
+
+            // Hacer la llamada al servicio PUT
+            val response = stopPassengerService.updateStopRouteState(
+                stopPassengerId = stopPassengerId,
+                stopRouteId = routeId,
+                authHeader = getAuthHeader(),
+                stateUpdate = stateUpdate
+            )
+
+            if (response.isSuccessful && response.body() != null) {
+                val updatedStopRoute = response.body()!!
+                println("DEBUG: StopRoute actualizado exitosamente: ${updatedStopRoute.id}, Estado: ${updatedStopRoute.state}")
+                true
+            } else {
+                println("DEBUG: Error en la respuesta del servidor - Código: ${response.code()}, Mensaje: ${response.message()}")
+                false
+            }
+        } catch (e: Exception) {
+            println("DEBUG: Error al actualizar StopRoute: ${e.message}")
+            e.printStackTrace()
+            false
+        }
+    }
+
+    override suspend fun getStopRouteByStopPassenger(
+        stopPassengerId: Int,
+        routeId: Int
+    ): StopRoute? {
+        // TODO: Implementar llamada al servicio
+        return null
+    }
+
+    override suspend fun notifyStopPassengerStateChange(stopPassengerUpdate: Map<String, Any>): Boolean {
+        // TODO: Implementar notificación al servicio
+        return true
+    }
 }

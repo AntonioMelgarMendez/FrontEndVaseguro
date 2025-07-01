@@ -71,7 +71,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun MapScreen(
     viewModel: MapViewModel = viewModel(factory = MapViewModel.Factory),
-    childId: Int = 1
+    childId: Int = 48
 ) {
     // Estados del ViewModel
     val driverLocation by viewModel.driverLocation.collectAsStateWithLifecycle()

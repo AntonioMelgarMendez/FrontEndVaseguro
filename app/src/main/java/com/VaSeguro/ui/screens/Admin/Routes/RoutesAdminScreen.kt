@@ -199,13 +199,13 @@ fun AddRouteDialog(
     var routeStatus by remember { mutableStateOf<RouteStatus?>(null) }
 
     val routeTypes = listOf(
-        RouteType("1", "Long Distance"),
-        RouteType("2", "Short Distance")
+        RouteType(1, "Long Distance"),
+        RouteType(2, "Short Distance")
     )
 
     val routeStatuses = listOf(
-        RouteStatus("1", "Active"),
-        RouteStatus("2", "Inactive")
+        RouteStatus(1, "Active"),
+        RouteStatus(2, "Inactive")
     )
 
     fun resetForm() {

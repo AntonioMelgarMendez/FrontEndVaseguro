@@ -5,12 +5,12 @@ package com.VaSeguro.data.model.Route
  * Se implementa como un enum para seguridad de tipos, pero mantiene
  * compatibilidad con código que lo usaba como data class.
  */
-enum class RouteStatus(val id: String, val status: String) {
-    NO_INIT("1", "Sin iniciar"),
-    ON_PROGRESS("2", "En progreso"),
-    STOPED("3", "Detenida"),
-    PROBLEMS("5", "Con problemas"),
-    FINISHED("4", "Finalizada");
+enum class RouteStatus(val id: Int, val status: String) {
+    NO_INIT(1, "Sin iniciar"),
+    ON_PROGRESS(2, "En progreso"),
+    STOPED(3, "Detenida"),
+    PROBLEMS(5, "Con problemas"),
+    FINISHED(4, "Finalizada");
 
     companion object {
         fun fromString(value: String): RouteStatus {
@@ -23,19 +23,14 @@ enum class RouteStatus(val id: String, val status: String) {
             }
         }
 
-        fun fromId(id: String): RouteStatus {
-            return values().find { it.id == id } ?: NO_INIT
-        }
-
-        // Soporte para IDs numéricos (compatibilidad con código anterior)
         fun fromId(id: Int): RouteStatus {
-            return fromId(id.toString())
+            return values().find { it.id == id } ?: NO_INIT
         }
 
         fun getAll(): List<RouteStatus> = values().toList()
 
         // Constructor operator para mantener compatibilidad con código existente
-        operator fun invoke(id: String, status: String): RouteStatus {
+        operator fun invoke(id: Int, status: String): RouteStatus {
             // Intentamos encontrar el enum por id primero
             val byId = values().find { it.id == id }
             if (byId != null) return byId

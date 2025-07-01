@@ -88,7 +88,7 @@ class LocationRepositoryImpl(
         routeActive: Boolean,
         routeProgress: Float,
         currentSegment: Int,
-        routeStatus: String?
+        routeStatus: Int?
     ) {
         val locationUpdate = LocationDriverAddress(
             driver_id = driverId,
@@ -216,7 +216,7 @@ class LocationRepositoryImpl(
                             route_active = record["route_active"]?.toString()?.toBooleanStrictOrNull() ?: false,
                             route_progress = record["route_progress"]?.toString()?.toFloatOrNull() ?: 0.0f,
                             current_segment = record["current_segment"]?.toString()?.toIntOrNull() ?: 0,
-                            route_status = record["route_status"]?.toString() // null es válido
+                            route_status = record["route_status"]?.toString()?.toIntOrNull() // null es válido
                         )
 
                         println("Datos completos recibidos: $updatedData")
@@ -265,9 +265,9 @@ data class LocationDriverAddress(
     val latitude: Double,
     val longitude: Double,
     val updated_at: String,
-    val encoded_polyline: String? = null, // NUEVO: Polyline de la ruta activa
-    val route_active: Boolean = false, // NUEVO: Indica si hay una ruta activa
-    val route_progress: Float = 0.0f, // NUEVO: Progreso de la ruta (0.0 - 1.0)
-    val current_segment: Int = 0, // NUEVO: Segmento actual de la ruta
-    val route_status: String? = null // NUEVO: Estado de la ruta
+    val encoded_polyline: String? = null,
+    val route_active: Boolean = false,
+    val route_progress: Float = 0.0f,
+    val current_segment: Int = 0,
+    val route_status: Int? = null
 )

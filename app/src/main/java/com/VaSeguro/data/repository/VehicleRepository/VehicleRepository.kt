@@ -1,5 +1,6 @@
 package com.VaSeguro.data.repository.VehicleRepository
 
+import com.VaSeguro.data.model.Vehicle.VehicleMap
 import com.VaSeguro.data.remote.Vehicle.VehicleResponse
 import com.VaSeguro.helpers.Resource
 import kotlinx.coroutines.flow.Flow
@@ -11,6 +12,9 @@ interface VehicleRepository
 {
     suspend fun getAllVehicles(token: String): Flow<Resource<List<VehicleResponse>>>
     suspend fun getVehicleById(id: Int, token: String): Flow<Resource<VehicleResponse>>
+    suspend fun getVehicleById(vehicleId: Int): VehicleMap?
+    suspend fun getAllVehicles(): List<VehicleMap>
+    suspend fun getVehiclesByDriverId(driverId: Int): List<VehicleMap>
     suspend fun createVehicle(
         plate: String,
         model: String,

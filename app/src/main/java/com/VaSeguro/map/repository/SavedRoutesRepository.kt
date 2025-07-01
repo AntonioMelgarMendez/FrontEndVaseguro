@@ -3,6 +3,8 @@ package com.VaSeguro.map.repository
 import com.VaSeguro.data.model.Route.RouteStatus
 import com.VaSeguro.data.model.Route.RouteType
 import com.VaSeguro.data.model.Routes.RoutesData
+import com.VaSeguro.data.model.Routes.RoutesDataToSave
+import com.VaSeguro.data.model.Routes.CreateFullRouteRequest
 import com.VaSeguro.data.model.Stop.StopRoute
 import com.VaSeguro.data.model.StopPassenger.StopPassenger
 import com.VaSeguro.data.model.User.UserData
@@ -29,8 +31,15 @@ interface SavedRoutesRepository {
 
     fun getRoute(routeId: Int): Flow<RoutesData?>
 
-    suspend fun createMockRoutes(): List<RoutesData>
 
-    // Función helper para encontrar un StopPassenger por tipo y lista de stops de un niño
-    fun findStopByTypeAndChild(type: String, childStops: List<StopPassenger>): StopPassenger
+
+    // NUEVOS MÉTODOS PARA GUARDAR RUTAS COMPLETADAS
+    suspend fun saveCompletedRoute(route: RoutesData): RoutesData?
+
+
+    // NUEVO: Método para crear ruta completa usando /routes/full
+    suspend fun createFullRoute(request: CreateFullRouteRequest): RoutesData
+
+    // NUEVO: Método para actualizar el estado de una ruta existente
+    suspend fun updateRouteStatus(routeId: Int, statusId: Int, endDate: String? = null): RoutesData?
 }

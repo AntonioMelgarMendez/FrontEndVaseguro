@@ -1,39 +1,89 @@
 package com.VaSeguro.map.repository
 
+import androidx.compose.runtime.mutableStateOf
+import com.VaSeguro.data.model.Routes.RoutesData
+import com.VaSeguro.data.model.Routes.toRoutesData
+import com.VaSeguro.data.model.Routes.toSave
+import com.VaSeguro.data.model.Routes.CreateFullRouteRequest
+import com.VaSeguro.data.model.Routes.UpdateRouteRequest
 import com.VaSeguro.data.model.Route.RouteStatus
 import com.VaSeguro.data.model.Route.RouteType
-import com.VaSeguro.data.model.Routes.RoutesData
-import com.VaSeguro.data.model.Stop.StopRoute
-import com.VaSeguro.data.model.StopPassenger.StopPassenger
-import com.VaSeguro.data.model.User.UserData
-import com.VaSeguro.data.model.User.UserDataMap
-import com.VaSeguro.data.model.User.UserRole
 import com.VaSeguro.data.model.Vehicle.VehicleMap
+import com.VaSeguro.data.model.Stop.StopRoute
+import com.VaSeguro.data.model.Stop.toSave
+import com.VaSeguro.map.services.SavedRoutesService
+import com.VaSeguro.data.repository.UserPreferenceRepository.UserPreferencesRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.runBlocking
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import kotlin.random.Random
 
-class SavedRoutesRepositoryImpl: SavedRoutesRepository {
-    // Utilizar el repositorio de StopPassenger para obtener los datos consistentes
-    private val stopPassengerRepository = StopPassengerRepositoryImpl()
+class SavedRoutesRepositoryImpl(
+    private val savedRoutesService: SavedRoutesService,
+    private val userPreferencesRepository: UserPreferencesRepository
+): SavedRoutesRepository {
 
     private val _savedRoutes = MutableStateFlow<List<RoutesData>>(emptyList())
     val savedRoutes: Flow<List<RoutesData>> = _savedRoutes
+    private val _driverId = mutableStateOf<Int?>(null)
+    val driverId: Int? get() = _driverId.value
 
     init {
-        // Inicializar con las rutas de ejemplo
         runBlocking {
-            _savedRoutes.value = createMockRoutes()
+            try {
+                val userData = userPreferencesRepository.getUserData()
+                val actualDriverId = userData?.id
+                if (actualDriverId != null) {
+                    setDriverId(actualDriverId)
+                } else {
+                    println("DEBUG_INIT: No se pudo obtener el driverId del usuario")
+                }
+            } catch (e: Exception) {
+                println("DEBUG_INIT: Error al inicializar repositorio: ${e.message}")
+            }
         }
     }
 
+    /**
+     * Establece el ID del conductor y carga los datos iniciales
+     */
+    fun setDriverId(driverId: Int) {
+        _driverId.value = driverId
+        runBlocking {
+            loadInitialData(driverId)
+        }
+    }
+
+    /**
+     * Carga los datos iniciales para un conductor específico
+     */
+    private suspend fun loadInitialData(driverId: Int) {
+        try {
+            val response = savedRoutesService.getAllRoutes(driverId)
+            if (response.isSuccessful) {
+                val apiRoutes = response.body() ?: emptyList()
+                // Convert API response to RoutesData
+                val routesData = apiRoutes.map { it.toRoutesData() }
+                _savedRoutes.value = routesData
+                println("DEBUG_LOAD_INITIAL: ${routesData.size} rutas cargadas para driver $driverId")
+            } else {
+                println("DEBUG_LOAD_INITIAL: Error al cargar rutas del servidor: ${response.errorBody()?.string()}")
+                _savedRoutes.value = emptyList()
+            }
+        } catch (e: Exception) {
+            println("DEBUG_LOAD_INITIAL: Error al cargar datos para driver $driverId: ${e.message}")
+            _savedRoutes.value = emptyList()
+        }
+    }
+
+    override fun getRoute(routeId: Int): Flow<RoutesData?> {
+        return _savedRoutes.map { routes ->
+            routes.find { it.id == routeId }
+        }
+    }
+
+    // Keep only essential methods for getting routes
     override fun addRoute(route: RoutesData) {
         _savedRoutes.update { currentList ->
             currentList + route
@@ -54,122 +104,78 @@ class SavedRoutesRepositoryImpl: SavedRoutesRepository {
         }
     }
 
-    override fun getRoute(routeId: Int): Flow<RoutesData?> {
-        return _savedRoutes.map { routes ->
-            routes.find { it.id == routeId }
+    override suspend fun saveCompletedRoute(route: RoutesData): RoutesData? {
+        return try {
+            val response = savedRoutesService.saveRoute(route.toSave())
+            if (response.isSuccessful) {
+                val savedRoute = response.body()
+                savedRoute?.let { addRoute(it) }
+                savedRoute
+            } else {
+                println("DEBUG_SAVE_COMPLETED: Error al guardar ruta completada: ${response.errorBody()?.string()}")
+                null
+            }
+        } catch (e: Exception) {
+            println("DEBUG_SAVE_COMPLETED: Error al guardar ruta completada: ${e.message}")
+            null
         }
     }
 
-    override suspend fun createMockRoutes(): List<RoutesData> {
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
-        val now = Date()
 
-        // Obtener los StopPassenger del repositorio utilizando .first() para convertir el Flow en una lista
-        val stopPassengers = stopPassengerRepository.getAllStopPassengers().first()
-
-        // Agrupar las paradas por niño para crear rutas coherentes
-        val child1Stops = stopPassengers.filter { it.child.id == 1 }
-        val child2Stops = stopPassengers.filter { it.child.id == 2 }
-        val child3Stops = stopPassengers.filter { it.child.id == 3 }
-
-        val driverRole = UserRole(
-            id = 2,
-            role_name = "Driver"
-        )
-
-        val driver = UserDataMap(
-            id = 1,
-            forename = "Carlos",
-            surname = "Ramírez",
-            email = "carlos.ramirez@example.com",
-            phoneNumber = "+50312345678",
-            profilePic = null,
-            role_id = driverRole,
-            gender = "Male"
-        )
-
-        val burnedVehicle = VehicleMap(
-            id = 2,
-            plate = "P987654",
-            model = "Toyota Hiace 2020",
-            driver_id = driver.id,
-            created_at = "2025-06-16T09:00:00",
-            brand = "Toyota",
-            year = "2020",
-            color = "White",
-            capacity = "20",
-            updated_at = "2025-06-16T09:00:00",
-            carPic = "https://example.com/toyota_hiace_2020.jpg"
-        )
-
-        // Crear rutas con diferentes combinaciones de paradas
-        return listOf(
-            // Ruta 1: Mañana - Recogida de niños para llevarlos a la escuela
+    // NUEVO: Método para crear ruta completa usando /routes/full
+    override suspend fun createFullRoute(request: CreateFullRouteRequest): RoutesData {
+        return try {
+            val response = savedRoutesService.createFullRoute(request, "Bearer token")
+            // Convert CreateFullRouteResponse to RoutesData
+            // Note: This is a simplified conversion, you might need to adjust based on your needs
             RoutesData(
-                id = 1,
-                name = "Ruta Escolar Mañana",
-                start_date = dateFormat.format(Date(now.time - 24 * 60 * 60 * 1000)), // ayer
-                vehicle_id = burnedVehicle,
-                status_id = RouteStatus.NO_INIT,
-                type_id = RouteType.INBOUND,
-                end_date = dateFormat.format(Date(now.time - 23 * 60 * 60 * 1000)),
-                stopRoute = listOf(
-                    // Primero recogemos a los niños de sus casas
-                    StopRoute(1, findStopByTypeAndChild("HOME", child1Stops), 1, true),
-                    StopRoute(2, findStopByTypeAndChild("HOME", child2Stops), 2, true),
-                    StopRoute(3, findStopByTypeAndChild("HOME", child3Stops), 3, true),
-                    // Luego los dejamos en sus respectivas instituciones
-                    StopRoute(4, findStopByTypeAndChild("INSTITUTION", child1Stops), 4, true),
-                    StopRoute(5, findStopByTypeAndChild("INSTITUTION", child2Stops), 5, true),
-                    StopRoute(6, findStopByTypeAndChild("INSTITUTION", child3Stops), 6, true)
-                )
-            ),
-
-            // Ruta 2: Tarde - Recoger niños de la escuela y llevarlos a casa
-            RoutesData(
-                id = Random.nextInt(1, 9999),
-                name = "Ruta Escolar Tarde",
-                start_date = dateFormat.format(now), // hoy
-                vehicle_id = burnedVehicle,
-                status_id = RouteStatus.FINISHED,
-                type_id = RouteType.INBOUND,
-                end_date = "",
-                stopRoute = listOf(
-                    // Primero recogemos a los niños de sus instituciones
-                    StopRoute(7, findStopByTypeAndChild("INSTITUTION", child1Stops), 1, true),
-                    StopRoute(8, findStopByTypeAndChild("INSTITUTION", child2Stops), 2, true),
-                    StopRoute(9, findStopByTypeAndChild("INSTITUTION", child3Stops), 3, true),
-                    // Luego los llevamos a sus casas
-                    StopRoute(10, findStopByTypeAndChild("HOME", child1Stops), 4, true),
-                    StopRoute(11, findStopByTypeAndChild("HOME", child2Stops), 5, true),
-                    StopRoute(12, findStopByTypeAndChild("HOME", child3Stops), 6, true)
-                )
-            ),
-
-            // Ruta 3: Especial - Solo para el niño 1 y 2
-            RoutesData(
-                id = Random.nextInt(1, 9999),
-                name = "Ruta Especial Centro",
-                start_date = dateFormat.format(Date(now.time + 24 * 60 * 60 * 1000)), // mañana
-                vehicle_id = burnedVehicle,
-                status_id = RouteStatus.NO_INIT,
-                type_id = RouteType.INBOUND,
-                end_date = "",
-                stopRoute = listOf(
-                    // Solo incluimos al niño 1 y 2
-                    StopRoute(13, findStopByTypeAndChild("HOME", child1Stops), 1, true),
-                    StopRoute(14, findStopByTypeAndChild("HOME", child2Stops), 2, true),
-                    StopRoute(15, findStopByTypeAndChild("INSTITUTION", child1Stops), 3, true),
-                    StopRoute(16, findStopByTypeAndChild("INSTITUTION", child2Stops), 4, true)
-                )
+                id = response.id,
+                name = response.name,
+                start_date = response.start_date,
+                vehicle_id = VehicleMap(
+                    id = response.vehicle_id,
+                    plate = "",
+                    driver_id = 0,
+                    model = "",
+                    brand = "",
+                    year = "",
+                    color = "",
+                    capacity = "",
+                    updated_at = "",
+                    carPic = "",
+                    created_at = ""
+                ),
+                status_id = RouteStatus.fromId(response.status_id),
+                type_id = RouteType.fromId(response.type_id),
+                end_date = response.end_date,
+                encodedPolyline = "",
+                stopRoute = emptyList()
             )
-        )
+        } catch (e: Exception) {
+            println("DEBUG_CREATE_FULL: Error al crear ruta completa: ${e.message}")
+            throw e
+        }
     }
 
-    // Función helper para encontrar un StopPassenger por tipo y lista de stops de un niño
-    override fun findStopByTypeAndChild(type: String, childStops: List<StopPassenger>): StopPassenger {
-        return childStops.firstOrNull { it.stopType.name == type }
-            ?: throw IllegalStateException("No se encontró parada de tipo $type para el niño")
+    // NUEVO: Método para actualizar el estado de una ruta existente
+    override suspend fun updateRouteStatus(routeId: Int, statusId: Int, endDate: String?): RoutesData? {
+        return try {
+            val updateRequest = UpdateRouteRequest(
+                status_id = statusId,
+                end_date = endDate
+            )
+            val response = savedRoutesService.updateRoute(routeId, updateRequest, "Bearer token")
+            if (response.isSuccessful) {
+                val updatedRoute = response.body()
+                updatedRoute?.let { updateRoute(it) }
+                updatedRoute
+            } else {
+                println("DEBUG_UPDATE_STATUS: Error al actualizar estado: ${response.errorBody()?.string()}")
+                null
+            }
+        } catch (e: Exception) {
+            println("DEBUG_UPDATE_STATUS: Error al actualizar estado: ${e.message}")
+            null
+        }
     }
 }
-

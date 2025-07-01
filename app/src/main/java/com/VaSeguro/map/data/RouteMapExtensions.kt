@@ -88,35 +88,6 @@ fun RoutesData.updateFromRoute(route: Route): RoutesData {
     )
 }
 
-/**
- * Crea un objeto StopRoute a partir de información básica
- * Esta es una función auxiliar para crear objetos StopRoute con datos temporales
- * que luego serán reemplazados con datos reales
- */
-fun createTemporaryStopRoute(
-    id: Int,
-    stopData: StopData,
-    child: ChildMap,
-    stopType: StopType,
-    order: Int,
-    state: Boolean = true
-): StopRoute {
-    // Creamos primero el StopPassenger
-    val stopPassenger = StopPassenger(
-        id = id,
-        stop = stopData,
-        child = child,
-        stopType = stopType
-    )
-
-    // Creamos el StopRoute usando el StopPassenger
-    return StopRoute(
-        id = id,
-        stopPassenger = stopPassenger,
-        order = order,
-        state = state
-    )
-}
 
 /**
  * Convierte los segmentos de una ruta en puntos de parada temporales

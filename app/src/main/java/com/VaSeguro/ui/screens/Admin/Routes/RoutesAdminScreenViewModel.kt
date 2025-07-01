@@ -31,8 +31,8 @@ class RoutesAdminScreenViewModel : ViewModel(){
                 name = "Ruta A",
                 start_date = "2025-06-01",
                 vehicle_id = burnedVehicle,
-                status_id = RouteStatus(id = "1", status = "Active"),
-                type_id = RouteType(id = "A", type = "School"),
+                status_id = RouteStatus(id = 1, status = "Active"),
+                type_id = RouteType(id = 2, type = "School"),
                 end_date = "2025-12-15",
                 stopRoute = emptyList()
             ),
@@ -41,8 +41,8 @@ class RoutesAdminScreenViewModel : ViewModel(){
                 name = "Ruta B",
                 start_date = "2025-06-10",
                 vehicle_id = burnedVehicle,
-                status_id = RouteStatus(id = "2", status = "Inactive"),
-                type_id = RouteType(id = "B", type = "Weekend"),
+                status_id = RouteStatus(id = 2, status = "Inactive"),
+                type_id = RouteType(id = 2, type = "Weekend"),
                 end_date = "2025-12-20",
                 stopRoute = emptyList()
             )

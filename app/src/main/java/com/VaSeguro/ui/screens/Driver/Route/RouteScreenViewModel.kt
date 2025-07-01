@@ -1,5 +1,6 @@
 package com.VaSeguro.ui.screens.Driver.Route
 
+import android.content.Context
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
@@ -12,31 +13,36 @@ import com.VaSeguro.MyApplication
 import com.VaSeguro.data.model.Child.ChildMap
 import com.VaSeguro.data.model.Route.RouteStatus
 import com.VaSeguro.data.model.Route.RouteType
+import com.VaSeguro.data.model.Routes.CreateFullRouteRequest
+import com.VaSeguro.data.model.Routes.CreateStopRouteRequest
 import com.VaSeguro.data.model.Routes.RoutesData
 import com.VaSeguro.data.model.Stop.StopData
+import com.VaSeguro.data.model.Stop.StopRoute
 import com.VaSeguro.data.model.StopPassenger.StopPassenger
 import com.VaSeguro.data.model.Stop.StopType
 import com.VaSeguro.data.model.Vehicle.VehicleMap
+import com.VaSeguro.data.repository.UserPreferenceRepository.UserPreferencesRepository
 import com.VaSeguro.map.repository.StopPassengerRepository
 import com.VaSeguro.map.calculateDistance
 import com.VaSeguro.map.data.PlaceResult
-import com.VaSeguro.map.data.Polyline
 import com.VaSeguro.map.data.Route
 import com.VaSeguro.map.data.RoutePoint
 import com.VaSeguro.map.data.RouteSegment
-import com.VaSeguro.map.data.driver
-import com.VaSeguro.map.decodePolyline
-import com.VaSeguro.map.isPointNearPolyline
+import com.VaSeguro.map.formatDuration
 import com.VaSeguro.map.repository.LocationRepository
 import com.VaSeguro.map.repository.MapsApiRepository
 import com.VaSeguro.map.repository.RoutesApiRepository
 import com.VaSeguro.map.repository.SavedRoutesRepository
+import com.VaSeguro.data.repository.DriverPrefs.DriverPrefs
+import com.VaSeguro.data.repository.VehicleRepository.VehicleRepository
+import com.VaSeguro.helpers.Resource
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -53,7 +59,10 @@ class RouteScreenViewModel(
     private val routesApiRepository: RoutesApiRepository,
     private val stopPassengerRepository: StopPassengerRepository,
     private val savedRoutesRepository: SavedRoutesRepository,
-    private val locationRepository: LocationRepository
+    private val locationRepository: LocationRepository,
+    private val vehicleRepository: VehicleRepository,
+    private val userPreferencesRepository: UserPreferencesRepository,
+    private val context: Context
 ) : ViewModel() {
 
     // Estados para niños y paradas
@@ -81,6 +90,12 @@ class RouteScreenViewModel(
     // Estados para la ruta seleccionada y puntos
     private val _selectedRoute = mutableStateOf<Route?>(null)
     val selectedRoute: Route? get() = _selectedRoute.value
+
+    private val _driverId = mutableStateOf<Int?>(null)
+    val driverId: Int? get() = _driverId.value
+
+    private val _vehicleId = mutableStateOf<Int?>(1)
+    val vehicleId: Int? get() = _vehicleId.value
 
     // Estado para el segmento actual de la ruta
     private val _currentSegmentIndex = MutableStateFlow(0)
@@ -139,11 +154,11 @@ class RouteScreenViewModel(
     private val _stopCompletionStates = MutableStateFlow<Map<Int, Boolean>>(emptyMap())
     val stopCompletionStates: StateFlow<Map<Int, Boolean>> = _stopCompletionStates.asStateFlow()
 
-    // NUEVO: Set para rastrear las paradas que ya han sido procesadas (para evitar mostrar el diálogo múltiples veces)
+    // Set para rastrear las paradas que ya han sido procesadas (para evitar mostrar el diálogo múltiples veces)
     private val _processedStops = MutableStateFlow<Set<String>>(emptySet())
     val processedStops: StateFlow<Set<String>> = _processedStops.asStateFlow()
 
-    // NUEVO: Estado para el diálogo de confirmación al cerrar StopInfoDialog
+    // Estado para el diálogo de confirmación al cerrar StopInfoDialog
     private val _showStopCloseConfirmation = MutableStateFlow(false)
     val showStopCloseConfirmation: StateFlow<Boolean> = _showStopCloseConfirmation.asStateFlow()
 
@@ -155,7 +170,7 @@ class RouteScreenViewModel(
     private val _adjustedTimeToNextPoint = MutableStateFlow("")
     val adjustedTimeToNextPoint: StateFlow<String> = _adjustedTimeToNextPoint.asStateFlow()
 
-    // Estado para controlar si la ruta actual está guardada en la base de datos
+    // Estado para controlar si la ruta current está guardada en la base de datos
     private val _isCurrentRouteSaved = MutableStateFlow(false)
     val isCurrentRouteSaved: StateFlow<Boolean> = _isCurrentRouteSaved.asStateFlow()
 
@@ -167,11 +182,11 @@ class RouteScreenViewModel(
     private val _currentRouteId = MutableStateFlow<Int?>(null)
     val currentRouteId: StateFlow<Int?> = _currentRouteId.asStateFlow()
 
-    // Nuevo: Estado para el objeto RoutesData sincronizado con la ruta actual
+    // Estado para el objeto RoutesData sincronizado con la ruta actual
     private val _currentRoutesData = MutableStateFlow<RoutesData?>(null)
     val currentRoutesData: StateFlow<RoutesData?> = _currentRoutesData.asStateFlow()
 
-    // Nuevo: Estado para el status actual de la ruta
+    // Estado para el status actual de la ruta
     private val _currentRouteStatus = MutableStateFlow<RouteStatus>(RouteStatus.NO_INIT)
     val currentRouteStatus: StateFlow<RouteStatus> = _currentRouteStatus.asStateFlow()
 
@@ -218,9 +233,25 @@ class RouteScreenViewModel(
     private val segmentCompletionThreshold = 150.0
 
     init {
+        // Inicializar el ViewModel con el ID del conductor y del vehiculo
+        viewModelScope.launch {
+            val user = userPreferencesRepository.getUserData()
+            val token = userPreferencesRepository.getAuthToken()
+            val idToUse = when (user?.role_id) {
+                3 -> DriverPrefs.getDriverId(context)
+                4 -> user.id
+                else -> null
+            }
+            vehicleRepository.getVehicleById(idToUse!!, token!!).collectLatest { vehicleResource ->
+                if (vehicleResource is Resource.Success) {
+                    setVehicleId(vehicleResource.data.id)
+                    setDriverId(vehicleResource.data.driverId)
+                }
+            }
+        }
+
         // Cargar los datos de niños y sus paradas al iniciar
         loadChildrenData()
-
         // Iniciar observador para filtrado de niños
         viewModelScope.launch {
             // Combinar estado de niños y búsqueda para filtrar
@@ -242,8 +273,15 @@ class RouteScreenViewModel(
     private fun loadChildrenData() {
         viewModelScope.launch {
             try {
-                // Obtener todas las paradas
-                val stops = stopPassengerRepository.getAllStopPassengers().first()
+                // Verificar que tenemos un driverId válido antes de cargar
+                val currentDriverId = _driverId.value
+                if (currentDriverId == null) {
+                    showError("No se ha establecido el ID del conductor")
+                    return@launch
+                }
+
+                // Obtener todas las paradas usando el driverId correcto
+                val stops = stopPassengerRepository.getAllStopPassengers(currentDriverId).first()
                 _stopPassengers.value = stops
 
                 // Extraer los niños únicos
@@ -281,18 +319,23 @@ class RouteScreenViewModel(
     }
 
     /**
-     * Alterna la selección de un niño
+     * Alterna la selección de un niño y devuelve el nuevo estado de selección.
+     * @return `true` si el niño ahora está seleccionado, `false` si no lo está.
      */
-    fun toggleChildSelection(childId: Int) {
+    fun toggleChildSelection(childId: Int): Boolean {
         val currentSelection = _selectedChildIds.value.toMutableList()
+        val isSelected: Boolean
 
         if (currentSelection.contains(childId)) {
             currentSelection.remove(childId)
+            isSelected = false
         } else {
             currentSelection.add(childId)
+            isSelected = true
         }
 
         _selectedChildIds.value = currentSelection
+        return isSelected
     }
 
     /**
@@ -313,8 +356,8 @@ class RouteScreenViewModel(
             return
         }
 
-        // Si hay paradas existentes, mantenemos el historial
-        // Si no, limpiamos la ruta
+        // Si no hay paradas existentes, limpiamos la ruta para empezar de cero.
+        // Si ya hay, no limpiamos para mantener el historial de otros niños.
         if (_routePoints.isEmpty()) {
             clearRoute()
         }
@@ -364,6 +407,13 @@ class RouteScreenViewModel(
     }
 
     /**
+     * Limpia las selecciones de niños
+     */
+    fun clearSelections() {
+        _selectedChildIds.value = emptyList()
+    }
+
+    /**
      * Limpia todos los puntos de la ruta y la ruta seleccionada
      */
     fun clearRoute() {
@@ -380,27 +430,34 @@ class RouteScreenViewModel(
         _currentRouteStatus.value = RouteStatus.NO_INIT // Restablecer estado a inicial
         _stopCompletionStates.value = emptyMap() // Limpiar estados de paradas
 
-        // NUEVO: Limpiar estados de desviación y copias de seguridad
+        //Limpiar estados de desviación y copias de seguridad
         _originalCompleteRoute.value = null
         _originalRoutePoints.clear()
         _completedSegments.clear()
         _isDeviatedFromRoute.value = false
         consecutiveDeviations = 0
         lastDeviationTime = 0L
+        _processedStops.value = emptySet()
 
         dismissProximityAlert()
         dismissStopInfoDialog() // Asegurar que el diálogo se cierra
 
-        // Deseleccionar todos los niños cuando se limpia la ruta
-        _selectedChildIds.value = emptyList()
+        // NO deseleccionar los niños aquí. La deselección debe ser una acción explícita
+        // del usuario, no un efecto secundario de limpiar la ruta.
+        // _selectedChildIds.value = emptyList()
 
-        // CORREGIDO: Actualizar la base de datos para resetear todos los valores de ruta
+        // Actualizar la base de datos para resetear todos los valores de ruta
         viewModelScope.launch {
             _currentLocation.value?.let { location ->
-                locationRepository.updateLocation(
-                    driverId = 1,
+                locationRepository.updateLocationWithRoute(
+                    driverId = _driverId.value!!,
                     lat = location.latitude,
-                    lon = location.longitude
+                    lon = location.longitude,
+                    encodedPolyline = null, // Limpiar polyline
+                    routeActive = false, // Ruta no activa
+                    routeProgress = 0.0f, // Progreso en 0
+                    currentSegment = 0, // Segmento en 0
+                    routeStatus = RouteStatus.NO_INIT.id // Estado inicial
                 )
             }
         }
@@ -517,7 +574,7 @@ class RouteScreenViewModel(
                     _currentSegmentIndex.value = 0
                     updateNextPointInfo()
 
-                    // NUEVO: Crear copia de seguridad de la ruta y puntos originales
+                    // Crear copia de seguridad de la ruta y puntos originales
                     // Solo si no estamos recalculando (es decir, es la primera vez o es una ruta nueva)
                     if (_originalCompleteRoute.value == null) {
                         createRouteBackup(routeWithSegments, _routePoints.toList())
@@ -543,238 +600,232 @@ class RouteScreenViewModel(
     }
 
     /**
-     * Actualiza la ubicación actual del conductor y maneja la lógica de proximidad y progreso
+     * Inicia una nueva ruta usando el endpoint /routes/full
+     * Crea el registro de ruta en el backend con todas las paradas
      */
-    fun updateCurrentLocation(location: LatLng, routeStatus: RouteStatus) {
-        val oldLocation = _currentLocation.value
-        _currentLocation.value = location
-
-        // Solo procesar lógica de ruta si tenemos una ruta activa
-        val route = _selectedRoute.value
-        if (route != null && routeStatus == RouteStatus.ON_PROGRESS) {
-            // Calcular velocidad si tenemos una ubicación anterior
-            if (oldLocation != null) {
-                calculateSpeed(oldLocation, location)
-            }
-
-            // Verificar proximidad y progreso solo si la ruta está iniciada
-            checkProximityToRoutePoints(location)
-            updateRouteProgress(location)
-        }
-
-        // Actualizar la ubicación en el repositorio
-        viewModelScope.launch {
-            try {
-                locationRepository.updateLocation(
-                    driverId = 1,
-                    lat = location.latitude,
-                    lon = location.longitude
-                )
-            } catch (e: Exception) {
-                println("Error al actualizar ubicación en repositorio: ${e.message}")
-            }
-        }
-    }
-
-    /**
-     * Actualiza el estado de la ruta actual
-     */
-    fun updateRouteStatus(statusId: String) {
-        viewModelScope.launch {
-            try {
-                val newStatus = RouteStatus.values().find { it.id == statusId }
-                newStatus?.let { status ->
-                    _currentRouteStatus.value = status
-
-                    // Actualizar también en RoutesData si existe
-                    _currentRoutesData.value?.let { routeData ->
-                        _currentRoutesData.value = routeData.copy(status_id = status)
-                    }
-                } ?: showError("No hay una ruta activa para actualizar")
-            } catch (e: Exception) {
-                showError("Error al actualizar estado de ruta: ${e.message}")
-            }
-        }
-    }
-
-    /**
-     * Actualiza el tipo de ruta (INBOUND/OUTBOUND)
-     */
-    fun updateRouteType(routeType: RouteType) {
-        _currentRouteType.value = routeType
-
-        // Si tenemos datos de ruta, actualizar también el objeto RoutesData
-        _currentRoutesData.value?.let { routeData ->
-            _currentRoutesData.value = routeData.copy(type_id = routeType)
-        }
-    }
-
-    /**
-     * Actualiza el progreso de la ruta (0.0 - 1.0)
-     */
-    fun updateRouteProgress(progress: Float) {
-        _routeProgress.value = progress.coerceIn(0.0f, 1.0f)
-    }
-
-    /**
-     * Configura el umbral de proximidad para detectar paradas (en metros)
-     */
-    fun setStopProximityThreshold(meters: Double) {
-        _stopProximityThreshold.value = meters
-    }
-
-    /**
-     * Verifica si el usuario está lo suficientemente cerca de un punto y muestra el diálogo si es así
-     * @param markerPosition La posición del marcador en el que se ha hecho clic
-     * @return true si se muestra el diálogo, false si no está lo suficientemente cerca
-     */
-    fun checkMarkerProximityAndShowDialog(markerPosition: LatLng): Boolean {
-        // Si la ruta no está en progreso, no hacemos nada
-        if (_currentRouteStatus.value != RouteStatus.ON_PROGRESS) {
+    fun startNewRoute(routeName: String = ""): Boolean {
+        if (_routePoints.isEmpty()) {
+            showError("No hay puntos de ruta para iniciar")
             return false
         }
 
-        // Obtener la ubicación actual
-        val currentLocation = _currentLocation.value ?: return false
+        val vehicleId = _vehicleId.value
+        val driverId = _driverId.value
 
-        // Calcular la distancia al marcador
-        val distance = calculateDistance(currentLocation, markerPosition)
+        if (vehicleId == null || driverId == null) {
+            showError("Información de conductor o vehículo no disponible")
+            return false
+        }
 
-        // Verificar si estamos dentro del umbral de proximidad
-        if (distance <= _stopProximityThreshold.value) {
-            // Encontrar el RoutePoint correspondiente a este marcador
-            val routePoint = _routePoints.find { isApproximatelySameLocation(markerPosition, it.location) }
+        viewModelScope.launch {
+            try {
+                _isLoading.value = true
 
-            routePoint?.let {
-                // Buscar la StopData asociada a este punto
-                _stopPassengers.value.forEach { stopPassenger ->
-                    val stopLocation = LatLng(
-                        stopPassenger.stop.latitude,
-                        stopPassenger.stop.longitude
+                // Construir el request para crear la ruta completa
+                val request = buildCreateFullRouteRequest(routeName, vehicleId)
+
+                // Llamar al servicio para crear la ruta usando SavedRoutesRepository
+                val createdRoute = savedRoutesRepository.createFullRoute(request)
+
+                // Actualizar el estado local con la ruta creada
+                _currentRouteId.value = createdRoute.id
+                _currentRoutesData.value = createdRoute
+                _currentRouteStatus.value = createdRoute.status_id
+                _currentRouteType.value = createdRoute.type_id
+                _isCurrentRouteSaved.value = true
+
+                // Cambiar el estado a "En progreso"
+                updateRouteStatus(RouteStatus.ON_PROGRESS.id)
+
+                showError("Ruta iniciada exitosamente: ${createdRoute.name}")
+                println("DEBUG_START_ROUTE: Ruta creada con ID: ${createdRoute.id}")
+
+            } catch (e: Exception) {
+                println("DEBUG_START_ROUTE: Error al iniciar ruta: ${e.message}")
+                showError("Error al iniciar la ruta: ${e.localizedMessage}")
+            } finally {
+                _isLoading.value = false
+            }
+        }
+
+        return true
+    }
+
+    /**
+     * Construye el request para crear una ruta completa
+     */
+    private fun buildCreateFullRouteRequest(routeName: String, vehicleId: Int): CreateFullRouteRequest {
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault())
+        val startDate = dateFormat.format(Date())
+
+        // Generar nombre automático si no se proporciona
+        val finalRouteName = if (routeName.isBlank()) {
+            "Ruta ${SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date())}"
+        } else {
+            routeName
+        }
+
+        // Construir la lista de StopRoute basada en los puntos de ruta actuales
+        val stopRouteRequests = buildStopRouteRequestsFromCurrentPoints()
+
+        return CreateFullRouteRequest(
+            name = finalRouteName,
+            start_date = startDate,
+            vehicle_id = vehicleId,
+            status_id = RouteStatus.NO_INIT.id.toInt(),
+            type_id = _currentRouteType.value.id.toInt(),
+            stopRoute = stopRouteRequests
+        )
+    }
+
+    /**
+     * Construye la lista de CreateStopRouteRequest basada en los puntos de ruta actuales
+     */
+    private fun buildStopRouteRequestsFromCurrentPoints(): List<CreateStopRouteRequest> {
+        val stopRouteRequests = mutableListOf<CreateStopRouteRequest>()
+
+        // Iterar sobre los puntos de ruta (excluyendo "Mi ubicación")
+        _routePoints.forEachIndexed { index, routePoint ->
+            if (routePoint.name != "Mi ubicación" && routePoint.stopType != null) {
+                // Buscar el StopPassenger correspondiente a este punto
+                val matchingStopPassenger = _stopPassengers.value.find { stopPassenger ->
+                    val stopLocation = LatLng(stopPassenger.stop.latitude, stopPassenger.stop.longitude)
+                    isApproximatelySameLocation(routePoint.location, stopLocation)
+                }
+
+                matchingStopPassenger?.let { stopPassenger ->
+                    val stopRouteRequest = CreateStopRouteRequest(
+                        stopPassengerId = stopPassenger.id,
+                        order = index, // Usar el índice como orden
+                        state = false // Inicialmente todas las paradas están pendientes
                     )
-
-                    if (isApproximatelySameLocation(markerPosition, stopLocation)) {
-                        // Encontramos una parada cerca
-                        val stopData = stopPassenger.stop
-
-                        // NUEVO: Verificar si esta parada ya fue procesada
-                        val stopKey = generateStopKey(stopData)
-                        if (_processedStops.value.contains(stopKey)) {
-                            showError("Esta parada ya ha sido procesada y completada")
-                            return false
-                        }
-
-                        // Buscar todos los StopPassengers asociados a esta parada
-                        val relatedPassengers = _stopPassengers.value.filter {
-                            isApproximatelySameLocation(
-                                LatLng(it.stop.latitude, it.stop.longitude),
-                                stopLocation
-                            )
-                        }
-
-                        if (relatedPassengers.isNotEmpty()) {
-                            // Actualizar estados y mostrar diálogo
-                            _currentNearbyStop.value = stopData
-                            _currentStopPassengers.value = relatedPassengers
-                            _isStopInfoDialogVisible.value = true
-                            return true
-                        }
-                    }
+                    stopRouteRequests.add(stopRouteRequest)
                 }
             }
-
-            return false
-        } else {
-            // Si no estamos lo suficientemente cerca, mostrar mensaje de error
-            showError("Necesitas acercarte más a la parada para poder interactuar con ella")
-            return false
         }
+
+        return stopRouteRequests
     }
 
     /**
-     * Actualiza el estado de un StopPassenger
+     * Construye el objeto RoutesData para la nueva ruta
+     */
+    private fun buildRoutesDataForNewRoute(): RoutesData {
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+        val now = dateFormat.format(Date())
+
+        return RoutesData(
+            id = 0, // Nuevo registro, será asignado por el backend
+            name = "Ruta ${now}", // Nombre por defecto, se puede cambiar
+            start_date = now,
+            vehicle_id = VehicleMap(
+                id = _vehicleId.value ?: 0,
+                plate = "",
+                driver_id = _driverId.value ?: 0,
+                model = "",
+                brand = "",
+                year = "",
+                color = "",
+                capacity = "",
+                updated_at = "",
+                carPic = "",
+                created_at = ""
+            ),
+            status_id = RouteStatus.NO_INIT,
+            type_id = _currentRouteType.value,
+            end_date = "",
+            encodedPolyline = "",
+            stopRoute = emptyList() // Se llenará al crear la ruta
+        )
+    }
+
+
+    /**
+     * Actualiza el estado de un StopPassenger y su StopRoute correspondiente
      */
     fun updateStopPassengerState(stopPassengerId: Int, isCompleted: Boolean) {
-        // Actualizar el mapa de estados de paradas
-        val currentStates = _stopCompletionStates.value.toMutableMap()
-        currentStates[stopPassengerId] = isCompleted
-        _stopCompletionStates.value = currentStates
-
-        // Encontrar el StopPassenger que se está actualizando
-        val stopPassenger = _stopPassengers.value.find { it.id == stopPassengerId }
-
-        // Notificar al backend sobre el cambio de estado
-        stopPassenger?.let { sp ->
-            notifyStopPassengerStateChange(sp, isCompleted)
-        }
-    }
-
-    /**
-     * Notifica al backend sobre el cambio de estado de un StopPassenger
-     */
-    private fun notifyStopPassengerStateChange(stopPassenger: StopPassenger, isCompleted: Boolean) {
         viewModelScope.launch {
             try {
-                val stopStateUpdate = mapOf(
-                    "event" to "stop_passenger_state_changed",
-                    "driver_id" to 1,
-                    "stop_passenger_id" to stopPassenger.id,
-                    "child_id" to stopPassenger.child.id,
-                    "parent_id" to stopPassenger.child.id, // Asumiendo que child_id = parent_id por ahora
-                    "stop_id" to stopPassenger.stop.id,
-                    "stop_type" to stopPassenger.stopType.name,
-                    "is_completed" to isCompleted,
-                    "child_name" to stopPassenger.child.fullName,
-                    "stop_name" to stopPassenger.stop.name,
-                    "current_segment" to _currentSegmentIndex.value,
-                    "route_id" to _currentRouteId.value,
-                    "timestamp" to System.currentTimeMillis(),
-                    "location" to mapOf(
-                        "latitude" to _currentLocation.value?.latitude,
-                        "longitude" to _currentLocation.value?.longitude
-                    )
-                )
+                // Actualizar el estado local inmediatamente
+                val currentStates = _stopCompletionStates.value.toMutableMap()
+                currentStates[stopPassengerId] = isCompleted
+                _stopCompletionStates.value = currentStates
 
-                // Logging para debug
-                println("DEBUG: Notificando cambio de StopPassenger al backend:")
-                println("DEBUG: Child: ${stopPassenger.child.fullName}")
-                println("DEBUG: Stop: ${stopPassenger.stop.name}")
-                println("DEBUG: Completed: $isCompleted")
+                // Actualizar en el servidor
+                val success = stopPassengerRepository.updateStopRouteState(stopPassengerId, routeId = currentRouteId.value!!, isCompleted = isCompleted)
 
-                // Aquí se implementaría la llamada real al backend/socket
-                // stopPassengerRepository.notifyStateChange(stopStateUpdate)
-                // locationRepository.notifyStopPassengerUpdate(stopStateUpdate)
+                if (success) {
+                    println("DEBUG_UPDATE: StopPassenger $stopPassengerId actualizado: $isCompleted")
+                } else {
+                    println("WARNING: StopRoute actualizado localmente, pero falló la notificación al backend")
+                }
 
             } catch (e: Exception) {
-                println("ERROR: Error al notificar cambio de StopPassenger: ${e.message}")
-                _errorMessage.value = "Error al notificar cambio de estado: ${e.message}"
+                println("ERROR: Error al actualizar StopPassenger y StopRoute: ${e.message}")
+                _errorMessage.value = "Error al actualizar estado: ${e.message}"
             }
         }
     }
 
     /**
-     * NUEVA FUNCIÓN: Genera una clave única para una parada basada en su ubicación
+     * Obtiene una ruta guardada por su ID
+     */
+    fun getSavedRouteById(routeId: Int): RoutesData? {
+        return if (routeId > 0) {
+            // Buscar en la lista de rutas guardadas
+            _currentRoutesData.value?.let { routeData ->
+                if (routeData.id == routeId) {
+                    routeData
+                } else {
+                    null
+                }
+            }
+        } else {
+            null
+        }
+    }
+
+    /**
+     *  Genera una clave única para una parada basada en su ubicación
      */
     private fun generateStopKey(stopData: StopData): String {
         return "${stopData.latitude}_${stopData.longitude}_${stopData.id}"
     }
 
     /**
-     * NUEVA FUNCIÓN: Muestra el diálogo de confirmación antes de cerrar StopInfoDialog
+     * Muestra el diálogo de confirmación antes de cerrar StopInfoDialog
      */
     fun showStopCloseConfirmation() {
         _showStopCloseConfirmation.value = true
     }
 
     /**
-     * NUEVA FUNCIÓN: Cancela el diálogo de confirmación de cierre
+     * Cancela el diálogo de confirmación de cierre
      */
     fun cancelStopCloseConfirmation() {
         _showStopCloseConfirmation.value = false
     }
 
     /**
-     * NUEVA FUNCIÓN: Confirma el cierre del StopInfoDialog y procesa la parada
+     * Configura el ID del conductor
+     */
+    fun setDriverId(id: Int) {
+        if (_driverId.value != id) {
+            _driverId.value = id
+        }
+    }
+
+    /**
+     * Configura el ID del vehiculo
+     */
+    fun setVehicleId(id: Int) {
+        if (_vehicleId.value != id) {
+            _vehicleId.value = id
+        }
+    }
+
+    /**
+     * Confirma el cierre del StopInfoDialog y procesa la parada
      */
     fun confirmStopClose() {
         _showStopCloseConfirmation.value = false
@@ -811,7 +862,7 @@ class RouteScreenViewModel(
     }
 
     /**
-     * MODIFICADA: Nueva versión de dismissStopInfoDialog que maneja el flujo de confirmación
+     * Nueva versión de dismissStopInfoDialog que maneja el flujo de confirmación
      */
     fun dismissStopInfoDialogWithConfirmation() {
         // Verificar si hay pasajeros pendientes
@@ -1023,14 +1074,14 @@ class RouteScreenViewModel(
                 _adjustedTimeToNextPoint.value = ""
                 _routeProgress.value = 1.0f // Marcar la ruta como completada al 100%
 
-                // NUEVO: Finalizar la ruta cuando se complete el último segmento
+                //Finalizar la ruta cuando se complete el último segmento
                 finalizeRoute()
             }
         }
     }
 
     /**
-     * NUEVA FUNCIÓN: Finaliza la ruta cuando se han completado todas las paradas
+     * Finaliza la ruta cuando se han completado todas las paradas
      */
     private fun finalizeRoute() {
         viewModelScope.launch {
@@ -1049,11 +1100,24 @@ class RouteScreenViewModel(
                     )
                 }
 
+                // Guardar la ruta completada automáticamente
+                val routeToSave = buildRoutesDataForSaving()
+                routeToSave?.let { route ->
+                    val savedRoute = savedRoutesRepository.saveCompletedRoute(route)
+                    if (savedRoute != null) {
+                        showError("¡Ruta completada y guardada exitosamente!")
+                        println("DEBUG_ROUTE_SAVE: Ruta guardada con ID: ${savedRoute.id}")
+                    } else {
+                        showError("Ruta completada, pero hubo un problema al guardarla.")
+                        println("DEBUG_ROUTE_SAVE: Error al guardar la ruta completada")
+                    }
+                } ?: run {
+                    showError("¡Ruta completada! (No se pudo construir datos para guardar)")
+                    println("DEBUG_ROUTE_SAVE: No se pudieron construir los datos de la ruta para guardar")
+                }
+
                 // Limpiar estados de paradas procesadas para permitir nuevas rutas
                 _processedStops.value = emptySet()
-
-                // Mostrar mensaje de finalización
-                showError("¡Felicidades! Has completado todas las paradas de la ruta.")
 
                 // Log para debug
                 println("DEBUG_ROUTE: Ruta finalizada correctamente")
@@ -1070,22 +1134,250 @@ class RouteScreenViewModel(
     }
 
     /**
-     * Optimiza el orden de los puntos de ruta usando un algoritmo simple de vecino más cercano
+     * Construye un objeto RoutesData para guardar basado en el estado actual
+     */
+    private fun buildRoutesDataForSaving(): RoutesData? {
+        return try {
+            val currentLoc = _currentLocation.value
+            val selectedRoute = _selectedRoute.value
+            val vehicleId = _vehicleId.value
+            val driverId = _driverId.value
+
+            if (currentLoc == null || selectedRoute == null || vehicleId == null || driverId == null) {
+                println("DEBUG_BUILD_ROUTE: Faltan datos esenciales para construir RoutesData")
+                return null
+            }
+
+            // Usar datos existentes si ya tenemos un RoutesData, o crear uno nuevo
+            val existingRouteData = _currentRoutesData.value
+
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+            val now = Date()
+
+            // Construir StopRoutes basado en los puntos de ruta actuales y estados de completación
+            val stopRoutes = buildStopRoutesFromCurrentState()
+
+            // Obtener vehículo completo
+            val vehicleMap = VehicleMap(
+                id = vehicleId,
+                plate = "", // Se completará en el repositorio
+                driver_id = driverId,
+                model = "",
+                brand = "",
+                year = "",
+                color = "",
+                capacity = "",
+                updated_at = "",
+                carPic = "",
+                created_at = ""
+            )
+
+            val routeData = RoutesData(
+                id = existingRouteData?.id ?: 0, // 0 para nueva ruta, será asignado por el backend
+                name = existingRouteData?.name ?: "", // Se generará automáticamente en el repositorio
+                start_date = existingRouteData?.start_date ?: dateFormat.format(now),
+                vehicle_id = vehicleMap,
+                status_id = RouteStatus.FINISHED,
+                type_id = _currentRouteType.value,
+                end_date = dateFormat.format(now),
+                encodedPolyline = "", // No guardamos el polyline
+                stopRoute = stopRoutes
+            )
+
+            println("DEBUG_BUILD_ROUTE: RoutesData construido exitosamente")
+            println("DEBUG_BUILD_ROUTE: Tipo: ${routeData.type_id.type}")
+            println("DEBUG_BUILD_ROUTE: StopRoutes: ${routeData.stopRoute.size}")
+
+            routeData
+        } catch (e: Exception) {
+            println("DEBUG_BUILD_ROUTE: Error al construir RoutesData: ${e.message}")
+            e.printStackTrace()
+            null
+        }
+    }
+
+    /**
+     * Construye StopRoutes basado en el estado actual de la ruta
+     */
+    private fun buildStopRoutesFromCurrentState(): List<StopRoute> {
+        val stopRoutes = mutableListOf<StopRoute>()
+
+        try {
+            // Iterar sobre los puntos de ruta (excluyendo "Mi ubicación")
+            _routePoints.forEachIndexed { index, routePoint ->
+                if (routePoint.name != "Mi ubicación" && routePoint.stopType != null) {
+                    // Buscar el StopPassenger correspondiente a este punto
+                    val matchingStopPassenger = _stopPassengers.value.find { stopPassenger ->
+                        val stopLocation = LatLng(stopPassenger.stop.latitude, stopPassenger.stop.longitude)
+                        isApproximatelySameLocation(routePoint.location, stopLocation)
+                    }
+
+                    matchingStopPassenger?.let { stopPassenger ->
+                        // Verificar si esta parada fue completada
+                        val isCompleted = _stopCompletionStates.value[stopPassenger.id] ?: false
+
+                        val stopRoute = StopRoute(
+                            id = 0, // Será asignado por el backend
+                            stopPassenger = stopPassenger,
+                            order = index, // Usar el índice como orden
+                            state = isCompleted
+                        )
+
+                        stopRoutes.add(stopRoute)
+                    }
+                }
+            }
+
+            println("DEBUG_BUILD_STOP_ROUTES: ${stopRoutes.size} StopRoutes construidos")
+        } catch (e: Exception) {
+            println("DEBUG_BUILD_STOP_ROUTES: Error al construir StopRoutes: ${e.message}")
+            e.printStackTrace()
+        }
+
+        return stopRoutes
+    }
+
+    /**
+     * Muestra un mensaje de error
+     */
+    public fun showError(message: String) {
+        _errorMessage.value = message
+    }
+
+    /**
+     * Actualiza la información del próximo punto en la ruta
+     */
+    private fun updateNextPointInfo() {
+        val route = _selectedRoute.value ?: return
+        val currentIndex = _currentSegmentIndex.value
+
+        if (currentIndex < _routePoints.size - 1) {
+            val nextPoint = _routePoints[currentIndex + 1]
+            _nextPointName.value = nextPoint.name
+
+            if (currentIndex < route.segments.size) {
+                val segment = route.segments[currentIndex]
+                _timeToNextPoint.value = formatGoogleDuration(segment.duration)
+            }
+        } else {
+            _nextPointName.value = "Destino final"
+            _timeToNextPoint.value = ""
+        }
+    }
+
+    /**
+     * Actualiza el estado de la ruta actual
+     * @param statusId ID del nuevo estado de la ruta (basado en RouteStatus enum)
+     */
+    fun updateRouteStatus(statusId: Int) {
+        viewModelScope.launch {
+            try {
+                // Buscar el RouteStatus correspondiente al ID
+                val newStatus = RouteStatus.entries.find { it.id == statusId }
+                    ?: RouteStatus.NO_INIT
+
+                // Actualizar el estado local inmediatamente
+                _currentRouteStatus.value = newStatus
+
+                // Si tenemos una ruta activa guardada, actualizar en el servidor
+                _currentRouteId.value?.let { routeId ->
+                    try {
+                        // Determinar si necesitamos fecha de finalización
+                        val endDate = if (newStatus == RouteStatus.FINISHED) {
+                            val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+                            dateFormat.format(Date())
+                        } else {
+                            null
+                        }
+
+                        // Actualizar el estado en el servidor usando el repositorio
+                        val updatedRoute = savedRoutesRepository.updateRouteStatus(routeId, statusId, endDate)
+
+                        if (updatedRoute != null) {
+                            // Actualizar el objeto RoutesData local
+                            _currentRoutesData.value = updatedRoute
+
+                            println("DEBUG_STATUS: Estado de ruta actualizado exitosamente: ${newStatus.status}")
+                            if (endDate != null) {
+                                println("DEBUG_STATUS: Fecha de finalización establecida: $endDate")
+                            }
+                        } else {
+                            // Si falla la actualización en el servidor, mostrar error pero mantener el estado local
+                            showError("Error al actualizar el estado de la ruta en el servidor")
+                            println("DEBUG_STATUS: Error al actualizar estado en servidor para ruta $routeId")
+                        }
+                    } catch (e: Exception) {
+                        // Si hay excepción, mostrar error pero mantener el estado local
+                        showError("Error de conexión al actualizar estado: ${e.message}")
+                        println("DEBUG_STATUS: Excepción al actualizar estado: ${e.message}")
+                    }
+                } ?: run {
+                    // Si no hay ruta guardada activa, solo actualizamos el estado local
+                    println("DEBUG_STATUS: Estado actualizado localmente (sin ruta guardada): ${newStatus.status}")
+                }
+
+                // Lógica adicional según el estado
+                when (newStatus) {
+                    RouteStatus.ON_PROGRESS -> {
+                        // Si se pone en progreso, asegurar que el progreso no sea 0
+                        if (_routeProgress.value == 0f) {
+                            updateRouteProgress(0.001f)
+                        }
+                    }
+                    RouteStatus.FINISHED -> {
+                        // Si se finaliza, poner progreso al 100%
+                        updateRouteProgress(1.0f)
+
+                        // Mostrar mensaje de finalización
+                        showError("¡Ruta finalizada exitosamente!")
+
+                        // Limpiar estados de paradas procesadas
+                        _processedStops.value = emptySet()
+
+                        // Opcional: Limpiar la ruta después de un delay
+                        viewModelScope.launch {
+                            delay(3000)
+                            clearRoute()
+                        }
+                    }
+                    RouteStatus.STOPED -> {
+                        // Pausar el seguimiento de proximidad si existe
+                        proximityAlertJob?.cancel()
+                    }
+                    RouteStatus.PROBLEMS -> {
+                        // Log para problemas reportados
+                        println("DEBUG_STATUS: Ruta marcada con problemas")
+                    }
+                    else -> {
+                        // Estados iniciales o no definidos
+                        println("DEBUG_STATUS: Estado actualizado a: ${newStatus.status}")
+                    }
+                }
+
+            } catch (e: Exception) {
+                showError("Error al actualizar estado de la ruta: ${e.message}")
+                println("DEBUG_STATUS: Error general en updateRouteStatus: ${e.message}")
+            }
+        }
+    }
+
+    /**
+     * Optimiza el orden de los puntos de ruta para minimizar la distancia total
      */
     private fun optimizeRouteOrder(startLocation: LatLng, points: List<RoutePoint>): List<RoutePoint> {
-        if (points.size <= 1) return points
+        if (points.size <= 2) return points
 
+        // Algoritmo simple de optimización: ordenar por proximidad
         val optimized = mutableListOf<RoutePoint>()
         val remaining = points.toMutableList()
         var currentLocation = startLocation
 
         while (remaining.isNotEmpty()) {
-            // Encontrar el punto más cercano a la ubicación actual
-            val nearestPoint = remaining.minByOrNull { point ->
+            val nearest = remaining.minByOrNull { point ->
                 calculateDistance(currentLocation, point.location)
             }
 
-            nearestPoint?.let { point ->
+            nearest?.let { point ->
                 optimized.add(point)
                 remaining.remove(point)
                 currentLocation = point.location
@@ -1096,90 +1388,70 @@ class RouteScreenViewModel(
     }
 
     /**
-     * Crea segmentos de ruta a partir de una ruta de la API
+     * Crea segmentos de ruta a partir de una ruta básica
      */
     private fun createRouteSegments(route: Route): Route {
         val segments = mutableListOf<RouteSegment>()
 
-        // Si la ruta tiene legs (segmentos), crear un RouteSegment por cada leg
-        route.legs.forEachIndexed { index, leg ->
-            val startPointName = if (index == 0) "Origen" else _routePoints.getOrNull(index)?.name ?: "Punto $index"
-            val endPointName = _routePoints.getOrNull(index + 1)?.name ?: "Punto ${index + 1}"
+        // Usar las RouteLegs de la ruta para obtener información real de los segmentos
+        if (route.legs.isNotEmpty()) {
+            // Crear segmentos basados en las RouteLegs
+            route.legs.forEachIndexed { index, leg ->
+                val startPointIndex = index
+                val endPointIndex = index + 1
 
-            segments.add(
-                RouteSegment(
+                // Obtener nombres de los puntos si están disponibles
+                val startPointName = if (startPointIndex < _routePoints.size) {
+                    _routePoints[startPointIndex].name
+                } else {
+                    "Punto ${startPointIndex + 1}"
+                }
+
+                val endPointName = if (endPointIndex < _routePoints.size) {
+                    _routePoints[endPointIndex].name
+                } else {
+                    "Destino final"
+                }
+
+                val segment = RouteSegment(
+                    startPoint = leg.startLocation.latLng,
+                    endPoint = leg.endLocation.latLng,
                     startPointName = startPointName,
                     endPointName = endPointName,
                     distance = leg.distanceMeters,
                     duration = leg.duration,
-                    polyline = leg.polyline,
-                    startPoint = leg.startLocation.latLng,
-                    endPoint = leg.endLocation.latLng
+                    polyline = leg.polyline
                 )
-            )
 
+                segments.add(segment)
+            }
+        } else {
+            // Fallback: crear segmentos básicos si no hay RouteLegs
+            for (i in 0 until _routePoints.size - 1) {
+                val startPoint = _routePoints[i]
+                val endPoint = _routePoints[i + 1]
+
+                val segment = RouteSegment(
+                    startPoint = startPoint.location,
+                    endPoint = endPoint.location,
+                    startPointName = startPoint.name,
+                    endPointName = endPoint.name,
+                    distance = calculateDistance(startPoint.location, endPoint.location).toInt(),
+                    duration = "5 min", // Estimación básica como fallback
+                    polyline = route.polyline // Usar el polyline de la ruta original
+                )
+
+                segments.add(segment)
+            }
         }
 
         return route.copy(segments = segments)
     }
 
-    /**
-     * Crea una copia de seguridad de la ruta y puntos originales
-     */
-    private fun createRouteBackup(route: Route, routePoints: List<RoutePoint>) {
-        _originalCompleteRoute.value = route.copy()
-        _originalRoutePoints.clear()
-        _originalRoutePoints.addAll(routePoints)
-    }
-
-    /**
-     * Fuerza el recálculo de la ruta desde la ubicación actual
-     */
-    fun forceRouteRecalculation() {
-        val currentLoc = _currentLocation.value ?: return
-        val remainingPoints = _routePoints.drop(1) // Omitir "Mi ubicación"
-
-        if (remainingPoints.isNotEmpty()) {
-            _routePoints.clear()
-            _routePoints.add(RoutePoint(currentLoc, "Mi ubicación", null))
-            _routePoints.addAll(remainingPoints)
-
-            calculateRoute()
-            _isDeviatedFromRoute.value = false
-        }
-    }
-
-    /**
-     * Actualiza la información sobre el próximo punto en la ruta
-     */
-    private fun updateNextPointInfo() {
-        val route = _selectedRoute.value ?: return
-        val currentIndex = _currentSegmentIndex.value
-
-        // Actualizar el nombre del próximo punto
-        _nextPointName.value = route.getNextPointName(currentIndex)
-
-        // Usar directamente la duración de Google para el segmento actual
-        if (currentIndex < route.segments.size) {
-            val segment = route.segments[currentIndex]
-            val originalDuration = segment.duration
-
-            // Siempre usamos la duración original de Google para mostrar en la interfaz
-            _timeToNextPoint.value = formatGoogleDuration(originalDuration)
-        } else {
-            // Si no hay un segmento actual, usar la duración total de la ruta
-            _timeToNextPoint.value = formatGoogleDuration(route.duration)
-        }
-    }
-
-    /**
-     * Formatea una duración de Google Maps a formato legible
-     */
     private fun formatGoogleDuration(durationString: String): String {
         val seconds = parseDuration(durationString)
         return formatDuration(seconds)
     }
-
     /**
      * Parsea una duración de Google Maps (formato: "123s")
      */
@@ -1190,101 +1462,92 @@ class RouteScreenViewModel(
             0L
         }
     }
+    /**
+     * Crea una copia de seguridad de la ruta original
+     */
+    private fun createRouteBackup(route: Route, points: List<RoutePoint>) {
+        _originalCompleteRoute.value = route
+        _originalRoutePoints.clear()
+        _originalRoutePoints.addAll(points)
+    }
 
     /**
-     * Formatea segundos a formato "Xh Ym" o "Ym"
+     * Manejo de desviaciones y recálculo automático
      */
-    private fun formatDuration(seconds: Long): String {
-        val hours = seconds / 3600
-        val minutes = (seconds % 3600) / 60
+    fun forceRouteRecalculation() {
+        // Implementación básica para recálculo forzado
+        if (_routePoints.size >= 2) {
+            calculateRoute()
+        }
+    }
 
-        return when {
-            hours > 0 -> "${hours}h ${minutes}m"
-            minutes > 0 -> "${minutes}m"
-            else -> "< 1m"
+    fun pauseRouteOnAppBackground() {
+        // Pausar actualizaciones cuando la app va a segundo plano
+        if (_currentRouteStatus.value == RouteStatus.ON_PROGRESS) {
+            updateRouteStatus(RouteStatus.STOPED.id)
+        }
+    }
+
+    fun resumeRouteOnAppForeground() {
+        // Reanudar cuando la app vuelve al primer plano
+        if (_currentRouteStatus.value == RouteStatus.STOPED) {
+            updateRouteStatus(RouteStatus.ON_PROGRESS.id)
+        }
+    }
+
+    fun finalizeRouteOnAppDestroy() {
+        // Finalizar la ruta si la app se cierra
+        if (_currentRouteStatus.value == RouteStatus.ON_PROGRESS) {
+            updateRouteStatus(RouteStatus.FINISHED.id)
         }
     }
 
     /**
-     * Cargar ruta guardada
+     * Carga una ruta guardada desde la base de datos
      */
     fun loadSavedRoute(routeId: Int) {
-        _isLoading.value = true
-        _errorMessage.value = null
         viewModelScope.launch {
             try {
-                // Guardamos la ubicación actual antes de limpiar
-                val savedCurrentLocation = _currentLocation.value
+                _isLoading.value = true
 
-                // Limpiamos la ruta pero conservamos datos críticos
-                _routePoints.clear()
-                _selectedRoute.value = null
-                _routeProgress.value = 0.0f
-                _currentSegmentIndex.value = 0
-                _nextPointName.value = ""
-                _timeToNextPoint.value = ""
-                _isCurrentRouteSaved.value = false
-                _currentRouteId.value = null
-                _stopCompletionStates.value = emptyMap()
-                dismissProximityAlert()
+                // Obtener la ruta desde el repositorio
+                savedRoutesRepository.getRoute(routeId).collect { routeData ->
+                    routeData?.let { route ->
+                        // Limpiar estado actual
+                        clearRoute()
 
-                // Restauramos la ubicación actual inmediatamente
-                if (savedCurrentLocation != null) {
-                    _currentLocation.value = savedCurrentLocation
+                        // Configurar la nueva ruta
+                        _currentRouteId.value = route.id
+                        _currentRoutesData.value = route
+                        _currentRouteType.value = route.type_id
+                        _currentRouteStatus.value = route.status_id
+
+                        // Convertir StopRoutes a RoutePoints
+                        route.stopRoute.forEach { stopRoute ->
+                            val stopLocation = LatLng(
+                                stopRoute.stopPassenger.stop.latitude,
+                                stopRoute.stopPassenger.stop.longitude
+                            )
+                            val pointName = "${stopRoute.stopPassenger.child.fullName} - ${stopRoute.stopPassenger.stop.name}"
+
+                            addRoutePoint(stopLocation, pointName, stopRoute.stopPassenger.stopType)
+
+                            // Restaurar estado de completación
+                            val currentStates = _stopCompletionStates.value.toMutableMap()
+                            currentStates[stopRoute.stopPassenger.id] = stopRoute.state
+                            _stopCompletionStates.value = currentStates
+                        }
+
+                        // Calcular la ruta con los puntos cargados
+                        if (_routePoints.isNotEmpty()) {
+                            calculateRoute()
+                        }
+
+                        println("DEBUG_LOAD: Ruta cargada exitosamente: ${route.name}")
+                    }
                 }
-
-                // Obtener la ruta guardada
-                savedRoutesRepository.getRoute(routeId).first()?.let { routeData ->
-                    // Actualizar estados para indicar que esta es una ruta guardada
-                    _currentRouteId.value = routeData.id
-                    _isCurrentRouteSaved.value = true
-
-                    // Convertir StopRoute a RoutePoint para usar las funciones de optimización
-                    val routePoints = routeData.stopRoute.map { stopRoute ->
-                        val stop = stopRoute.stopPassenger.stop
-                        val latLng = LatLng(stop.latitude, stop.longitude)
-                        val childName = stopRoute.stopPassenger.child.fullName
-                        val stopName = stop.name
-                        val stopType = stopRoute.stopPassenger.stopType
-                        RoutePoint(latLng, "$childName - $stopName (${stopType.name})", stopType)
-                    }
-
-                    // Si tenemos ubicación actual, optimizar el orden de las paradas
-                    _currentLocation.value?.let { currentLoc ->
-                        // Usar el algoritmo de optimización existente
-                        val optimizedPoints = optimizeRouteOrder(currentLoc, routePoints)
-
-                        // Añadir los puntos optimizados a la ruta
-                        optimizedPoints.forEach { point ->
-                            addRoutePoint(point.location, point.name, point.stopType)
-
-                            // Extraer el ID del niño del nombre del punto y añadirlo a seleccionados
-                            val childName = point.name.substringBefore(" - ")
-                            val childId = routeData.stopRoute.find {
-                                it.stopPassenger.child.fullName == childName
-                            }?.stopPassenger?.child?.id
-
-                            childId?.let {
-                                if (!_selectedChildIds.value.contains(it)) {
-                                    _selectedChildIds.value = _selectedChildIds.value + it
-                                }
-                            }
-                        }
-                    } ?: run {
-                        // Si no hay ubicación actual, mantener el orden original
-                        routePoints.forEach { point ->
-                            addRoutePoint(point.location, point.name, point.stopType)
-                        }
-                    }
-
-                    // Si tenemos ubicación actual y al menos un punto, calcular la ruta
-                    if (_currentLocation.value != null && _routePoints.isNotEmpty()) {
-                        calculateRoute()
-                    } else {
-                        showError("No se puede calcular la ruta sin ubicación actual")
-                    }
-                } ?: showError("No se encontró la ruta con ID: $routeId")
             } catch (e: Exception) {
+                println("DEBUG_LOAD: Error al cargar ruta: ${e.message}")
                 showError("Error al cargar la ruta: ${e.message}")
             } finally {
                 _isLoading.value = false
@@ -1293,13 +1556,109 @@ class RouteScreenViewModel(
     }
 
     /**
-     * Muestra un mensaje de error
+     * Actualiza la ubicación actual del conductor y realiza operaciones relacionadas
      */
-    fun showError(message: String) {
-        _errorMessage.value = message
+    fun updateCurrentLocation(location: LatLng, routeStatus: RouteStatus) {
+        val previousLocation = _currentLocation.value
+        _currentLocation.value = location
+
+        // Si hay una ubicación previa, calcular la velocidad
+        previousLocation?.let { prevLoc ->
+            calculateSpeed(prevLoc, location)
+        }
+
+        // Si hay una ruta activa y está en progreso, realizar verificaciones
+        if (_selectedRoute.value != null && routeStatus == RouteStatus.ON_PROGRESS) {
+            // Verificar proximidad a puntos de la ruta
+            checkProximityToRoutePoints(location)
+
+            // Actualizar el progreso de la ruta
+            updateRouteProgress(location)
+        }
+
+        // Actualizar la ubicación en el repositorio si tenemos una ruta activa
         viewModelScope.launch {
-            delay(3000)
-            _errorMessage.value = null
+            try {
+                _driverId.value?.let { driverId ->
+                    val selectedRoute = _selectedRoute.value
+                    val encodedPolyline = selectedRoute?.polyline?.encodedPolyline
+                    val routeActive = selectedRoute != null && routeStatus == RouteStatus.ON_PROGRESS
+                    val progress = _routeProgress.value
+                    val currentSegment = _currentSegmentIndex.value
+                    val statusId = routeStatus.id
+
+                    locationRepository.updateLocationWithRoute(
+                        driverId = driverId,
+                        lat = location.latitude,
+                        lon = location.longitude,
+                        encodedPolyline = encodedPolyline,
+                        routeActive = routeActive,
+                        routeProgress = progress,
+                        currentSegment = currentSegment,
+                        routeStatus = statusId
+                    )
+                }
+            } catch (e: Exception) {
+                println("DEBUG_LOCATION: Error al actualizar ubicación en repositorio: ${e.message}")
+            }
+        }
+    }
+
+    /**
+     * Actualiza el progreso de la ruta manualmente
+     */
+    fun updateRouteProgress(progress: Float) {
+        _routeProgress.value = progress.coerceIn(0.0f, 1.0f)
+    }
+
+    /**
+     * Configura el umbral de proximidad para las paradas
+     */
+    fun setStopProximityThreshold(threshold: Double) {
+        _stopProximityThreshold.value = threshold
+    }
+
+    /**
+     * Actualiza el tipo de ruta (INBOUND/OUTBOUND)
+     */
+    fun updateRouteType(routeType: RouteType) {
+        _currentRouteType.value = routeType
+    }
+
+    /**
+     * Verifica si un marcador está cerca y muestra el diálogo de información de parada
+     */
+    fun checkMarkerProximityAndShowDialog(markerLocation: LatLng) {
+        val currentLoc = _currentLocation.value ?: return
+        val distance = calculateDistance(currentLoc, markerLocation)
+
+        // Si estamos dentro del umbral de proximidad
+        if (distance <= _stopProximityThreshold.value) {
+            // Buscar el StopPassenger correspondiente a esta ubicación
+            _stopPassengers.value.forEach { stopPassenger ->
+                val stopLocation = LatLng(stopPassenger.stop.latitude, stopPassenger.stop.longitude)
+
+                if (isApproximatelySameLocation(markerLocation, stopLocation)) {
+                    val stopKey = generateStopKey(stopPassenger.stop)
+
+                    // Solo mostrar diálogo si no se ha procesado esta parada
+                    if (!_processedStops.value.contains(stopKey) && !_isStopInfoDialogVisible.value) {
+                        _currentNearbyStop.value = stopPassenger.stop
+
+                        // Buscar todos los StopPassengers asociados a esta parada
+                        val relatedPassengers = _stopPassengers.value.filter {
+                            isApproximatelySameLocation(
+                                LatLng(it.stop.latitude, it.stop.longitude),
+                                stopLocation
+                            )
+                        }
+
+                        _currentStopPassengers.value = relatedPassengers
+                        _isStopInfoDialogVisible.value = true
+                        return
+                    }
+                }
+            }
         }
     }
 
@@ -1312,7 +1671,10 @@ class RouteScreenViewModel(
                     routesApiRepository = application.appProvider.provideRoutesApiRepository(),
                     stopPassengerRepository = application.appProvider.provideStopPassengerRepository(),
                     savedRoutesRepository = application.appProvider.provideSavedRoutesRepository(),
-                    locationRepository = application.appProvider.provideLocationRepository()
+                    locationRepository = application.appProvider.provideLocationRepository(),
+                    userPreferencesRepository = application.appProvider.provideUserPreferences(),
+                    vehicleRepository = application.appProvider.provideVehicleRepository(),
+                    context = application.applicationContext
                 )
             }
         }
