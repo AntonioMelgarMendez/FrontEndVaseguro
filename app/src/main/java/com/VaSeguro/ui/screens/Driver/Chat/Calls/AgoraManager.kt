@@ -1,28 +1,23 @@
 package com.VaSeguro.ui.screens.Driver.Chat.Calls
 
 import android.content.Context
-import android.util.Log
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import io.agora.rtc2.IRtcEngineEventHandler
 import io.agora.rtc2.RtcEngine
 
 class AgoraManager(context: Context, private val appId: String) {
     private var rtcEngine: RtcEngine? = null
-    var callStatus by mutableStateOf("Calling...") // Expose call status
 
     private val rtcEventHandler = object : IRtcEngineEventHandler() {
         override fun onUserJoined(uid: Int, elapsed: Int) {
-            Log.d("Agora", "Remote user joined: $uid")
-            callStatus = "In call"
+            // Called when a remote user joins
         }
+
         override fun onUserOffline(uid: Int, reason: Int) {
-            Log.d("Agora", "Remote user offline: $uid")
-            callStatus = "User left"
+            // Called when a remote user leaves
         }
+
         override fun onJoinChannelSuccess(channel: String?, uid: Int, elapsed: Int) {
-            Log.d("Agora", "Joined channel: $channel, uid: $uid")
+            // Called when local user joins channel
         }
     }
 

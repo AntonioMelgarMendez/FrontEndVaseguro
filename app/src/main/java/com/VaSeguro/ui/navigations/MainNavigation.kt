@@ -32,13 +32,19 @@ import com.VaSeguro.ui.screens.Parents.History.HistoryScreen
 import com.VaSeguro.ui.screens.Parents.Map.MapScreen
 
 @Composable
-fun MainNavigation(navController: NavHostController, isAdmin: Boolean, isDriver: Boolean = false) {
-    val startDestination = if (isAdmin) HomeAdminScreenNavigation else if(isDriver) RouteScreenNavigation else MapScreenNavigation
+fun MainNavigation(navController: NavHostController, userRole: Int?) {
+    val startDestination = when (userRole) {
+        2 -> HomeAdminScreenNavigation
+        3 -> MapScreenNavigation
+        4 ->  RouteScreenNavigation(routeId = 0)
+        else -> MapScreenNavigation
+    }
 
     // Compartimos el ViewModel para la pantalla de rutas guardadas
     val savedRoutesViewModel: SavedRoutesViewModel = viewModel(
         factory = SavedRoutesViewModel.Factory
     )
+
 
     // Definimos las acciones de navegación
     val onNavigateToSavedRoutes = {
@@ -100,8 +106,6 @@ fun MainNavigation(navController: NavHostController, isAdmin: Boolean, isDriver:
             val args = backStackEntry.toRoute<CallScreenNavigation>()
             AgoraCallScreen(
                 channelName = args.roomName,
-                personName = args.personName,
-                personPhotoUrl = args.personPhotoUrl,
                 onCallEnd = {
                     navController.navigate(ChatScreenNavigation(args.id)) {
                         popUpTo(CallScreenNavigation(args.roomName, args.id, args.personName, args.personPhotoUrl)) { inclusive = true }
