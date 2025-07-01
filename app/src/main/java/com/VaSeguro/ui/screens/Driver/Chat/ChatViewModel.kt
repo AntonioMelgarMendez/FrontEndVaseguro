@@ -24,15 +24,11 @@ import com.VaSeguro.data.repository.UserPreferenceRepository.UserPreferencesRepo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import kotlin.text.format
 
 class ChatViewModel(
-    private val chatRepository: ChatRepository,
-    private val authRepository: AuthRepository,
-    internal val userPreferencesRepository: UserPreferencesRepository
+  private val chatRepository: ChatRepository,
+  private val authRepository: AuthRepository,
+  internal val userPreferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
 
   private val _messages = MutableStateFlow<List<Message>>(emptyList())
@@ -50,6 +46,9 @@ class ChatViewModel(
   val currentUserId: StateFlow<String?> = _currentUserId
   private var allMessages: List<Message> = emptyList()
   private var visibleCount = 10
+
+  // Prevent multiple socket/listener registrations
+  private var isSocketConnected = false
 
   init {
     viewModelScope.launch {
@@ -77,6 +76,7 @@ class ChatViewModel(
     }
     return raw
   }
+
   val quickReplies: List<QuickReply> = listOf(
     QuickReply(
       text = "I'm here!",
@@ -119,6 +119,7 @@ class ChatViewModel(
       }
     }
   }
+
   fun loadChat(user1Id: String, user2Id: String) {
     viewModelScope.launch {
       val token = userPreferencesRepository.getAuthToken() ?: return@launch
@@ -138,6 +139,7 @@ class ChatViewModel(
       }
     }
   }
+
   private fun updateVisibleMessages() {
     val fromIndex = (allMessages.size - visibleCount).coerceAtLeast(0)
     _messages.value = allMessages.subList(fromIndex, allMessages.size)
@@ -181,6 +183,8 @@ class ChatViewModel(
   }
 
   fun connectSocket(userId: String, token: String) {
+    if (isSocketConnected) return
+    isSocketConnected = true
     chatRepository.connectWebSocket(userId, token)
     chatRepository.setOnMessageReceivedListener { chatMessage ->
       _messages.value = _messages.value + Message(
@@ -191,9 +195,11 @@ class ChatViewModel(
       )
     }
   }
+
   override fun onCleared() {
     super.onCleared()
     chatRepository.disconnectWebSocket()
+    isSocketConnected = false
   }
 
   companion object {
