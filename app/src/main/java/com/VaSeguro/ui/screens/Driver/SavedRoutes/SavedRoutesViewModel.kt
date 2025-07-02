@@ -69,7 +69,7 @@ class SavedRoutesViewModel(
      * Calcula la duración de la ruta en formato legible
      */
     fun calculateRouteDuration(route: RoutesData): String {
-        if (route.end_date.isEmpty()) return "No completada"
+        if (route.end_date==null || route.end_date.isEmpty()) return "No completada"
 
         try {
             val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())

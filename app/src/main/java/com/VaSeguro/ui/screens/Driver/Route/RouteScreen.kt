@@ -37,7 +37,6 @@ import com.VaSeguro.data.model.Route.RouteStatus
 import com.VaSeguro.data.model.Stop.StopType
 import com.VaSeguro.data.model.Route.RouteType
 import com.VaSeguro.helpers.bitmapDescriptorFromVector
-import com.VaSeguro.map.repository.SavedRoutesRepository
 import com.VaSeguro.map.data.PlaceResult
 import com.VaSeguro.map.data.RoutePoint
 import com.VaSeguro.map.decodePolyline
@@ -53,7 +52,6 @@ import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.maps.CameraUpdateFactory
-import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties

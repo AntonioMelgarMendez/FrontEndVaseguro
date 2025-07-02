@@ -18,10 +18,10 @@ interface LocationRepository {
         lat: Double,
         lon: Double,
         encodedPolyline: String?,
-        routeActive: Boolean,
-        routeProgress: Float,
-        currentSegment: Int,
-        routeStatus: Int?
+        routeActive: Boolean = false,
+        routeProgress: Float = 0f,
+        currentSegment: Int = 0,
+        routeStatus: Int? = 1
     )
 
     // Método para obtener la última ubicación conocida de un conductor

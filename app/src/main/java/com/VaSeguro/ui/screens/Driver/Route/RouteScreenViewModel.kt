@@ -287,14 +287,73 @@ class RouteScreenViewModel(
                     return@launch
                 }
 
+                Log.d("DEBUG_CHILDREN", "=== INICIANDO CARGA DE DATOS ===")
+                Log.d("DEBUG_CHILDREN", "Driver ID: $currentDriverId")
+
                 // Obtener todas las paradas usando el driverId correcto
                 val stops = stopPassengerRepository.getAllStopPassengers(currentDriverId).first()
+
+                Log.d("DEBUG_CHILDREN", "Total StopPassengers obtenidos: ${stops.size}")
+
+                // Log detallado de cada StopPassenger
+                stops.forEachIndexed { index, stopPassenger ->
+                    Log.d("DEBUG_CHILDREN", "--- StopPassenger #$index ---")
+                    Log.d("DEBUG_CHILDREN", "  ID: ${stopPassenger.id}")
+                    Log.d("DEBUG_CHILDREN", "  Stop ID: ${stopPassenger.stop_id}")
+                    Log.d("DEBUG_CHILDREN", "  Child ID: ${stopPassenger.child_id}")
+                    Log.d("DEBUG_CHILDREN", "  Type ID: ${stopPassenger.type_id}")
+
+                    // Log del Stop
+                    Log.d("DEBUG_CHILDREN", "  Stop Data:")
+                    Log.d("DEBUG_CHILDREN", "    Stop name: '${stopPassenger.stop.name}'")
+                    Log.d("DEBUG_CHILDREN", "    Stop lat: ${stopPassenger.stop.latitude}")
+                    Log.d("DEBUG_CHILDREN", "    Stop lon: ${stopPassenger.stop.longitude}")
+
+                    // Log detallado del Child
+                    Log.d("DEBUG_CHILDREN", "  Child Data:")
+                    Log.d("DEBUG_CHILDREN", "    Child ID: ${stopPassenger.child.id}")
+                    Log.d("DEBUG_CHILDREN", "    Forenames: '${stopPassenger.child.forenames}' (length: ${stopPassenger.child.forenames?.length ?: "NULL"})")
+                    Log.d("DEBUG_CHILDREN", "    Surnames: '${stopPassenger.child.surnames}' (length: ${stopPassenger.child.surnames?.length ?: "NULL"})")
+                    Log.d("DEBUG_CHILDREN", "    FullName: '${stopPassenger.child.fullName}' (length: ${stopPassenger.child.fullName?.length ?: "NULL"})")
+                    Log.d("DEBUG_CHILDREN", "    Calculated FullName: '${stopPassenger.child.calculatedFullName}' (length: ${stopPassenger.child.calculatedFullName?.length ?: "NULL"})")
+                    Log.d("DEBUG_CHILDREN", "    Birth date: '${stopPassenger.child.birthDate}' (length: ${stopPassenger.child.birthDate?.length ?: "NULL"})")
+                    Log.d("DEBUG_CHILDREN", "    Medical info: '${stopPassenger.child.medicalInfo}' (length: ${stopPassenger.child.medicalInfo?.length ?: "NULL"})")
+                    Log.d("DEBUG_CHILDREN", "    Gender: '${stopPassenger.child.gender}' (length: ${stopPassenger.child.gender?.length ?: "NULL"})")
+                    Log.d("DEBUG_CHILDREN", "    Created at: '${stopPassenger.child.createdAt}' (length: ${stopPassenger.child.createdAt?.length ?: "NULL"})")
+
+                    // Log del StopType calculado
+                    Log.d("DEBUG_CHILDREN", "    Calculated StopType: ${stopPassenger.stopType}")
+                }
+
                 _stopPassengers.value = stops
+                Log.d("DEBUG_CHILDREN", "StopPassengers guardados en _stopPassengers: ${_stopPassengers.value.size}")
 
                 // Extraer los niños únicos
                 val uniqueChildren = stops.map { it.child }.distinctBy { it.id }
+                Log.d("DEBUG_CHILDREN", "Niños únicos extraídos: ${uniqueChildren.size}")
+
+                // Log detallado de los niños únicos
+                uniqueChildren.forEachIndexed { index, child ->
+                    Log.d("DEBUG_CHILDREN", "--- Niño único #$index ---")
+                    Log.d("DEBUG_CHILDREN", "  ID: ${child.id}")
+                    Log.d("DEBUG_CHILDREN", "  Forenames: '${child.forenames}' (es null? ${child.forenames == null})")
+                    Log.d("DEBUG_CHILDREN", "  Surnames: '${child.surnames}' (es null? ${child.surnames == null})")
+                    Log.d("DEBUG_CHILDREN", "  FullName: '${child.fullName}' (es null? ${child.fullName == null})")
+                    Log.d("DEBUG_CHILDREN", "  Calculated FullName: '${child.calculatedFullName}' (es null? ${child.calculatedFullName == null})")
+                }
+
                 _children.value = uniqueChildren
+                Log.d("DEBUG_CHILDREN", "Niños guardados en _children: ${_children.value.size}")
+
+                // Verificar el estado después de guardar
+                Log.d("DEBUG_CHILDREN", "=== VERIFICACIÓN POST-GUARDADO ===")
+                Log.d("DEBUG_CHILDREN", "_stopPassengers.value.size: ${_stopPassengers.value.size}")
+                Log.d("DEBUG_CHILDREN", "_children.value.size: ${_children.value.size}")
+                Log.d("DEBUG_CHILDREN", "filteredChildren.value.size: ${filteredChildren.value.size}")
+
             } catch (e: Exception) {
+                Log.e("DEBUG_CHILDREN", "Error al cargar datos de niños: ${e.message}")
+                Log.e("DEBUG_CHILDREN", "Stack trace: ", e)
                 showError("Error al cargar datos de niños: ${e.localizedMessage}")
             }
         }
@@ -304,17 +363,78 @@ class RouteScreenViewModel(
      * Actualiza la lista de niños filtrados basado en la búsqueda
      */
     private fun updateFilteredChildren() {
-        val query = _searchQuery.value.trim().lowercase()
-        val allChildren = _children.value
+        try {
+            Log.d("DEBUG_FILTER", "=== INICIANDO FILTRADO DE NIÑOS ===")
 
-        filteredChildren.value = if (query.isEmpty()) {
-            allChildren
-        } else {
-            allChildren.filter { child ->
-                child.calculatedFullName.lowercase().contains(query) ||
-                        child.forenames.lowercase().contains(query) ||
-                        child.surnames.lowercase().contains(query)
+            val query = _searchQuery.value.trim().lowercase()
+            val allChildren = _children.value
+
+            Log.d("DEBUG_FILTER", "Query de búsqueda: '$query' (length: ${query.length})")
+            Log.d("DEBUG_FILTER", "Total niños disponibles: ${allChildren.size}")
+
+            // Log detallado de cada niño antes del filtrado
+            allChildren.forEachIndexed { index, child ->
+                Log.d("DEBUG_FILTER", "--- Niño #$index antes del filtrado ---")
+                Log.d("DEBUG_FILTER", "  ID: ${child.id}")
+                Log.d("DEBUG_FILTER", "  Forenames: '${child.forenames}' (es null? ${child.forenames == null})")
+                Log.d("DEBUG_FILTER", "  Surnames: '${child.surnames}' (es null? ${child.surnames == null})")
+                Log.d("DEBUG_FILTER", "  FullName: '${child.fullName}' (es null? ${child.fullName == null})")
+
+                // Verificar calculatedFullName con más detalle
+                try {
+                    val calculatedName = child.calculatedFullName
+                    Log.d("DEBUG_FILTER", "  Calculated FullName: '$calculatedName' (es null? ${calculatedName == null}, length: ${calculatedName?.length ?: "NULL"})")
+                } catch (e: Exception) {
+                    Log.e("DEBUG_FILTER", "  ERROR al acceder a calculatedFullName: ${e.message}")
+                    Log.e("DEBUG_FILTER", "  Stack trace: ", e)
+                }
             }
+
+            filteredChildren.value = if (query.isEmpty()) {
+                Log.d("DEBUG_FILTER", "Query vacío, devolviendo todos los niños")
+                allChildren
+            } else {
+                Log.d("DEBUG_FILTER", "Filtrando niños con query: '$query'")
+
+                val filtered = allChildren.filter { child ->
+                    try {
+                        val calculatedFullName = child.calculatedFullName.lowercase()
+                        val forenames = child.forenames?.lowercase() ?: ""
+                        val surnames = child.surnames?.lowercase() ?: ""
+
+                        val matchesCalculatedName = calculatedFullName.contains(query)
+                        val matchesForenames = forenames.contains(query)
+                        val matchesSurnames = surnames.contains(query)
+
+                        Log.d("DEBUG_FILTER", "    Niño ID ${child.id}:")
+                        Log.d("DEBUG_FILTER", "      calculatedFullName: '$calculatedFullName' -> matches: $matchesCalculatedName")
+                        Log.d("DEBUG_FILTER", "      forenames: '$forenames' -> matches: $matchesForenames")
+                        Log.d("DEBUG_FILTER", "      surnames: '$surnames' -> matches: $matchesSurnames")
+
+                        val result = matchesCalculatedName || matchesForenames || matchesSurnames
+                        Log.d("DEBUG_FILTER", "      RESULTADO FINAL: $result")
+
+                        result
+                    } catch (e: Exception) {
+                        Log.e("DEBUG_FILTER", "    ERROR al filtrar niño ID ${child.id}: ${e.message}")
+                        Log.e("DEBUG_FILTER", "    Stack trace: ", e)
+                        false // En caso de error, no incluir el niño en el filtro
+                    }
+                }
+
+                Log.d("DEBUG_FILTER", "Niños después del filtrado: ${filtered.size}")
+                filtered
+            }
+
+            Log.d("DEBUG_FILTER", "=== FILTRADO COMPLETADO ===")
+            Log.d("DEBUG_FILTER", "filteredChildren.value.size: ${filteredChildren.value.size}")
+
+        } catch (e: Exception) {
+            Log.e("DEBUG_FILTER", "ERROR GENERAL en updateFilteredChildren: ${e.message}")
+            Log.e("DEBUG_FILTER", "Stack trace: ", e)
+
+            // En caso de error, asignar lista vacía para evitar crashes
+            filteredChildren.value = emptyList()
         }
     }
 
@@ -453,19 +573,56 @@ class RouteScreenViewModel(
         // del usuario, no un efecto secundario de limpiar la ruta.
         // _selectedChildIds.value = emptyList()
 
-        // Actualizar la base de datos para resetear todos los valores de ruta
+        // MEJORADO: Actualizar la base de datos para resetear todos los valores de ruta
         viewModelScope.launch {
-            _currentLocation.value?.let { location ->
-                locationRepository.updateLocationWithRoute(
-                    driverId = _driverId.value!!,
-                    lat = location.latitude,
-                    lon = location.longitude,
-                    encodedPolyline = null, // Limpiar polyline
-                    routeActive = false, // Ruta no activa
-                    routeProgress = 0.0f, // Progreso en 0
-                    currentSegment = 0, // Segmento en 0
-                    routeStatus = RouteStatus.NO_INIT.id // Estado inicial
-                )
+            try {
+                val currentDriverId = _driverId.value
+                val currentLoc = _currentLocation.value
+
+                println("DEBUG_CLEAR_ROUTE: Iniciando limpieza de ruta")
+                println("DEBUG_CLEAR_ROUTE: Driver ID: $currentDriverId")
+                println("DEBUG_CLEAR_ROUTE: Current Location: $currentLoc")
+
+                if (currentDriverId != null && currentLoc != null) {
+                    println("DEBUG_CLEAR_ROUTE: Llamando updateLocationWithRoute con valores de limpieza")
+
+                    locationRepository.updateLocationWithRoute(
+                        driverId = currentDriverId,
+                        lat = currentLoc.latitude,
+                        lon = currentLoc.longitude,
+                        encodedPolyline = null, // Limpiar polyline
+                        routeActive = false, // Ruta no activa
+                        routeProgress = 0.0f, // Progreso en 0
+                        currentSegment = 0, // Segmento en 0
+                        routeStatus = RouteStatus.NO_INIT.id // Estado inicial
+                    )
+
+                    println("DEBUG_CLEAR_ROUTE: updateLocationWithRoute completado exitosamente")
+
+                    // Verificar que los datos se actualizaron correctamente
+                    delay(1000) // Esperar un segundo para que se procese la actualización
+
+                    try {
+                        val updatedLocation = locationRepository.getDriverLocationWithRoute(currentDriverId)
+                        println("DEBUG_CLEAR_ROUTE: Verificación post-actualización:")
+                        println("DEBUG_CLEAR_ROUTE: - route_active: ${updatedLocation.route_active}")
+                        println("DEBUG_CLEAR_ROUTE: - route_progress: ${updatedLocation.route_progress}")
+                        println("DEBUG_CLEAR_ROUTE: - current_segment: ${updatedLocation.current_segment}")
+                        println("DEBUG_CLEAR_ROUTE: - encoded_polyline: ${updatedLocation.encoded_polyline}")
+                        println("DEBUG_CLEAR_ROUTE: - route_status: ${updatedLocation.route_status}")
+                    } catch (e: Exception) {
+                        println("DEBUG_CLEAR_ROUTE: Error al verificar actualización: ${e.message}")
+                    }
+
+                } else {
+                    println("DEBUG_CLEAR_ROUTE: No se puede actualizar - falta driverId o ubicación")
+                    println("DEBUG_CLEAR_ROUTE: Driver ID is null: ${currentDriverId == null}")
+                    println("DEBUG_CLEAR_ROUTE: Current Location is null: ${currentLoc == null}")
+                }
+            } catch (e: Exception) {
+                println("DEBUG_CLEAR_ROUTE: Error al limpiar ruta en base de datos: ${e.message}")
+                e.printStackTrace()
+                showError("Error al limpiar datos de ruta: ${e.localizedMessage}")
             }
         }
     }
@@ -628,6 +785,10 @@ class RouteScreenViewModel(
             try {
                 _isLoading.value = true
 
+                // NUEVO: Resetear valores de ruta antes de iniciar
+                _routeProgress.value = 0.0f
+                _currentSegmentIndex.value = 0
+
                 // Construir el request para crear la ruta completa
                 val request = buildCreateFullRouteRequest(routeName, vehicleId)
 
@@ -641,8 +802,22 @@ class RouteScreenViewModel(
                 _currentRouteType.value = createdRoute.type_id
                 _isCurrentRouteSaved.value = true
 
+                // NUEVO: Actualizar inmediatamente la base de datos con los valores iniciales
+                _currentLocation.value?.let { location ->
+                    locationRepository.updateLocationWithRoute(
+                        driverId = driverId,
+                        lat = location.latitude,
+                        lon = location.longitude,
+                        encodedPolyline = _selectedRoute.value?.polyline?.encodedPolyline,
+                        routeActive = false, // Aún no está activa hasta que se presione "Iniciar"
+                        routeProgress = 0.0f,
+                        currentSegment = 0,
+                        routeStatus = RouteStatus.NO_INIT.id
+                    )
+                }
+
                 // Cambiar el estado a "En progreso"
-                updateRouteStatus(RouteStatus.ON_PROGRESS.id)
+                updateRouteStatus(RouteStatus.ON_PROGRESS.id, createdRoute.id)
 
                 showError("Ruta iniciada exitosamente: ${createdRoute.name}")
                 println("DEBUG_START_ROUTE: Ruta creada con ID: ${createdRoute.id}")
@@ -740,7 +915,7 @@ class RouteScreenViewModel(
             ),
             status_id = RouteStatus.NO_INIT,
             type_id = _currentRouteType.value,
-            end_date = "",
+            end_date = null, // Cambiado a null ya que la ruta no ha terminado
             encodedPolyline = "",
             stopRoute = emptyList() // Se llenará al crear la ruta
         )
@@ -796,7 +971,12 @@ class RouteScreenViewModel(
      *  Genera una clave única para una parada basada en su ubicación
      */
     private fun generateStopKey(stopData: StopData): String {
-        return "${stopData.latitude}_${stopData.longitude}_${stopData.id}"
+        // Manejar posibles valores nulos para evitar NullPointerException
+        val latitude = stopData.latitude?.toString() ?: "0.0"
+        val longitude = stopData.longitude?.toString() ?: "0.0"
+        val id = stopData.id?.toString() ?: "0"
+
+        return "${latitude}_${longitude}_${id}"
     }
 
     /**
@@ -1276,7 +1456,7 @@ class RouteScreenViewModel(
      * Actualiza el estado de la ruta actual
      * @param statusId ID del nuevo estado de la ruta (basado en RouteStatus enum)
      */
-    fun updateRouteStatus(statusId: Int) {
+    fun updateRouteStatus(statusId: Int, routeId: Int = _currentRouteId.value ?: 0) {
         viewModelScope.launch {
             try {
                 // Buscar el RouteStatus correspondiente al ID
@@ -1287,7 +1467,6 @@ class RouteScreenViewModel(
                 _currentRouteStatus.value = newStatus
 
                 // Si tenemos una ruta activa guardada, actualizar en el servidor
-                _currentRouteId.value?.let { routeId ->
                     try {
                         // Determinar si necesitamos fecha de finalización
                         val endDate = if (newStatus == RouteStatus.FINISHED) {
@@ -1318,10 +1497,7 @@ class RouteScreenViewModel(
                         showError("Error de conexión al actualizar estado: ${e.message}")
                         println("DEBUG_STATUS: Excepción al actualizar estado: ${e.message}")
                     }
-                } ?: run {
-                    // Si no hay ruta guardada activa, solo actualizamos el estado local
-                    println("DEBUG_STATUS: Estado actualizado localmente (sin ruta guardada): ${newStatus.status}")
-                }
+
 
                 // Lógica adicional según el estado
                 when (newStatus) {
@@ -1491,21 +1667,21 @@ class RouteScreenViewModel(
     fun pauseRouteOnAppBackground() {
         // Pausar actualizaciones cuando la app va a segundo plano
         if (_currentRouteStatus.value == RouteStatus.ON_PROGRESS) {
-            updateRouteStatus(RouteStatus.STOPED.id)
+            updateRouteStatus(RouteStatus.STOPED.id, currentRouteId.value!!)
         }
     }
 
     fun resumeRouteOnAppForeground() {
         // Reanudar cuando la app vuelve al primer plano
         if (_currentRouteStatus.value == RouteStatus.STOPED) {
-            updateRouteStatus(RouteStatus.ON_PROGRESS.id)
+            updateRouteStatus(RouteStatus.ON_PROGRESS.id, currentRouteId.value!!)
         }
     }
 
     fun finalizeRouteOnAppDestroy() {
         // Finalizar la ruta si la app se cierra
         if (_currentRouteStatus.value == RouteStatus.ON_PROGRESS) {
-            updateRouteStatus(RouteStatus.FINISHED.id)
+            updateRouteStatus(RouteStatus.FINISHED.id, currentRouteId.value!!)
         }
     }
 

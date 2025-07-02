@@ -225,7 +225,7 @@ fun SavedRouteCard(
             }
 
             // Fecha de fin (si existe)
-            if (route.end_date.isNotEmpty()) {
+            if (route.end_date!=null && route.end_date.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),

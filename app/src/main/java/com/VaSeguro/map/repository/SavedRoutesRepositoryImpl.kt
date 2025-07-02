@@ -2,6 +2,7 @@ package com.VaSeguro.map.repository
 
 import androidx.compose.runtime.mutableStateOf
 import com.VaSeguro.data.model.Routes.RoutesData
+import com.VaSeguro.data.model.Routes.RoutesDataResponse
 import com.VaSeguro.data.model.Routes.toRoutesData
 import com.VaSeguro.data.model.Routes.toSave
 import com.VaSeguro.data.model.Routes.CreateFullRouteRequest
@@ -23,6 +24,7 @@ class SavedRoutesRepositoryImpl(
     private val savedRoutesService: SavedRoutesService,
     private val userPreferencesRepository: UserPreferencesRepository
 ): SavedRoutesRepository {
+
 
     private val _savedRoutes = MutableStateFlow<List<RoutesData>>(emptyList())
     val savedRoutes: Flow<List<RoutesData>> = _savedRoutes
@@ -54,7 +56,8 @@ class SavedRoutesRepositoryImpl(
             loadInitialData(driverId)
         }
     }
-
+    private suspend fun getAuthHeader(): String =
+        "Bearer ${userPreferencesRepository.getAuthToken().orEmpty()}"
     /**
      * Carga los datos iniciales para un conductor específico
      */
@@ -125,7 +128,7 @@ class SavedRoutesRepositoryImpl(
     // NUEVO: Método para crear ruta completa usando /routes/full
     override suspend fun createFullRoute(request: CreateFullRouteRequest): RoutesData {
         return try {
-            val response = savedRoutesService.createFullRoute(request, "Bearer token")
+            val response = savedRoutesService.createFullRoute(request, getAuthHeader())
             // Convert CreateFullRouteResponse to RoutesData
             // Note: This is a simplified conversion, you might need to adjust based on your needs
             RoutesData(
@@ -157,18 +160,36 @@ class SavedRoutesRepositoryImpl(
         }
     }
 
-    // NUEVO: Método para actualizar el estado de una ruta existente
     override suspend fun updateRouteStatus(routeId: Int, statusId: Int, endDate: String?): RoutesData? {
         return try {
             val updateRequest = UpdateRouteRequest(
                 status_id = statusId,
                 end_date = endDate
             )
-            val response = savedRoutesService.updateRoute(routeId, updateRequest, "Bearer token")
+            val response = savedRoutesService.updateRoute(routeId, updateRequest, getAuthHeader())
             if (response.isSuccessful) {
-                val updatedRoute = response.body()
-                updatedRoute?.let { updateRoute(it) }
-                updatedRoute
+                val routeResponse = response.body()
+                routeResponse?.let { routesDataResponse ->
+                    // Crear un VehicleMap básico con el ID del vehículo
+                    val vehicleMap = VehicleMap(
+                        id = routesDataResponse.vehicle_id,
+                        plate = "",
+                        driver_id = _driverId.value ?: 0,
+                        model = "",
+                        brand = "",
+                        year = "",
+                        color = "",
+                        capacity = "",
+                        updated_at = "",
+                        carPic = "",
+                        created_at = ""
+                    )
+
+                    // Convertir la respuesta a RoutesData
+                    val updatedRoute = routesDataResponse.toRoutesData(vehicleMap)
+                    updateRoute(updatedRoute)
+                    updatedRoute
+                }
             } else {
                 println("DEBUG_UPDATE_STATUS: Error al actualizar estado: ${response.errorBody()?.string()}")
                 null

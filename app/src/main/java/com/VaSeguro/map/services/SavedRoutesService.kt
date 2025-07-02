@@ -1,6 +1,7 @@
 package com.VaSeguro.map.services
 
 import com.VaSeguro.data.model.Routes.RoutesData
+import com.VaSeguro.data.model.Routes.RoutesDataResponse
 import com.VaSeguro.data.model.Routes.RoutesDataToSave
 import com.VaSeguro.data.model.Routes.CreateFullRouteRequest
 import com.VaSeguro.data.model.Routes.CreateFullRouteResponse
@@ -45,7 +46,7 @@ interface SavedRoutesService {
         @Path("routeId") routeId: Int,
         @Body request: UpdateRouteRequest,
         @Header("Authorization") authHeader: String
-    ): Response<RoutesData>
+    ): Response<RoutesDataResponse>
 
 
 }
