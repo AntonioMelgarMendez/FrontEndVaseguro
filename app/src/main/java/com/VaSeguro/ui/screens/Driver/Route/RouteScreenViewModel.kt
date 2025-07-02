@@ -286,8 +286,7 @@ class RouteScreenViewModel(
                     showError("No se ha establecido el ID del conductor")
                     return@launch
                 }
-
-                Log.d("DEBUG_CHILDREN", "=== INICIANDO CARGA DE DATOS ===")
+                
                 Log.d("DEBUG_CHILDREN", "Driver ID: $currentDriverId")
 
                 // Obtener todas las paradas usando el driverId correcto
@@ -295,35 +294,6 @@ class RouteScreenViewModel(
 
                 Log.d("DEBUG_CHILDREN", "Total StopPassengers obtenidos: ${stops.size}")
 
-                // Log detallado de cada StopPassenger
-                stops.forEachIndexed { index, stopPassenger ->
-                    Log.d("DEBUG_CHILDREN", "--- StopPassenger #$index ---")
-                    Log.d("DEBUG_CHILDREN", "  ID: ${stopPassenger.id}")
-                    Log.d("DEBUG_CHILDREN", "  Stop ID: ${stopPassenger.stop_id}")
-                    Log.d("DEBUG_CHILDREN", "  Child ID: ${stopPassenger.child_id}")
-                    Log.d("DEBUG_CHILDREN", "  Type ID: ${stopPassenger.type_id}")
-
-                    // Log del Stop
-                    Log.d("DEBUG_CHILDREN", "  Stop Data:")
-                    Log.d("DEBUG_CHILDREN", "    Stop name: '${stopPassenger.stop.name}'")
-                    Log.d("DEBUG_CHILDREN", "    Stop lat: ${stopPassenger.stop.latitude}")
-                    Log.d("DEBUG_CHILDREN", "    Stop lon: ${stopPassenger.stop.longitude}")
-
-                    // Log detallado del Child
-                    Log.d("DEBUG_CHILDREN", "  Child Data:")
-                    Log.d("DEBUG_CHILDREN", "    Child ID: ${stopPassenger.child.id}")
-                    Log.d("DEBUG_CHILDREN", "    Forenames: '${stopPassenger.child.forenames}' (length: ${stopPassenger.child.forenames?.length ?: "NULL"})")
-                    Log.d("DEBUG_CHILDREN", "    Surnames: '${stopPassenger.child.surnames}' (length: ${stopPassenger.child.surnames?.length ?: "NULL"})")
-                    Log.d("DEBUG_CHILDREN", "    FullName: '${stopPassenger.child.fullName}' (length: ${stopPassenger.child.fullName?.length ?: "NULL"})")
-                    Log.d("DEBUG_CHILDREN", "    Calculated FullName: '${stopPassenger.child.calculatedFullName}' (length: ${stopPassenger.child.calculatedFullName?.length ?: "NULL"})")
-                    Log.d("DEBUG_CHILDREN", "    Birth date: '${stopPassenger.child.birthDate}' (length: ${stopPassenger.child.birthDate?.length ?: "NULL"})")
-                    Log.d("DEBUG_CHILDREN", "    Medical info: '${stopPassenger.child.medicalInfo}' (length: ${stopPassenger.child.medicalInfo?.length ?: "NULL"})")
-                    Log.d("DEBUG_CHILDREN", "    Gender: '${stopPassenger.child.gender}' (length: ${stopPassenger.child.gender?.length ?: "NULL"})")
-                    Log.d("DEBUG_CHILDREN", "    Created at: '${stopPassenger.child.createdAt}' (length: ${stopPassenger.child.createdAt?.length ?: "NULL"})")
-
-                    // Log del StopType calculado
-                    Log.d("DEBUG_CHILDREN", "    Calculated StopType: ${stopPassenger.stopType}")
-                }
 
                 _stopPassengers.value = stops
                 Log.d("DEBUG_CHILDREN", "StopPassengers guardados en _stopPassengers: ${_stopPassengers.value.size}")
@@ -332,24 +302,10 @@ class RouteScreenViewModel(
                 val uniqueChildren = stops.map { it.child }.distinctBy { it.id }
                 Log.d("DEBUG_CHILDREN", "Niños únicos extraídos: ${uniqueChildren.size}")
 
-                // Log detallado de los niños únicos
-                uniqueChildren.forEachIndexed { index, child ->
-                    Log.d("DEBUG_CHILDREN", "--- Niño único #$index ---")
-                    Log.d("DEBUG_CHILDREN", "  ID: ${child.id}")
-                    Log.d("DEBUG_CHILDREN", "  Forenames: '${child.forenames}' (es null? ${child.forenames == null})")
-                    Log.d("DEBUG_CHILDREN", "  Surnames: '${child.surnames}' (es null? ${child.surnames == null})")
-                    Log.d("DEBUG_CHILDREN", "  FullName: '${child.fullName}' (es null? ${child.fullName == null})")
-                    Log.d("DEBUG_CHILDREN", "  Calculated FullName: '${child.calculatedFullName}' (es null? ${child.calculatedFullName == null})")
-                }
 
                 _children.value = uniqueChildren
                 Log.d("DEBUG_CHILDREN", "Niños guardados en _children: ${_children.value.size}")
 
-                // Verificar el estado después de guardar
-                Log.d("DEBUG_CHILDREN", "=== VERIFICACIÓN POST-GUARDADO ===")
-                Log.d("DEBUG_CHILDREN", "_stopPassengers.value.size: ${_stopPassengers.value.size}")
-                Log.d("DEBUG_CHILDREN", "_children.value.size: ${_children.value.size}")
-                Log.d("DEBUG_CHILDREN", "filteredChildren.value.size: ${filteredChildren.value.size}")
 
             } catch (e: Exception) {
                 Log.e("DEBUG_CHILDREN", "Error al cargar datos de niños: ${e.message}")
@@ -691,11 +647,8 @@ class RouteScreenViewModel(
                 _routePoints.add(RoutePoint(currentLoc, "Mi ubicación", null))
 
                 // 4. Optimizamos el orden de los puntos de usuario
-                val optimizedPoints = if (userRoutePoints.size > 1) {
-                    optimizeRouteOrder(currentLoc, userRoutePoints)
-                } else {
-                    userRoutePoints
-                }
+                val optimizedPoints = optimizeRouteOrder(currentLoc, userRoutePoints)
+
 
                 // 5. Añadimos los puntos optimizados a la ruta
                 _routePoints.addAll(optimizedPoints)
@@ -1445,17 +1398,18 @@ class RouteScreenViewModel(
      */
     private fun updateNextPointInfo() {
         val route = _selectedRoute.value ?: return
-        val currentIndex = _currentSegmentIndex.value
+        val currentSegmentIndex = _currentSegmentIndex.value
 
-        if (currentIndex < _routePoints.size - 1) {
-            val nextPoint = _routePoints[currentIndex + 1]
-            _nextPointName.value = nextPoint.name
+        // Usar la información de los segmentos de la ruta calculada
+        // en lugar de depender del orden de _routePoints
+        if (currentSegmentIndex < route.segments.size) {
+            val currentSegment = route.segments[currentSegmentIndex]
 
-            if (currentIndex < route.segments.size) {
-                val segment = route.segments[currentIndex]
-                _timeToNextPoint.value = formatGoogleDuration(segment.duration)
-            }
+            // El próximo punto es el punto final del segmento actual
+            _nextPointName.value = currentSegment.endPointName
+            _timeToNextPoint.value = formatGoogleDuration(currentSegment.duration)
         } else {
+            // Si ya no hay más segmentos, hemos llegado al destino final
             _nextPointName.value = "Destino final"
             _timeToNextPoint.value = ""
         }
@@ -1557,7 +1511,7 @@ class RouteScreenViewModel(
      * Optimiza el orden de los puntos de ruta para minimizar la distancia total
      */
     private fun optimizeRouteOrder(startLocation: LatLng, points: List<RoutePoint>): List<RoutePoint> {
-        if (points.size <= 2) return points
+        if (points.size < 2) return points
 
         // Algoritmo simple de optimización: ordenar por proximidad
         val optimized = mutableListOf<RoutePoint>()
@@ -1978,4 +1932,3 @@ class RouteScreenViewModel(
         }
     }
 }
-

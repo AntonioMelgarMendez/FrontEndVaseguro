@@ -17,7 +17,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DirectionsBus
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MyLocation
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -52,9 +51,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.VaSeguro.R
 import com.VaSeguro.helpers.bitmapDescriptorFromVector
 import com.google.android.gms.maps.CameraUpdateFactory
-import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapEffect
 import com.google.maps.android.compose.MapProperties
@@ -71,7 +68,8 @@ import kotlinx.coroutines.launch
 @SuppressLint("MissingPermission")
 @Composable
 fun MapScreen(
-    viewModel: MapViewModel = viewModel(factory = MapViewModel.Factory)
+    viewModel: MapViewModel = viewModel(factory = MapViewModel.Factory),
+    childId: Int? = null,
 ) {
     // Estados del ViewModel
     val driverLocation by viewModel.driverLocation.collectAsStateWithLifecycle()

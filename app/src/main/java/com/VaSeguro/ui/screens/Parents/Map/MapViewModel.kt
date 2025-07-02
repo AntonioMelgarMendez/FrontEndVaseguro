@@ -8,26 +8,19 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.VaSeguro.MyApplication
-import com.VaSeguro.data.model.Route.RouteStatus
 import com.VaSeguro.data.model.Stop.StopRoute
 import com.VaSeguro.data.model.StopPassenger.StopPassenger
 import com.VaSeguro.data.repository.DriverPrefs.DriverPrefs
-import com.VaSeguro.map.data.RoutePoint
-import com.VaSeguro.map.data.Route
 import com.VaSeguro.map.decodePolyline
 import com.VaSeguro.map.repository.LocationRepository
 import com.VaSeguro.map.repository.LocationDriverAddress
-import com.VaSeguro.map.repository.SavedRoutesRepository
-import com.VaSeguro.map.repository.StopPassengerRepository
 import com.VaSeguro.map.repository.StopRouteRepository
-import com.VaSeguro.ui.screens.Driver.Route.RouteScreenViewModel
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class MapViewModel(
