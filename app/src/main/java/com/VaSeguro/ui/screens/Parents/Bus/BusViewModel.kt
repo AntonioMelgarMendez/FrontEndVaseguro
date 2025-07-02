@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.VaSeguro.data.Dao.Vehicle.VehicleDao
 import com.VaSeguro.data.remote.Auth.UserResponse
 import com.VaSeguro.data.repository.AuthRepository.AuthRepository
 import com.VaSeguro.data.repository.UserPreferenceRepository.UserPreferencesRepository
@@ -11,6 +12,7 @@ import com.VaSeguro.data.repository.DriverPrefs.DriverPrefs
 import com.VaSeguro.data.repository.VehicleRepository.VehicleRepository
 import com.VaSeguro.data.remote.Vehicle.VehicleResponse
 import com.VaSeguro.data.remote.Vehicle.toEntity
+import com.VaSeguro.data.remote.Vehicle.toResponse
 import com.VaSeguro.helpers.Resource
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,6 +24,7 @@ class BusViewModel(
     private val userPreferencesRepository: UserPreferencesRepository,
     private val vehicleRepository: VehicleRepository,
     private val authRepository: AuthRepository,
+    private val vehicleDao: VehicleDao,
     private val context: Context
 ) : ViewModel() {
     private val _resolvedImageUrl = MutableStateFlow<String?>(null)
@@ -42,6 +45,8 @@ class BusViewModel(
     private val _userRole = MutableStateFlow<Int?>(null)
     val userRole: StateFlow<Int?> = _userRole
 
+    private val CACHE_EXPIRATION_MS = 5 * 60 * 1000L // 5 minutes
+
     init {
         viewModelScope.launch {
             _userRole.value = userPreferencesRepository.getUserData()?.role_id
@@ -56,29 +61,6 @@ class BusViewModel(
         }
     }
 
-//    fun loadVehicle() {
-//        viewModelScope.launch {
-//            val user = userPreferencesRepository.getUserData()
-//            val token = userPreferencesRepository.getAuthToken()
-//            val idToUse = when (user?.role_id) {
-//                3 -> DriverPrefs.getDriverId(context)
-//                4 -> user.id
-//                else -> null
-//            }
-//            Log.d("BusViewModel", "Driver ID: ${DriverPrefs.getDriverId(context).toString()}")
-//            if (idToUse != null && !token.isNullOrEmpty()) {
-//                vehicleRepository.getVehicleById(idToUse, token).collectLatest { vehicleResource ->
-//                    _vehicle.value = vehicleResource
-//                    if (vehicleResource is Resource.Success) {
-//                        val driverId = vehicleResource.data.driverId
-//                        fetchDriverData(driverId, token)
-//                    }
-//                }
-//            } else {
-//                _vehicle.value = Resource.Error("No valid user/driver ID or token found")
-//            }
-//        }
-//    }
 
     fun loadVehicle() {
         viewModelScope.launch {
@@ -91,21 +73,32 @@ class BusViewModel(
             }
 
             if (idToUse != null && !token.isNullOrEmpty()) {
-                // Obtener el vehículo de la base de datos local primero (Room)
+                val cached = vehicleDao.getVehicleById(idToUse)
+                val lastFetch = userPreferencesRepository.getLastVehicleFetchTime(idToUse)
+                val now = System.currentTimeMillis()
+                val cacheValid = lastFetch != null && now - lastFetch < CACHE_EXPIRATION_MS
+
+                if (cached != null && cacheValid) {
+                    _vehicle.value = Resource.Success(cached.toResponse())
+                    fetchDriverData(cached.driver_id, token)
+                    return@launch
+                }
+
+                // If cache is missing or expired, fetch from API
                 vehicleRepository.getVehicleById(idToUse, token).collectLatest { vehicleResource ->
-                    _vehicle.value = vehicleResource
                     if (vehicleResource is Resource.Success) {
-                        // Si se obtiene con éxito, obtener información adicional del conductor
-                        val driverId = vehicleResource.data.driverId
-                        fetchDriverData(driverId, token)
+                        val entity = vehicleResource.data.toEntity()
+                        vehicleDao.insertVehicle(entity)
+                        fetchDriverData(vehicleResource.data.driverId, token)
+                        userPreferencesRepository.setLastVehicleFetchTime(idToUse, now)
                     }
+                    _vehicle.value = vehicleResource
                 }
             } else {
                 _vehicle.value = Resource.Error("No valid user/driver ID or token found")
             }
         }
     }
-
     private fun fetchDriverData(driverId: Int, token: String) {
         viewModelScope.launch {
             _isDriverLoading.value = true
@@ -136,7 +129,6 @@ class BusViewModel(
             val token = userPreferencesRepository.getAuthToken()
             val vehicleId = (_vehicle.value as? Resource.Success)?.data?.id
             if (token != null && vehicleId != null) {
-                // Llamamos a la API para actualizar el vehículo
                 vehicleRepository.updateVehicle(
                     token = token,
                     id = vehicleId,
@@ -150,10 +142,8 @@ class BusViewModel(
                 ).collect { result ->
                     when (result) {
                         is Resource.Success -> {
-                            // Si la actualización es exitosa, actualizamos en Room también
-                            val updatedVehicle = result.data.toEntity()  // Convertimos el VehicleResponse a VehicleEntity
-                            vehicleRepository.updateVehicleInRoom(updatedVehicle)  // Actualizamos en Room
-
+                            val updatedVehicle = result.data.toEntity()
+                            vehicleRepository.updateVehicleInRoom(updatedVehicle)
                             _vehicle.value = result
                             onResult(true, null)
                         }
