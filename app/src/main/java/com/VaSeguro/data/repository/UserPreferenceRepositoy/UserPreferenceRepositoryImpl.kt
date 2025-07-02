@@ -39,7 +39,8 @@ class UserPreferencesRepositoryImpl(
         val LAST_USERS_FETCH_TIME = longPreferencesKey("LAST_USERS_FETCH_TIME")
         val LAST_ROUTES_FETCH_TIME = longPreferencesKey("LAST_ROUTES_FETCH_TIME")
         val LAST_STOPS_FETCH_TIME = longPreferencesKey("LAST_STOPS_FETCH_TIME")
-        val LAST_VEHICLES_FETCH_TIME = longPreferencesKey("LAST_VEHICLES_FETCH_TIME") // <-
+        val LAST_VEHICLES_FETCH_TIME = longPreferencesKey("LAST_VEHICLES_FETCH_TIME")
+        val USER_ONESIGNAL_PLAYER_ID = stringPreferencesKey("USER_ONESIGNAL_PLAYER_ID")
     }
 
     override val isLinearLayout: Flow<Boolean> = dataStore.data
@@ -112,6 +113,7 @@ class UserPreferencesRepositoryImpl(
             preferences[USER_ROLE] = user.role_id
             preferences[USER_PROFILE_PIC] = user.profile_pic ?: ""
             preferences[USER_CREATED_AT] = user.created_at
+            preferences[USER_ONESIGNAL_PLAYER_ID] = user.onesignal_player_id ?: ""
         }
     }
 
@@ -129,6 +131,7 @@ class UserPreferencesRepositoryImpl(
                     role_id = preferences[USER_ROLE] ?: 0,
                     profile_pic = preferences[USER_PROFILE_PIC],
                     created_at = preferences[USER_CREATED_AT] ?: ""
+                    , onesignal_player_id = preferences[USER_ONESIGNAL_PLAYER_ID] ?: null
                 )
             } catch (e: Exception) {
                 null
@@ -152,6 +155,7 @@ class UserPreferencesRepositoryImpl(
                         role_id = preferences[USER_ROLE] ?: 0,
                         profile_pic = preferences[USER_PROFILE_PIC],
                         created_at = preferences[USER_CREATED_AT] ?: ""
+                        , onesignal_player_id = preferences[USER_ONESIGNAL_PLAYER_ID] ?: null
                     )
                 } catch (e: Exception) {
                     null
@@ -208,6 +212,7 @@ class UserPreferencesRepositoryImpl(
             preferences[LAST_VEHICLES_FETCH_TIME] = time
         }
     }
+
 
 
 

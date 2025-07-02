@@ -1,5 +1,6 @@
 package com.VaSeguro.ui.screens.Driver.Chat
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
@@ -17,8 +18,8 @@ import com.VaSeguro.ui.components.Chat.ChatMessagesList
 import com.VaSeguro.ui.components.Chat.ChatTopBar
 import com.VaSeguro.ui.navigations.ChildrenScreenNavigation
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.VaSeguro.data.remote.Auth.UserResponse
 import com.VaSeguro.ui.navigations.CallScreenNavigation
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(
@@ -34,9 +35,18 @@ fun ChatScreen(
   val isLoading by viewModel.isLoading.collectAsState()
   val currentUserId by viewModel.currentUserId.collectAsState()
   val roomName = currentUserId?.let { getRoomName(it, id) } ?: ""
+  var currentUser by remember { mutableStateOf<UserResponse?>(null) }
 
+  LaunchedEffect(Unit) {
+    currentUser = viewModel.userPreferencesRepository.getUserData()
+    Log.d("ChatScreen", "Current user: $currentUser")
+  }
+  LaunchedEffect(messages.size) {
+    if (messages.isNotEmpty()) {
+      listState.animateScrollToItem(messages.lastIndex)
+    }
+  }
   var hasScrolledToBottom by remember { mutableStateOf(false) }
-
   LaunchedEffect(id) {
     viewModel.loadUser(id)
     val currentUser = viewModel.userPreferencesRepository.getUserData()
@@ -141,7 +151,9 @@ fun ChatScreen(
               roomName = roomName,
               id = id,
               personName = (user!!.forenames ?: "") + " " + (user!!.surnames ?: ""),
-              personPhotoUrl = user!!.profile_pic
+              personPhotoUrl = user!!.profile_pic,
+              callerOneSignalId = currentUser?.onesignal_player_id ?: "",
+              calleeOneSignalId = user!!.onesignal_player_id
             )
           )
         }

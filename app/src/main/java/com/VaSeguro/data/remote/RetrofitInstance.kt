@@ -9,6 +9,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import com.VaSeguro.BuildConfig
+import com.VaSeguro.data.remote.Call.CallService
 import com.VaSeguro.data.remote.Chat.ChatService
 import com.VaSeguro.data.remote.Request.RequestService
 import com.VaSeguro.data.remote.Route.RouteService
@@ -104,5 +105,8 @@ object RetrofitInstance {
     }
     val stopsService: com.VaSeguro.data.remote.Stops.StopsService by lazy {
         retrofit.create(com.VaSeguro.data.remote.Stops.StopsService::class.java)
+    }
+    val callService: CallService by lazy {
+        retrofit.create(CallService::class.java)
     }
 }

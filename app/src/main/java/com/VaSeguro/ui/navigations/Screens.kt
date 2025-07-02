@@ -58,5 +58,7 @@ data class CallScreenNavigation(
     val roomName: String,
     val id: String,
     val personName: String,
-    val personPhotoUrl: String? = null
+    val personPhotoUrl: String? = null,
+    val callerOneSignalId: String,
+    val calleeOneSignalId: String?
 )
