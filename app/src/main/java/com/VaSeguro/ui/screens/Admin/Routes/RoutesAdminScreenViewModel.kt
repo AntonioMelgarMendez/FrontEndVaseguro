@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+
 class RoutesAdminScreenViewModel(
     private val routeRepository: RouteRepository,
     private val vehicleRepository: VehicleRepository,
