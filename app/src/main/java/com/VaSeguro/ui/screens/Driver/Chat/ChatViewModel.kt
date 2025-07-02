@@ -12,6 +12,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.VaSeguro.MyApplication
+
 import com.VaSeguro.data.model.Chat.SendMessageRequest
 import com.VaSeguro.data.model.Message.Message
 import com.VaSeguro.data.model.QuickReply
@@ -67,9 +68,11 @@ class ChatViewModel(
     for (pattern in formats) {
       try {
         val parser = java.text.SimpleDateFormat(pattern, java.util.Locale.US)
+        parser.timeZone = java.util.TimeZone.getTimeZone("UTC")
         val date = parser.parse(raw)
         if (date != null) {
           val formatter = java.text.SimpleDateFormat("hh:mm a", java.util.Locale.getDefault())
+          formatter.timeZone = java.util.TimeZone.getDefault()
           return formatter.format(date)
         }
       } catch (_: Exception) { }
@@ -187,12 +190,17 @@ class ChatViewModel(
     isSocketConnected = true
     chatRepository.connectWebSocket(userId, token)
     chatRepository.setOnMessageReceivedListener { chatMessage ->
-      _messages.value = _messages.value + Message(
-        id = chatMessage.id.toLong(),
-        content = chatMessage.message,
-        isUser = false,
-        timestamp = formatTimestamp(chatMessage.created_at)
-      )
+      // Avoid duplicate messages: skip if already present or sent by current user
+      val alreadyExists = _messages.value.any { it.id == chatMessage.id.toLong() }
+      val isCurrentUser = chatMessage.sender_id == userId
+      if (!alreadyExists && !isCurrentUser) {
+        _messages.value = _messages.value + Message(
+          id = chatMessage.id.toLong(),
+          content = chatMessage.message,
+          isUser = false,
+          timestamp = formatTimestamp(chatMessage.created_at)
+        )
+      }
     }
   }
 

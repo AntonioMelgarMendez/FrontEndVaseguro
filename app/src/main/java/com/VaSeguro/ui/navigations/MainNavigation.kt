@@ -108,9 +108,18 @@ fun MainNavigation(navController: NavHostController, userRole: Int?) {
                 channelName = args.roomName,
                 personName = args.personName,
                 personPhotoUrl = args.personPhotoUrl,
+                callerOneSignalId = args.callerOneSignalId,
+                calleeOneSignalId = args.calleeOneSignalId.toString(),
                 onCallEnd = {
                     navController.navigate(ChatScreenNavigation(args.id)) {
-                        popUpTo(CallScreenNavigation(args.roomName, args.id, args.personName, args.personPhotoUrl)) { inclusive = true }
+                        popUpTo(CallScreenNavigation(
+                            args.roomName,
+                            args.id,
+                            args.personName,
+                            args.personPhotoUrl,
+                            args.callerOneSignalId,
+                            args.calleeOneSignalId
+                        )) { inclusive = true }
                     }
                 }
             )

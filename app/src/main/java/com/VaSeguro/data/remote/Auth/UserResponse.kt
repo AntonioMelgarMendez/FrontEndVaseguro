@@ -11,5 +11,6 @@ data class UserResponse(
     val phone_number: String?,
     val gender: String?,
     val role_id: Int,
-    val profile_pic: String?
+    val profile_pic: String?,
+    val onesignal_player_id: String? = null,
 )

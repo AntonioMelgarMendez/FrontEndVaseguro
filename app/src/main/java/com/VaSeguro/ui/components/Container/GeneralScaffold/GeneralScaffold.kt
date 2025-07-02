@@ -1,5 +1,12 @@
 package com.VaSeguro.ui.components.Container.GeneralScaffold
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.with
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -24,6 +31,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun GeneralScaffold(navControllerx: NavController) {
     val context = LocalContext.current
@@ -159,10 +167,18 @@ fun GeneralScaffold(navControllerx: NavController) {
                         .padding(innerPadding)
                 ) { page ->
                     Box(Modifier.fillMaxSize()) {
-                        MainNavigation(
-                            navController = navController,
-                            userRole = user?.role_id ?: 0,
-                        )
+                        AnimatedContent(
+                            targetState = page,
+                            transitionSpec = {
+                                (slideInHorizontally { it } + fadeIn()) with
+                                        (slideOutHorizontally { -it } + fadeOut())
+                            }
+                        ) { _ ->
+                            MainNavigation(
+                                navController = navController,
+                                userRole = user?.role_id ?: 0,
+                            )
+                        }
                     }
                 }
             }
