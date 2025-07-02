@@ -92,6 +92,10 @@ object RetrofitInstance {
         routesRetrofit.create(RoutesApiService::class.java)
     }
 
+    val routeService: RouteService by lazy {
+        routesRetrofit.create(RouteService::class.java)
+    }
+
     val savedRoutesSevcie: SavedRoutesService by lazy {
         retrofit.create(SavedRoutesService::class.java)
     }
@@ -104,6 +108,9 @@ object RetrofitInstance {
         retrofit.create(StopRouteService::class.java)
     }
 
+    val stopService: StopsService by lazy {
+        retrofit.create(StopsService::class.java)
+    }
 
     val chatApiService: ChatService by lazy {
         retrofit.create(ChatService::class.java)

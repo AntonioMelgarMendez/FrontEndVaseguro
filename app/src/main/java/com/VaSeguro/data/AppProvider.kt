@@ -60,7 +60,7 @@ class AppProvider(context: Context) {
     private val savedRoutesRepository = SavedRoutesRepositoryImpl(savedRoutesService, userPreferencesRepository)
 
 
-    private val StopsRepository = StopsRepositoryImpl(RetrofitInstance.stopsService)
+    private val StopsRepository = StopsRepositoryImpl(RetrofitInstance.stopService)
     private val RoutesRepository= RouteRepositoryImpl(routeService=RetrofitInstance.routeService)
     private val appDatabase = Room.databaseBuilder(
         context.applicationContext,

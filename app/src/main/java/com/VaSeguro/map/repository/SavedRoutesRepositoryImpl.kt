@@ -1,12 +1,12 @@
 package com.VaSeguro.map.repository
 
-import androidx.compose.runtime.mutableStateOf
 import com.VaSeguro.data.model.Routes.RoutesData
 import com.VaSeguro.data.model.Routes.RoutesDataResponse
 import com.VaSeguro.data.model.Routes.toRoutesData
 import com.VaSeguro.data.model.Routes.toSave
 import com.VaSeguro.data.model.Routes.CreateFullRouteRequest
 import com.VaSeguro.data.model.Routes.UpdateRouteRequest
+import com.VaSeguro.data.model.Routes.RouteByIdResponse
 import com.VaSeguro.data.model.Route.RouteStatus
 import com.VaSeguro.data.model.Route.RouteType
 import com.VaSeguro.data.model.Vehicle.VehicleMap
@@ -25,85 +25,38 @@ class SavedRoutesRepositoryImpl(
     private val userPreferencesRepository: UserPreferencesRepository
 ): SavedRoutesRepository {
 
-
-    private val _savedRoutes = MutableStateFlow<List<RoutesData>>(emptyList())
-    val savedRoutes: Flow<List<RoutesData>> = _savedRoutes
-    private val _driverId = mutableStateOf<Int?>(null)
-    val driverId: Int? get() = _driverId.value
-
-    init {
-        runBlocking {
-            try {
-                val userData = userPreferencesRepository.getUserData()
-                val actualDriverId = userData?.id
-                if (actualDriverId != null) {
-                    setDriverId(actualDriverId)
-                } else {
-                    println("DEBUG_INIT: No se pudo obtener el driverId del usuario")
-                }
-            } catch (e: Exception) {
-                println("DEBUG_INIT: Error al inicializar repositorio: ${e.message}")
-            }
-        }
-    }
-
-    /**
-     * Establece el ID del conductor y carga los datos iniciales
-     */
-    fun setDriverId(driverId: Int) {
-        _driverId.value = driverId
-        runBlocking {
-            loadInitialData(driverId)
-        }
-    }
     private suspend fun getAuthHeader(): String =
         "Bearer ${userPreferencesRepository.getAuthToken().orEmpty()}"
-    /**
-     * Carga los datos iniciales para un conductor específico
-     */
-    private suspend fun loadInitialData(driverId: Int) {
-        try {
+
+    override suspend fun getAllRoutes(driverId: Int): List<RoutesData> {
+        return try {
             val response = savedRoutesService.getAllRoutes(driverId)
             if (response.isSuccessful) {
                 val apiRoutes = response.body() ?: emptyList()
-                // Convert API response to RoutesData
-                val routesData = apiRoutes.map { it.toRoutesData() }
-                _savedRoutes.value = routesData
-                println("DEBUG_LOAD_INITIAL: ${routesData.size} rutas cargadas para driver $driverId")
+                apiRoutes.map { it.toRoutesData() }
             } else {
-                println("DEBUG_LOAD_INITIAL: Error al cargar rutas del servidor: ${response.errorBody()?.string()}")
-                _savedRoutes.value = emptyList()
+                println("DEBUG_GET_ALL_ROUTES: Error del servidor: ${response.errorBody()?.string()}")
+                emptyList()
             }
         } catch (e: Exception) {
-            println("DEBUG_LOAD_INITIAL: Error al cargar datos para driver $driverId: ${e.message}")
-            _savedRoutes.value = emptyList()
+            println("DEBUG_GET_ALL_ROUTES: Error al obtener rutas: ${e.message}")
+            emptyList()
         }
     }
 
-    override fun getRoute(routeId: Int): Flow<RoutesData?> {
-        return _savedRoutes.map { routes ->
-            routes.find { it.id == routeId }
-        }
-    }
-
-    // Keep only essential methods for getting routes
-    override fun addRoute(route: RoutesData) {
-        _savedRoutes.update { currentList ->
-            currentList + route
-        }
-    }
-
-    override fun updateRoute(route: RoutesData) {
-        _savedRoutes.update { currentList ->
-            currentList.map {
-                if (it.id == route.id) route else it
+    override suspend fun getRouteById(routeId: Int): RoutesData? {
+        return try {
+            val response = savedRoutesService.getRouteById(routeId)
+            if (response.isSuccessful) {
+                val routeResponse = response.body()
+                routeResponse?.toRoutesData()
+            } else {
+                println("DEBUG_GET_ROUTE_BY_ID: Error del servidor: ${response.errorBody()?.string()}")
+                null
             }
-        }
-    }
-
-    override fun deleteRoute(routeId: Int) {
-        _savedRoutes.update { currentList ->
-            currentList.filter { it.id != routeId }
+        } catch (e: Exception) {
+            println("DEBUG_GET_ROUTE_BY_ID: Error al obtener ruta: ${e.message}")
+            null
         }
     }
 
@@ -111,26 +64,32 @@ class SavedRoutesRepositoryImpl(
         return try {
             val response = savedRoutesService.saveRoute(route.toSave())
             if (response.isSuccessful) {
-                val savedRoute = response.body()
-                savedRoute?.let { addRoute(it) }
-                savedRoute
+                response.body()
             } else {
-                println("DEBUG_SAVE_COMPLETED: Error al guardar ruta completada: ${response.errorBody()?.string()}")
+                println("DEBUG_SAVE_COMPLETED: Error al guardar ruta: ${response.errorBody()?.string()}")
                 null
             }
         } catch (e: Exception) {
-            println("DEBUG_SAVE_COMPLETED: Error al guardar ruta completada: ${e.message}")
+            println("DEBUG_SAVE_COMPLETED: Error al guardar ruta: ${e.message}")
             null
         }
     }
 
+    override suspend fun deleteRoute(routeId: Int): Boolean {
+        return try {
+            // Aquí puedes implementar el endpoint de eliminación cuando esté disponible
+            // Por ahora retornamos true como placeholder
+            println("DEBUG_DELETE_ROUTE: Eliminando ruta ID: $routeId")
+            true
+        } catch (e: Exception) {
+            println("DEBUG_DELETE_ROUTE: Error al eliminar ruta: ${e.message}")
+            false
+        }
+    }
 
-    // NUEVO: Método para crear ruta completa usando /routes/full
     override suspend fun createFullRoute(request: CreateFullRouteRequest): RoutesData {
         return try {
             val response = savedRoutesService.createFullRoute(request, getAuthHeader())
-            // Convert CreateFullRouteResponse to RoutesData
-            // Note: This is a simplified conversion, you might need to adjust based on your needs
             RoutesData(
                 id = response.id,
                 name = response.name,
@@ -170,11 +129,10 @@ class SavedRoutesRepositoryImpl(
             if (response.isSuccessful) {
                 val routeResponse = response.body()
                 routeResponse?.let { routesDataResponse ->
-                    // Crear un VehicleMap básico con el ID del vehículo
                     val vehicleMap = VehicleMap(
                         id = routesDataResponse.vehicle_id,
                         plate = "",
-                        driver_id = _driverId.value ?: 0,
+                        driver_id = 0,
                         model = "",
                         brand = "",
                         year = "",
@@ -184,11 +142,7 @@ class SavedRoutesRepositoryImpl(
                         carPic = "",
                         created_at = ""
                     )
-
-                    // Convertir la respuesta a RoutesData
-                    val updatedRoute = routesDataResponse.toRoutesData(vehicleMap)
-                    updateRoute(updatedRoute)
-                    updatedRoute
+                    routesDataResponse.toRoutesData(vehicleMap)
                 }
             } else {
                 println("DEBUG_UPDATE_STATUS: Error al actualizar estado: ${response.errorBody()?.string()}")
@@ -227,11 +181,6 @@ class SavedRoutesRepositoryImpl(
                         null
                     }
                 } ?: emptyList()
-
-                // Actualizar el estado local de las rutas cerradas
-                closedRoutes.forEach { route ->
-                    updateRoute(route)
-                }
 
                 println("DEBUG_CLOSE_EXCEPT: ${closedRoutes.size} rutas cerradas exitosamente para driver $driverId")
                 closedRoutes
@@ -272,11 +221,6 @@ class SavedRoutesRepositoryImpl(
                         null
                     }
                 } ?: emptyList()
-
-                // Actualizar el estado local de las rutas cerradas
-                closedRoutes.forEach { route ->
-                    updateRoute(route)
-                }
 
                 println("DEBUG_CLOSE_ALL: ${closedRoutes.size} rutas cerradas exitosamente para driver $driverId")
                 closedRoutes

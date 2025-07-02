@@ -7,6 +7,7 @@ import com.VaSeguro.data.model.Routes.CreateFullRouteRequest
 import com.VaSeguro.data.model.Routes.CreateFullRouteResponse
 import com.VaSeguro.data.model.Routes.UpdateRouteRequest
 import com.VaSeguro.data.model.Routes.RoutesApiResponse
+import com.VaSeguro.data.model.Routes.RouteByIdResponse
 import com.VaSeguro.data.model.Stop.StopRoute
 import com.VaSeguro.data.model.Stop.StopRouteToSave
 import retrofit2.Response
@@ -33,7 +34,7 @@ interface SavedRoutesService {
     @GET("routes/{id}")
     suspend fun getRouteById(
         @Path("id") routeId: Int
-    ): Response<RoutesData>
+    ): Response<RouteByIdResponse>
 
     @POST("routes/full")
     suspend fun createFullRoute(

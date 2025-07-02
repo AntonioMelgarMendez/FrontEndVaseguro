@@ -3,6 +3,7 @@ package com.VaSeguro.data.remote.Route
 
 import com.VaSeguro.data.model.Routes.RoutesData
 import com.VaSeguro.data.model.Routes.CreateFullRouteRequest
+import com.VaSeguro.data.model.Routes.RouteResponse
 import okhttp3.RequestBody
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -15,12 +16,6 @@ import retrofit2.http.Part
 import retrofit2.http.Path
 import retrofit2.http.Query
 
-
-package com.VaSeguro.data.remote.Route
-
-import com.VaSeguro.data.model.Routes.RouteResponse
-import okhttp3.RequestBody
-import retrofit2.http.*
 
 interface RouteService {
     @GET("routes")
