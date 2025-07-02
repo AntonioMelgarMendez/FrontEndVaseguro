@@ -26,9 +26,11 @@ import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import androidx.core.graphics.createBitmap
 import androidx.room.Room
+import com.VaSeguro.data.remote.RetrofitInstance.vehicleService
 import com.VaSeguro.data.repository.RouteRepository.RouteRepositoryImpl
 import com.VaSeguro.data.repository.Stops.StopsRepository
 import com.VaSeguro.data.repository.Stops.StopsRepositoryImpl
+import com.VaSeguro.data.repository.VehicleRepository.VehicleRepository
 import com.VaSeguro.map.Supabase.SupabaseModule
 import com.VaSeguro.map.repository.LocationRepository
 import com.VaSeguro.map.repository.LocationRepositoryImpl
@@ -47,7 +49,7 @@ class AppProvider(context: Context) {
     private val requestRepository= RequestRepositoryImpl(RetrofitInstance.requestService)
     private val mapsApiRepository = MapsApiRepositoryImpl(mapsApiService)
     private val routesApiRepository = RoutesApiRepositoryImpl(routesApiService)
-    private val vehicleRespository = VehicleRepositoryImpl(RetrofitInstance.vehicleService)
+    //private val vehicleRespository = VehicleRepositoryImpl(RetrofitInstance.vehicleService)
     private val childrenRespository = ChildrenRepositoryImpl(RetrofitInstance.childrenService)
     private val chatRepository = ChatRepositoryImpl(RetrofitInstance.chatService,"https://sonoradinamita.live/")
     private val stopPassengerRepository = StopPassengerRepositoryImpl(RetrofitInstance.stopPassengerService, userPreferencesRepository)
@@ -75,7 +77,10 @@ class AppProvider(context: Context) {
     fun provideStopPassengerRepository() = stopPassengerRepository
     fun provideSavedRoutesRepository() = savedRoutesRepository
     fun provideRequestRepository() = requestRepository
-    fun provideVehicleRepository() = vehicleRespository
+    fun provideVehicleRepository(): VehicleRepository {
+        val vehicleDao = appDatabase.vehicleDao()
+        return VehicleRepositoryImpl(vehicleDao, vehicleService)  // Pasa también el servicio remoto
+    }
     fun provideChildrenRepository() = childrenRespository
     fun provideChatRepository() = chatRepository
     fun provideLocationRepository() = LocationRepository

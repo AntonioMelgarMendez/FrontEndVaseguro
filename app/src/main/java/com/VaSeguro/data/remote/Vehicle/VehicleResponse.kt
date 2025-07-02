@@ -65,3 +65,19 @@ fun VehicleEntity.toDomain(): Vehicle = Vehicle(
     created_at = created_at,
     carPic = carPic
 )
+
+fun VehicleEntity.toResponse(): VehicleResponse {
+    return VehicleResponse(
+        id = id,
+        plate = plate,
+        model = model,
+        brand = brand,
+        year = year,
+        color = color,
+        capacity = capacity,
+        driverId = driver_id,
+        carPic = carPic,
+        update_at = updated_at,
+        created_at = created_at
+    )
+}
