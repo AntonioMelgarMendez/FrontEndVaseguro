@@ -41,6 +41,7 @@ class UserPreferencesRepositoryImpl(
         val LAST_STOPS_FETCH_TIME = longPreferencesKey("LAST_STOPS_FETCH_TIME")
         val LAST_VEHICLES_FETCH_TIME = longPreferencesKey("LAST_VEHICLES_FETCH_TIME")
         val USER_ONESIGNAL_PLAYER_ID = stringPreferencesKey("USER_ONESIGNAL_PLAYER_ID")
+        val LAST_VEHICLE_FETCH_TIME = longPreferencesKey("LAST_VEHICLE_FETCH_TIME")
     }
 
     override val isLinearLayout: Flow<Boolean> = dataStore.data
@@ -211,8 +212,18 @@ class UserPreferencesRepositoryImpl(
         dataStore.edit { preferences ->
             preferences[LAST_VEHICLES_FETCH_TIME] = time
         }
-    }
 
+    }
+    override suspend fun getLastVehicleFetchTime(vehicleId: Int): Long? {
+        return dataStore.data.map { preferences ->
+            preferences[longPreferencesKey("LAST_VEHICLE_FETCH_TIME_$vehicleId")]
+        }.firstOrNull()
+    }
+    override suspend fun setLastVehicleFetchTime(vehicleId: Int, time: Long) {
+        dataStore.edit { preferences ->
+            preferences[longPreferencesKey("LAST_VEHICLE_FETCH_TIME_$vehicleId")] = time
+        }
+    }
 
 
 

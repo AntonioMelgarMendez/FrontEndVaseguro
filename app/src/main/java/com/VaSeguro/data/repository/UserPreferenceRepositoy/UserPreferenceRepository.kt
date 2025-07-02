@@ -26,4 +26,6 @@ interface UserPreferencesRepository {
     suspend fun setLastStopsFetchTime(time: Long)
     suspend fun getLastVehiclesFetchTime(): Long?
     suspend fun setLastVehiclesFetchTime(time: Long)
+    suspend fun getLastVehicleFetchTime(vehicleId: Int): Long?
+    suspend fun setLastVehicleFetchTime(vehicleId: Int, time: Long)
 }
