@@ -26,9 +26,11 @@ import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import androidx.core.graphics.createBitmap
 import androidx.room.Room
+import com.VaSeguro.data.Dao.Children.ChildDao
 import com.VaSeguro.data.Dao.Message.MessageDao
 import com.VaSeguro.data.remote.RetrofitInstance.vehicleService
 import com.VaSeguro.data.repository.ChatRepository.ChatRepository
+import com.VaSeguro.data.repository.Children.ChildrenRepository
 import com.VaSeguro.data.repository.RouteRepository.RouteRepositoryImpl
 import com.VaSeguro.data.repository.Stops.StopsRepository
 import com.VaSeguro.data.repository.Stops.StopsRepositoryImpl
@@ -52,7 +54,7 @@ class AppProvider(context: Context) {
     private val mapsApiRepository = MapsApiRepositoryImpl(mapsApiService)
     private val routesApiRepository = RoutesApiRepositoryImpl(routesApiService)
     //private val vehicleRespository = VehicleRepositoryImpl(RetrofitInstance.vehicleService)
-    private val childrenRespository = ChildrenRepositoryImpl(RetrofitInstance.childrenService)
+    //private val childrenRespository = ChildrenRepositoryImpl(RetrofitInstance.childrenService)
     //private val chatRepository = ChatRepositoryImpl(RetrofitInstance.chatService,"https://sonoradinamita.live/")
     private val stopPassengerRepository = StopPassengerRepositoryImpl(RetrofitInstance.stopPassengerService, userPreferencesRepository)
     private val LocationRepository = LocationRepositoryImpl(SupabaseModule.supabaseClient)
@@ -83,7 +85,7 @@ class AppProvider(context: Context) {
         val vehicleDao = appDatabase.vehicleDao()
         return VehicleRepositoryImpl(vehicleDao, vehicleService)  // Pasa también el servicio remoto
     }
-    fun provideChildrenRepository() = childrenRespository
+    //fun provideChildrenRepository() = childrenRespository
     //fun provideChatRepository() = chatRepository
     fun provideLocationRepository() = LocationRepository
     fun provideStopRouteRepository()=StopRouteRepository
@@ -91,7 +93,13 @@ class AppProvider(context: Context) {
     fun provideRoutesRepository(): RouteRepositoryImpl = RoutesRepository
     fun provideAppDatabase() = appDatabase
     fun provideUserDao() = appDatabase.userDao()
-    fun provideChildDao() = appDatabase.childDao()
+    fun provideChildDao(): ChildDao {
+        return appDatabase.childDao() // Proveer ChildDao
+    }
+    fun provideChildrenRepository(): ChildrenRepository {
+        val childDao = provideChildDao()  // Obtener el ChildDao
+        return ChildrenRepositoryImpl(RetrofitInstance.childrenService, childDao)  // Pasar el childDao
+    }
     fun provideRouteDao() = appDatabase.routeDao()
     fun provideStopDao() = appDatabase.stopDao()
     fun provideVehicleDao() = appDatabase.vehicleDao()

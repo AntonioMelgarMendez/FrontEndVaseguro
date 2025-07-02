@@ -55,6 +55,7 @@ class ChildrenViewModel(
   init {
     loadUserAndChildren()
   }
+
   private fun loadUserAndChildren() {
     viewModelScope.launch {
       _isLoading.value = true // Start loading
