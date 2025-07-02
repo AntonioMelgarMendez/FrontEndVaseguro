@@ -26,7 +26,9 @@ import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import androidx.core.graphics.createBitmap
 import androidx.room.Room
+import com.VaSeguro.data.Dao.Message.MessageDao
 import com.VaSeguro.data.remote.RetrofitInstance.vehicleService
+import com.VaSeguro.data.repository.ChatRepository.ChatRepository
 import com.VaSeguro.data.repository.RouteRepository.RouteRepositoryImpl
 import com.VaSeguro.data.repository.Stops.StopsRepository
 import com.VaSeguro.data.repository.Stops.StopsRepositoryImpl
@@ -51,7 +53,7 @@ class AppProvider(context: Context) {
     private val routesApiRepository = RoutesApiRepositoryImpl(routesApiService)
     //private val vehicleRespository = VehicleRepositoryImpl(RetrofitInstance.vehicleService)
     private val childrenRespository = ChildrenRepositoryImpl(RetrofitInstance.childrenService)
-    private val chatRepository = ChatRepositoryImpl(RetrofitInstance.chatService,"https://sonoradinamita.live/")
+    //private val chatRepository = ChatRepositoryImpl(RetrofitInstance.chatService,"https://sonoradinamita.live/")
     private val stopPassengerRepository = StopPassengerRepositoryImpl(RetrofitInstance.stopPassengerService, userPreferencesRepository)
     private val LocationRepository = LocationRepositoryImpl(SupabaseModule.supabaseClient)
 
@@ -82,7 +84,7 @@ class AppProvider(context: Context) {
         return VehicleRepositoryImpl(vehicleDao, vehicleService)  // Pasa también el servicio remoto
     }
     fun provideChildrenRepository() = childrenRespository
-    fun provideChatRepository() = chatRepository
+    //fun provideChatRepository() = chatRepository
     fun provideLocationRepository() = LocationRepository
     fun provideStopRouteRepository()=StopRouteRepository
     fun provideStopsRepository(): StopsRepository = StopsRepository
@@ -93,5 +95,13 @@ class AppProvider(context: Context) {
     fun provideRouteDao() = appDatabase.routeDao()
     fun provideStopDao() = appDatabase.stopDao()
     fun provideVehicleDao() = appDatabase.vehicleDao()
+    fun provideMessageDao(): MessageDao {
+        return appDatabase.messageDao()
+    }
+
+    fun provideChatRepository(): ChatRepository {
+        val messageDao = provideMessageDao()
+        return ChatRepositoryImpl(RetrofitInstance.chatService, messageDao, "https://sonoradinamita.live/")
+    }
 }
 

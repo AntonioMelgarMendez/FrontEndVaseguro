@@ -5,3 +5,4 @@ data class SendMessageRequest(
     val receiver_id: String,
     val message: String
 )
+

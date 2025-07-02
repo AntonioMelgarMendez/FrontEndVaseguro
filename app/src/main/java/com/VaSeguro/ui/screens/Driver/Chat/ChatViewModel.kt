@@ -42,8 +42,10 @@ class ChatViewModel(
 
   private val _isLoading = MutableStateFlow(false)
   val isLoading: StateFlow<Boolean> = _isLoading
+
   private val _currentUserId = MutableStateFlow<String?>(null)
   val currentUserId: StateFlow<String?> = _currentUserId
+
   private var allMessages: List<Message> = emptyList()
   private var visibleCount = 10
 
