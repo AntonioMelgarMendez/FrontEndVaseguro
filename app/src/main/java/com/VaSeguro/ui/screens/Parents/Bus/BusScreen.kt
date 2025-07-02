@@ -38,6 +38,7 @@ fun BusScreen() {
                     appProvider.provideUserPreferences(),
                     appProvider.provideVehicleRepository(),
                     appProvider.provideAuthRepository(),
+                    appProvider.provideVehicleDao(),
                     context
                 ) as T
             }
