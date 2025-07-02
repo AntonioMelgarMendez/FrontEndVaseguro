@@ -785,6 +785,15 @@ class RouteScreenViewModel(
             try {
                 _isLoading.value = true
 
+                // NUEVO: Cerrar todas las rutas activas antes de iniciar una nueva
+                println("DEBUG_START_ROUTE: Cerrando rutas activas antes de iniciar nueva ruta para driver: $driverId")
+                val closedRoutes = savedRoutesRepository.closeAllRoutes(driverId)
+                if (closedRoutes != null) {
+                    println("DEBUG_START_ROUTE: ${closedRoutes.size} rutas previas cerradas exitosamente")
+                } else {
+                    println("DEBUG_START_ROUTE: No se pudieron cerrar rutas previas, continuando...")
+                }
+
                 // NUEVO: Resetear valores de ruta antes de iniciar
                 _routeProgress.value = 0.0f
                 _currentSegmentIndex.value = 0
@@ -1692,6 +1701,21 @@ class RouteScreenViewModel(
         viewModelScope.launch {
             try {
                 _isLoading.value = true
+                val driverId = _driverId.value
+
+                if (driverId == null) {
+                    showError("ID de conductor no disponible")
+                    return@launch
+                }
+
+                // NUEVO: Cerrar todas las otras rutas activas antes de cargar una guardada
+                println("DEBUG_LOAD: Cerrando otras rutas activas antes de cargar ruta ID: $routeId para driver: $driverId")
+                val closedRoutes = savedRoutesRepository.closeAllRoutesExcept(routeId, driverId)
+                if (closedRoutes != null) {
+                    println("DEBUG_LOAD: ${closedRoutes.size} rutas cerradas antes de cargar la nueva")
+                } else {
+                    println("DEBUG_LOAD: No se pudieron cerrar otras rutas, continuando...")
+                }
 
                 // Obtener la ruta desde el repositorio
                 savedRoutesRepository.getRoute(routeId).collect { routeData ->

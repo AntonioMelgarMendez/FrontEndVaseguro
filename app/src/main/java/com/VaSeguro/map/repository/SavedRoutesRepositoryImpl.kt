@@ -199,4 +199,94 @@ class SavedRoutesRepositoryImpl(
             null
         }
     }
+
+    override suspend fun closeAllRoutesExcept(routeId: Int, driverId: Int): List<RoutesData>? {
+        return try {
+            println("DEBUG_CLOSE_EXCEPT: Cerrando todas las rutas excepto ID: $routeId para driver: $driverId")
+            val response = savedRoutesService.closeAllRoutesExcept(routeId, driverId, getAuthHeader())
+
+            if (response.isSuccessful) {
+                val closedRoutes = response.body()?.mapNotNull { routeResponse ->
+                    try {
+                        val vehicleMap = VehicleMap(
+                            id = routeResponse.vehicle_id,
+                            plate = "",
+                            driver_id = driverId,
+                            model = "",
+                            brand = "",
+                            year = "",
+                            color = "",
+                            capacity = "",
+                            updated_at = "",
+                            carPic = "",
+                            created_at = ""
+                        )
+                        routeResponse.toRoutesData(vehicleMap)
+                    } catch (e: Exception) {
+                        println("DEBUG_CLOSE_EXCEPT: Error al convertir ruta: ${e.message}")
+                        null
+                    }
+                } ?: emptyList()
+
+                // Actualizar el estado local de las rutas cerradas
+                closedRoutes.forEach { route ->
+                    updateRoute(route)
+                }
+
+                println("DEBUG_CLOSE_EXCEPT: ${closedRoutes.size} rutas cerradas exitosamente para driver $driverId")
+                closedRoutes
+            } else {
+                println("DEBUG_CLOSE_EXCEPT: Error del servidor: ${response.errorBody()?.string()}")
+                null
+            }
+        } catch (e: Exception) {
+            println("DEBUG_CLOSE_EXCEPT: Error al cerrar rutas: ${e.message}")
+            null
+        }
+    }
+
+    override suspend fun closeAllRoutes(driverId: Int): List<RoutesData>? {
+        return try {
+            println("DEBUG_CLOSE_ALL: Cerrando todas las rutas para driver: $driverId")
+            val response = savedRoutesService.closeAllRoutes(driverId, getAuthHeader())
+
+            if (response.isSuccessful) {
+                val closedRoutes = response.body()?.mapNotNull { routeResponse ->
+                    try {
+                        val vehicleMap = VehicleMap(
+                            id = routeResponse.vehicle_id,
+                            plate = "",
+                            driver_id = driverId,
+                            model = "",
+                            brand = "",
+                            year = "",
+                            color = "",
+                            capacity = "",
+                            updated_at = "",
+                            carPic = "",
+                            created_at = ""
+                        )
+                        routeResponse.toRoutesData(vehicleMap)
+                    } catch (e: Exception) {
+                        println("DEBUG_CLOSE_ALL: Error al convertir ruta: ${e.message}")
+                        null
+                    }
+                } ?: emptyList()
+
+                // Actualizar el estado local de las rutas cerradas
+                closedRoutes.forEach { route ->
+                    updateRoute(route)
+                }
+
+                println("DEBUG_CLOSE_ALL: ${closedRoutes.size} rutas cerradas exitosamente para driver $driverId")
+                closedRoutes
+            } else {
+                println("DEBUG_CLOSE_ALL: Error del servidor: ${response.errorBody()?.string()}")
+                null
+            }
+        } catch (e: Exception) {
+            println("DEBUG_CLOSE_ALL: Error al cerrar rutas: ${e.message}")
+            null
+        }
+    }
 }

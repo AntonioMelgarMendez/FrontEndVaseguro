@@ -48,5 +48,16 @@ interface SavedRoutesService {
         @Header("Authorization") authHeader: String
     ): Response<RoutesDataResponse>
 
+        @PUT("routes/close-all-except/{id}")
+        suspend fun closeAllRoutesExcept(
+            @Path("id") routeId: Int,
+            @Query("driverId") driverId: Int,
+            @Header("Authorization") authHeader: String
+        ): Response<List<RoutesDataResponse>>
 
+        @PUT("routes/close-all")
+        suspend fun closeAllRoutes(
+            @Query("driverId") driverId: Int,
+            @Header("Authorization") authHeader: String
+        ): Response<List<RoutesDataResponse>>
 }

@@ -42,4 +42,9 @@ interface SavedRoutesRepository {
 
     // NUEVO: Método para actualizar el estado de una ruta existente
     suspend fun updateRouteStatus(routeId: Int, statusId: Int, endDate: String? = null): RoutesData?
+
+    // NUEVOS: Métodos para cerrar rutas múltiples y prevenir conflictos
+    suspend fun closeAllRoutesExcept(routeId: Int, driverId: Int): List<RoutesData>?
+
+    suspend fun closeAllRoutes(driverId: Int): List<RoutesData>?
 }
