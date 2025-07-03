@@ -37,7 +37,6 @@ import com.VaSeguro.data.model.Route.RouteStatus
 import com.VaSeguro.data.model.Stop.StopType
 import com.VaSeguro.data.model.Route.RouteType
 import com.VaSeguro.helpers.bitmapDescriptorFromVector
-import com.VaSeguro.map.repository.SavedRoutesRepository
 import com.VaSeguro.map.data.PlaceResult
 import com.VaSeguro.map.data.RoutePoint
 import com.VaSeguro.map.decodePolyline
@@ -53,7 +52,6 @@ import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.maps.CameraUpdateFactory
-import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
@@ -1329,13 +1327,13 @@ fun RouteMenuBottomSheetContent(
 
         // Buscador de niños
         OutlinedTextField(
-            value = childrenSearchQuery,
+            value = childrenSearchQuery ?: "", // Proteger contra null
             onValueChange = { viewModel.updateSearchQuery(it) },
             modifier = Modifier.fillMaxWidth(),
             placeholder = { Text("Buscar niños...") },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
             trailingIcon = {
-                if (childrenSearchQuery.isNotEmpty()) {
+                if (!childrenSearchQuery.isNullOrEmpty()) { // Usar isNullOrEmpty
                     IconButton(onClick = { viewModel.updateSearchQuery("") }) {
                         Icon(Icons.Default.Close, contentDescription = "Limpiar")
                     }
@@ -1451,7 +1449,7 @@ fun RouteMenuBottomSheetContent(
                             Spacer(modifier = Modifier.width(8.dp))
 
                             Text(
-                                text = if (point.name.isNotEmpty()) point.name else "Punto sin nombre",
+                                text = if (!point.name.isNullOrEmpty()) point.name else "Punto sin nombre", // Usar isNullOrEmpty
                                 style = MaterialTheme.typography.bodyMedium,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,

@@ -13,6 +13,7 @@ import com.VaSeguro.data.remote.Call.CallService
 import com.VaSeguro.data.remote.Chat.ChatService
 import com.VaSeguro.data.remote.Request.RequestService
 import com.VaSeguro.data.remote.Route.RouteService
+import com.VaSeguro.data.remote.Stops.StopsService
 import com.VaSeguro.map.services.RoutesApiService
 import com.VaSeguro.map.services.SavedRoutesService
 import com.VaSeguro.map.services.StopPassengerService
@@ -73,9 +74,9 @@ object RetrofitInstance {
         retrofit.create(ChildrenService::class.java)
     }
 
-    val routeService: RouteService by lazy {
-        retrofit.create(RouteService::class.java)
-    }
+//    val routeService: RouteService by lazy {
+//        retrofit.create(RouteService::class.java)
+//    }
 
     val chatService: ChatService by lazy {
         retrofit.create(ChatService::class.java)
@@ -92,6 +93,10 @@ object RetrofitInstance {
         routesRetrofit.create(RoutesApiService::class.java)
     }
 
+    val routeService: RouteService by lazy {
+        routesRetrofit.create(RouteService::class.java)
+    }
+
     val savedRoutesSevcie: SavedRoutesService by lazy {
         retrofit.create(SavedRoutesService::class.java)
     }
@@ -103,8 +108,13 @@ object RetrofitInstance {
     val stopRouteService: StopRouteService by lazy {
         retrofit.create(StopRouteService::class.java)
     }
-    val stopsService: com.VaSeguro.data.remote.Stops.StopsService by lazy {
-        retrofit.create(com.VaSeguro.data.remote.Stops.StopsService::class.java)
+
+    val stopService: StopsService by lazy {
+        retrofit.create(StopsService::class.java)
+    }
+
+    val chatApiService: ChatService by lazy {
+        retrofit.create(ChatService::class.java)
     }
     val callService: CallService by lazy {
         retrofit.create(CallService::class.java)

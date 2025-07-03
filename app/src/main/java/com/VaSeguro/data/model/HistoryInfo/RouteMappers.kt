@@ -6,22 +6,22 @@ import java.time.format.DateTimeFormatter
 import java.time.Duration
 
 
-fun RoutesData.toTripInfo(
-    driverName: String,
-    mapImage: Int,
-    distanceKm: String
-): TripInfo {
-    return TripInfo(
-        date = start_date.substringBefore(" "),
-        duration = calcularDuracion(start_date, end_date),
-        pickupTime = start_date.substringAfter(" "),
-        arrivalTime = end_date.substringAfter(" "),
-        driver = driverName,
-        bus = "",
-        distance = distanceKm,
-        mapImageRes = mapImage
-    )
-}
+//fun RoutesData.toTripInfo(
+//    driverName: String,
+//    mapImage: Int,
+//    distanceKm: String
+//): TripInfo {
+//    return TripInfo(
+//        date = start_date.substringBefore(" "),
+//        duration = calcularDuracion(start_date, end_date),
+//        pickupTime = start_date.substringAfter(" "),
+//        arrivalTime = end_date.substringAfter(" "),
+//        driver = driverName,
+//        bus = "",
+//        distance = distanceKm,
+//        mapImageRes = mapImage
+//    )
+//}
 
 // Función de utilidad para calcular duración
 fun calcularDuracion(start: String, end: String): String {

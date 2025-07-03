@@ -14,4 +14,7 @@ import kotlinx.coroutines.flow.flow
 interface StopRouteRepository {
 
     fun getStopRoutesByChild(childId: Int): Flow<List<StopRoute>>
+
+    // NUEVO: Método para obtener StopRoutes de forma directa (sin Flow) para evitar problemas de concurrencia
+    suspend fun getStopRoutesByChildDirect(childId: Int): List<StopRoute>
 }

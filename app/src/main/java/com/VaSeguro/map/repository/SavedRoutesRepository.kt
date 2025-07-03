@@ -23,23 +23,23 @@ import java.util.UUID
 
 interface SavedRoutesRepository {
 
-    fun addRoute(route: RoutesData)
+    // MÉTODOS BÁSICOS CRUD
+    suspend fun getAllRoutes(driverId: Int): List<RoutesData>
 
-    fun updateRoute(route: RoutesData)
+    suspend fun getRouteById(routeId: Int): RoutesData?
 
-    fun deleteRoute(routeId: Int)
-
-    fun getRoute(routeId: Int): Flow<RoutesData?>
-
-
-
-    // NUEVOS MÉTODOS PARA GUARDAR RUTAS COMPLETADAS
     suspend fun saveCompletedRoute(route: RoutesData): RoutesData?
 
+    suspend fun deleteRoute(routeId: Int): Boolean
 
-    // NUEVO: Método para crear ruta completa usando /routes/full
+    // MÉTODO para crear ruta completa usando /routes/full
     suspend fun createFullRoute(request: CreateFullRouteRequest): RoutesData
 
-    // NUEVO: Método para actualizar el estado de una ruta existente
+    // MÉTODO para actualizar el estado de una ruta existente
     suspend fun updateRouteStatus(routeId: Int, statusId: Int, endDate: String? = null): RoutesData?
+
+    // MÉTODOS para cerrar rutas múltiples y prevenir conflictos
+    suspend fun closeAllRoutesExcept(routeId: Int, driverId: Int): List<RoutesData>?
+
+    suspend fun closeAllRoutes(driverId: Int): List<RoutesData>?
 }

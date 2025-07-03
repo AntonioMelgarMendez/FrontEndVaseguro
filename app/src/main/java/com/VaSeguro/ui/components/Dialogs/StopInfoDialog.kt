@@ -48,9 +48,9 @@ fun StopInfoDialog(
                         .padding(16.dp)
                         .fillMaxWidth()
                 ) {
-                    // Encabezado con nombre de la parada
+                    // Encabezado con nombre de la parada - Manejar posible nulo
                     Text(
-                        text = stopData.name,
+                        text = stopData.name ?: "Parada sin nombre",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier
@@ -58,9 +58,9 @@ fun StopInfoDialog(
                             .padding(bottom = 8.dp)
                     )
 
-                    // Información de coordenadas
+                    // Información de coordenadas - Manejar posibles nulos
                     Text(
-                        text = "Coordenadas: ${stopData.latitude}, ${stopData.longitude}",
+                        text = "Coordenadas: ${stopData.latitude?.toString() ?: "?"}, ${stopData.longitude?.toString() ?: "?"}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier
@@ -155,29 +155,35 @@ fun ChildStopItem(
             Column(
                 modifier = Modifier.weight(1f)
             ) {
-                // Nombre del niño
+                // Nombre del niño - Manejar posible nulo
+                val displayName = stopPassenger.child.fullName ?:
+                    stopPassenger.child.calculatedFullName ?:
+                    "${stopPassenger.child.forenames ?: ""} ${stopPassenger.child.surnames ?: ""}" // Fallback a campos individuales
+
                 Text(
-                    text = stopPassenger.child.fullName,
+                    text = if (displayName.trim().isNotEmpty()) displayName else "Niño/a sin nombre",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )
 
                 // Tipo de parada basado en el tipo de ruta
+                val stopTypeText = when {
+                    // Si es ruta INBOUND: HOME -> recoger, INSTITUTION -> dejar
+                    routeType == RouteType.INBOUND && stopPassenger.stopType == StopType.HOME ->
+                        "Recoger en casa"
+                    routeType == RouteType.INBOUND && stopPassenger.stopType == StopType.INSTITUTION ->
+                        "Dejar en escuela"
+                    // Si es ruta OUTBOUND: INSTITUTION -> recoger, HOME -> dejar
+                    routeType == RouteType.OUTBOUND && stopPassenger.stopType == StopType.INSTITUTION ->
+                        "Recoger en escuela"
+                    routeType == RouteType.OUTBOUND && stopPassenger.stopType == StopType.HOME ->
+                        "Dejar en casa"
+                    // Caso por defecto
+                    else -> "Parada"
+                }
+
                 Text(
-                    text = when {
-                        // Si es ruta INBOUND: HOME -> recoger, INSTITUTION -> dejar
-                        routeType == RouteType.INBOUND && stopPassenger.stopType == StopType.HOME ->
-                            "Recoger en casa"
-                        routeType == RouteType.INBOUND && stopPassenger.stopType == StopType.INSTITUTION ->
-                            "Dejar en escuela"
-                        // Si es ruta OUTBOUND: INSTITUTION -> recoger, HOME -> dejar
-                        routeType == RouteType.OUTBOUND && stopPassenger.stopType == StopType.INSTITUTION ->
-                            "Recoger en escuela"
-                        routeType == RouteType.OUTBOUND && stopPassenger.stopType == StopType.HOME ->
-                            "Dejar en casa"
-                        // Caso por defecto
-                        else -> "Parada"
-                    },
+                    text = stopTypeText,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

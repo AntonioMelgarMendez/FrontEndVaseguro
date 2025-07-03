@@ -1,6 +1,7 @@
 package com.VaSeguro.ui.screens.Driver.Route
 
 import android.content.Context
+import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
@@ -237,21 +238,27 @@ class RouteScreenViewModel(
         viewModelScope.launch {
             val user = userPreferencesRepository.getUserData()
             val token = userPreferencesRepository.getAuthToken()
-            val idToUse = when (user?.role_id) {
-                3 -> DriverPrefs.getDriverId(context)
-                4 -> user.id
-                else -> null
-            }
-            vehicleRepository.getVehicleById(idToUse!!, token!!).collectLatest { vehicleResource ->
-                if (vehicleResource is Resource.Success) {
-                    setVehicleId(vehicleResource.data.id)
-                    setDriverId(vehicleResource.data.driverId)
+            val idToUse = user?.id
+
+            if(idToUse!=null){
+                Log.d("DRIVER", "driverID: ${idToUse}")
+
+                vehicleRepository.getVehicleById(idToUse!!, token!!).collectLatest { vehicleResource ->
+                    if (vehicleResource is Resource.Success) {
+                        setVehicleId(vehicleResource.data.id)
+                        setDriverId(vehicleResource.data.driverId)
+
+                        // Cargar los datos de niños DESPUÉS de establecer el driverId
+                        loadChildrenData()
+                    }
                 }
+            } else {
+                Log.d("DRIVER", "No se pudo obtener el driverID: ${DriverPrefs.getDriverId(context).toString()}")
+
             }
+
         }
 
-        // Cargar los datos de niños y sus paradas al iniciar
-        loadChildrenData()
         // Iniciar observador para filtrado de niños
         viewModelScope.launch {
             // Combinar estado de niños y búsqueda para filtrar
@@ -279,15 +286,30 @@ class RouteScreenViewModel(
                     showError("No se ha establecido el ID del conductor")
                     return@launch
                 }
+                
+                Log.d("DEBUG_CHILDREN", "Driver ID: $currentDriverId")
 
                 // Obtener todas las paradas usando el driverId correcto
                 val stops = stopPassengerRepository.getAllStopPassengers(currentDriverId).first()
+
+                Log.d("DEBUG_CHILDREN", "Total StopPassengers obtenidos: ${stops.size}")
+
+
                 _stopPassengers.value = stops
+                Log.d("DEBUG_CHILDREN", "StopPassengers guardados en _stopPassengers: ${_stopPassengers.value.size}")
 
                 // Extraer los niños únicos
                 val uniqueChildren = stops.map { it.child }.distinctBy { it.id }
+                Log.d("DEBUG_CHILDREN", "Niños únicos extraídos: ${uniqueChildren.size}")
+
+
                 _children.value = uniqueChildren
+                Log.d("DEBUG_CHILDREN", "Niños guardados en _children: ${_children.value.size}")
+
+
             } catch (e: Exception) {
+                Log.e("DEBUG_CHILDREN", "Error al cargar datos de niños: ${e.message}")
+                Log.e("DEBUG_CHILDREN", "Stack trace: ", e)
                 showError("Error al cargar datos de niños: ${e.localizedMessage}")
             }
         }
@@ -297,17 +319,78 @@ class RouteScreenViewModel(
      * Actualiza la lista de niños filtrados basado en la búsqueda
      */
     private fun updateFilteredChildren() {
-        val query = _searchQuery.value.trim().lowercase()
-        val allChildren = _children.value
+        try {
+            Log.d("DEBUG_FILTER", "=== INICIANDO FILTRADO DE NIÑOS ===")
 
-        filteredChildren.value = if (query.isEmpty()) {
-            allChildren
-        } else {
-            allChildren.filter { child ->
-                child.fullName.lowercase().contains(query) ||
-                        child.forenames.lowercase().contains(query) ||
-                        child.surnames.lowercase().contains(query)
+            val query = _searchQuery.value.trim().lowercase()
+            val allChildren = _children.value
+
+            Log.d("DEBUG_FILTER", "Query de búsqueda: '$query' (length: ${query.length})")
+            Log.d("DEBUG_FILTER", "Total niños disponibles: ${allChildren.size}")
+
+            // Log detallado de cada niño antes del filtrado
+            allChildren.forEachIndexed { index, child ->
+                Log.d("DEBUG_FILTER", "--- Niño #$index antes del filtrado ---")
+                Log.d("DEBUG_FILTER", "  ID: ${child.id}")
+                Log.d("DEBUG_FILTER", "  Forenames: '${child.forenames}' (es null? ${child.forenames == null})")
+                Log.d("DEBUG_FILTER", "  Surnames: '${child.surnames}' (es null? ${child.surnames == null})")
+                Log.d("DEBUG_FILTER", "  FullName: '${child.fullName}' (es null? ${child.fullName == null})")
+
+                // Verificar calculatedFullName con más detalle
+                try {
+                    val calculatedName = child.calculatedFullName
+                    Log.d("DEBUG_FILTER", "  Calculated FullName: '$calculatedName' (es null? ${calculatedName == null}, length: ${calculatedName?.length ?: "NULL"})")
+                } catch (e: Exception) {
+                    Log.e("DEBUG_FILTER", "  ERROR al acceder a calculatedFullName: ${e.message}")
+                    Log.e("DEBUG_FILTER", "  Stack trace: ", e)
+                }
             }
+
+            filteredChildren.value = if (query.isEmpty()) {
+                Log.d("DEBUG_FILTER", "Query vacío, devolviendo todos los niños")
+                allChildren
+            } else {
+                Log.d("DEBUG_FILTER", "Filtrando niños con query: '$query'")
+
+                val filtered = allChildren.filter { child ->
+                    try {
+                        val calculatedFullName = child.calculatedFullName.lowercase()
+                        val forenames = child.forenames?.lowercase() ?: ""
+                        val surnames = child.surnames?.lowercase() ?: ""
+
+                        val matchesCalculatedName = calculatedFullName.contains(query)
+                        val matchesForenames = forenames.contains(query)
+                        val matchesSurnames = surnames.contains(query)
+
+                        Log.d("DEBUG_FILTER", "    Niño ID ${child.id}:")
+                        Log.d("DEBUG_FILTER", "      calculatedFullName: '$calculatedFullName' -> matches: $matchesCalculatedName")
+                        Log.d("DEBUG_FILTER", "      forenames: '$forenames' -> matches: $matchesForenames")
+                        Log.d("DEBUG_FILTER", "      surnames: '$surnames' -> matches: $matchesSurnames")
+
+                        val result = matchesCalculatedName || matchesForenames || matchesSurnames
+                        Log.d("DEBUG_FILTER", "      RESULTADO FINAL: $result")
+
+                        result
+                    } catch (e: Exception) {
+                        Log.e("DEBUG_FILTER", "    ERROR al filtrar niño ID ${child.id}: ${e.message}")
+                        Log.e("DEBUG_FILTER", "    Stack trace: ", e)
+                        false // En caso de error, no incluir el niño en el filtro
+                    }
+                }
+
+                Log.d("DEBUG_FILTER", "Niños después del filtrado: ${filtered.size}")
+                filtered
+            }
+
+            Log.d("DEBUG_FILTER", "=== FILTRADO COMPLETADO ===")
+            Log.d("DEBUG_FILTER", "filteredChildren.value.size: ${filteredChildren.value.size}")
+
+        } catch (e: Exception) {
+            Log.e("DEBUG_FILTER", "ERROR GENERAL en updateFilteredChildren: ${e.message}")
+            Log.e("DEBUG_FILTER", "Stack trace: ", e)
+
+            // En caso de error, asignar lista vacía para evitar crashes
+            filteredChildren.value = emptyList()
         }
     }
 
@@ -365,7 +448,7 @@ class RouteScreenViewModel(
         // Convertir StopPassenger a RoutePoint y agregar a la ruta
         childStops.forEach { stop ->
             val latLng = LatLng(stop.stop.latitude, stop.stop.longitude)
-            val name = "${stop.child.fullName} - ${stop.stop.name} (${stop.stopType.name})"
+            val name = "${stop.child.calculatedFullName} - ${stop.stop.name} (${stop.stopType.name})"
             addRoutePoint(latLng, name, stop.stopType)
         }
 
@@ -386,7 +469,7 @@ class RouteScreenViewModel(
 
         // Creamos un conjunto con los nombres de las paradas del niño para búsqueda eficiente
         val childStopNames = childStops.map { stop ->
-            "${stop.child.fullName} - ${stop.stop.name} (${stop.stopType.name})"
+            "${stop.child.calculatedFullName} - ${stop.stop.name} (${stop.stopType.name})"
         }.toSet()
 
         // Eliminamos los puntos que corresponden a este niño
@@ -446,19 +529,56 @@ class RouteScreenViewModel(
         // del usuario, no un efecto secundario de limpiar la ruta.
         // _selectedChildIds.value = emptyList()
 
-        // Actualizar la base de datos para resetear todos los valores de ruta
+        // MEJORADO: Actualizar la base de datos para resetear todos los valores de ruta
         viewModelScope.launch {
-            _currentLocation.value?.let { location ->
-                locationRepository.updateLocationWithRoute(
-                    driverId = _driverId.value!!,
-                    lat = location.latitude,
-                    lon = location.longitude,
-                    encodedPolyline = null, // Limpiar polyline
-                    routeActive = false, // Ruta no activa
-                    routeProgress = 0.0f, // Progreso en 0
-                    currentSegment = 0, // Segmento en 0
-                    routeStatus = RouteStatus.NO_INIT.id // Estado inicial
-                )
+            try {
+                val currentDriverId = _driverId.value
+                val currentLoc = _currentLocation.value
+
+                println("DEBUG_CLEAR_ROUTE: Iniciando limpieza de ruta")
+                println("DEBUG_CLEAR_ROUTE: Driver ID: $currentDriverId")
+                println("DEBUG_CLEAR_ROUTE: Current Location: $currentLoc")
+
+                if (currentDriverId != null && currentLoc != null) {
+                    println("DEBUG_CLEAR_ROUTE: Llamando updateLocationWithRoute con valores de limpieza")
+
+                    locationRepository.updateLocationWithRoute(
+                        driverId = currentDriverId,
+                        lat = currentLoc.latitude,
+                        lon = currentLoc.longitude,
+                        encodedPolyline = null, // Limpiar polyline
+                        routeActive = false, // Ruta no activa
+                        routeProgress = 0.0f, // Progreso en 0
+                        currentSegment = 0, // Segmento en 0
+                        routeStatus = RouteStatus.NO_INIT.id // Estado inicial
+                    )
+
+                    println("DEBUG_CLEAR_ROUTE: updateLocationWithRoute completado exitosamente")
+
+                    // Verificar que los datos se actualizaron correctamente
+                    delay(1000) // Esperar un segundo para que se procese la actualización
+
+                    try {
+                        val updatedLocation = locationRepository.getDriverLocationWithRoute(currentDriverId)
+                        println("DEBUG_CLEAR_ROUTE: Verificación post-actualización:")
+                        println("DEBUG_CLEAR_ROUTE: - route_active: ${updatedLocation.route_active}")
+                        println("DEBUG_CLEAR_ROUTE: - route_progress: ${updatedLocation.route_progress}")
+                        println("DEBUG_CLEAR_ROUTE: - current_segment: ${updatedLocation.current_segment}")
+                        println("DEBUG_CLEAR_ROUTE: - encoded_polyline: ${updatedLocation.encoded_polyline}")
+                        println("DEBUG_CLEAR_ROUTE: - route_status: ${updatedLocation.route_status}")
+                    } catch (e: Exception) {
+                        println("DEBUG_CLEAR_ROUTE: Error al verificar actualización: ${e.message}")
+                    }
+
+                } else {
+                    println("DEBUG_CLEAR_ROUTE: No se puede actualizar - falta driverId o ubicación")
+                    println("DEBUG_CLEAR_ROUTE: Driver ID is null: ${currentDriverId == null}")
+                    println("DEBUG_CLEAR_ROUTE: Current Location is null: ${currentLoc == null}")
+                }
+            } catch (e: Exception) {
+                println("DEBUG_CLEAR_ROUTE: Error al limpiar ruta en base de datos: ${e.message}")
+                e.printStackTrace()
+                showError("Error al limpiar datos de ruta: ${e.localizedMessage}")
             }
         }
     }
@@ -527,11 +647,8 @@ class RouteScreenViewModel(
                 _routePoints.add(RoutePoint(currentLoc, "Mi ubicación", null))
 
                 // 4. Optimizamos el orden de los puntos de usuario
-                val optimizedPoints = if (userRoutePoints.size > 1) {
-                    optimizeRouteOrder(currentLoc, userRoutePoints)
-                } else {
-                    userRoutePoints
-                }
+                val optimizedPoints = optimizeRouteOrder(currentLoc, userRoutePoints)
+
 
                 // 5. Añadimos los puntos optimizados a la ruta
                 _routePoints.addAll(optimizedPoints)
@@ -621,6 +738,19 @@ class RouteScreenViewModel(
             try {
                 _isLoading.value = true
 
+                // NUEVO: Cerrar todas las rutas activas antes de iniciar una nueva
+                println("DEBUG_START_ROUTE: Cerrando rutas activas antes de iniciar nueva ruta para driver: $driverId")
+                val closedRoutes = savedRoutesRepository.closeAllRoutes(driverId)
+                if (closedRoutes != null) {
+                    println("DEBUG_START_ROUTE: ${closedRoutes.size} rutas previas cerradas exitosamente")
+                } else {
+                    println("DEBUG_START_ROUTE: No se pudieron cerrar rutas previas, continuando...")
+                }
+
+                // NUEVO: Resetear valores de ruta antes de iniciar
+                _routeProgress.value = 0.0f
+                _currentSegmentIndex.value = 0
+
                 // Construir el request para crear la ruta completa
                 val request = buildCreateFullRouteRequest(routeName, vehicleId)
 
@@ -634,8 +764,22 @@ class RouteScreenViewModel(
                 _currentRouteType.value = createdRoute.type_id
                 _isCurrentRouteSaved.value = true
 
+                // NUEVO: Actualizar inmediatamente la base de datos con los valores iniciales
+                _currentLocation.value?.let { location ->
+                    locationRepository.updateLocationWithRoute(
+                        driverId = driverId,
+                        lat = location.latitude,
+                        lon = location.longitude,
+                        encodedPolyline = _selectedRoute.value?.polyline?.encodedPolyline,
+                        routeActive = false, // Aún no está activa hasta que se presione "Iniciar"
+                        routeProgress = 0.0f,
+                        currentSegment = 0,
+                        routeStatus = RouteStatus.NO_INIT.id
+                    )
+                }
+
                 // Cambiar el estado a "En progreso"
-                updateRouteStatus(RouteStatus.ON_PROGRESS.id)
+                updateRouteStatus(RouteStatus.ON_PROGRESS.id, createdRoute.id)
 
                 showError("Ruta iniciada exitosamente: ${createdRoute.name}")
                 println("DEBUG_START_ROUTE: Ruta creada con ID: ${createdRoute.id}")
@@ -733,7 +877,7 @@ class RouteScreenViewModel(
             ),
             status_id = RouteStatus.NO_INIT,
             type_id = _currentRouteType.value,
-            end_date = "",
+            end_date = null, // Cambiado a null ya que la ruta no ha terminado
             encodedPolyline = "",
             stopRoute = emptyList() // Se llenará al crear la ruta
         )
@@ -789,7 +933,12 @@ class RouteScreenViewModel(
      *  Genera una clave única para una parada basada en su ubicación
      */
     private fun generateStopKey(stopData: StopData): String {
-        return "${stopData.latitude}_${stopData.longitude}_${stopData.id}"
+        // Manejar posibles valores nulos para evitar NullPointerException
+        val latitude = stopData.latitude?.toString() ?: "0.0"
+        val longitude = stopData.longitude?.toString() ?: "0.0"
+        val id = stopData.id?.toString() ?: "0"
+
+        return "${latitude}_${longitude}_${id}"
     }
 
     /**
@@ -1249,17 +1398,18 @@ class RouteScreenViewModel(
      */
     private fun updateNextPointInfo() {
         val route = _selectedRoute.value ?: return
-        val currentIndex = _currentSegmentIndex.value
+        val currentSegmentIndex = _currentSegmentIndex.value
 
-        if (currentIndex < _routePoints.size - 1) {
-            val nextPoint = _routePoints[currentIndex + 1]
-            _nextPointName.value = nextPoint.name
+        // Usar la información de los segmentos de la ruta calculada
+        // en lugar de depender del orden de _routePoints
+        if (currentSegmentIndex < route.segments.size) {
+            val currentSegment = route.segments[currentSegmentIndex]
 
-            if (currentIndex < route.segments.size) {
-                val segment = route.segments[currentIndex]
-                _timeToNextPoint.value = formatGoogleDuration(segment.duration)
-            }
+            // El próximo punto es el punto final del segmento actual
+            _nextPointName.value = currentSegment.endPointName
+            _timeToNextPoint.value = formatGoogleDuration(currentSegment.duration)
         } else {
+            // Si ya no hay más segmentos, hemos llegado al destino final
             _nextPointName.value = "Destino final"
             _timeToNextPoint.value = ""
         }
@@ -1269,7 +1419,7 @@ class RouteScreenViewModel(
      * Actualiza el estado de la ruta actual
      * @param statusId ID del nuevo estado de la ruta (basado en RouteStatus enum)
      */
-    fun updateRouteStatus(statusId: Int) {
+    fun updateRouteStatus(statusId: Int, routeId: Int = _currentRouteId.value ?: 0) {
         viewModelScope.launch {
             try {
                 // Buscar el RouteStatus correspondiente al ID
@@ -1280,7 +1430,6 @@ class RouteScreenViewModel(
                 _currentRouteStatus.value = newStatus
 
                 // Si tenemos una ruta activa guardada, actualizar en el servidor
-                _currentRouteId.value?.let { routeId ->
                     try {
                         // Determinar si necesitamos fecha de finalización
                         val endDate = if (newStatus == RouteStatus.FINISHED) {
@@ -1311,10 +1460,7 @@ class RouteScreenViewModel(
                         showError("Error de conexión al actualizar estado: ${e.message}")
                         println("DEBUG_STATUS: Excepción al actualizar estado: ${e.message}")
                     }
-                } ?: run {
-                    // Si no hay ruta guardada activa, solo actualizamos el estado local
-                    println("DEBUG_STATUS: Estado actualizado localmente (sin ruta guardada): ${newStatus.status}")
-                }
+
 
                 // Lógica adicional según el estado
                 when (newStatus) {
@@ -1365,7 +1511,7 @@ class RouteScreenViewModel(
      * Optimiza el orden de los puntos de ruta para minimizar la distancia total
      */
     private fun optimizeRouteOrder(startLocation: LatLng, points: List<RoutePoint>): List<RoutePoint> {
-        if (points.size <= 2) return points
+        if (points.size < 2) return points
 
         // Algoritmo simple de optimización: ordenar por proximidad
         val optimized = mutableListOf<RoutePoint>()
@@ -1484,21 +1630,21 @@ class RouteScreenViewModel(
     fun pauseRouteOnAppBackground() {
         // Pausar actualizaciones cuando la app va a segundo plano
         if (_currentRouteStatus.value == RouteStatus.ON_PROGRESS) {
-            updateRouteStatus(RouteStatus.STOPED.id)
+            updateRouteStatus(RouteStatus.STOPED.id, currentRouteId.value!!)
         }
     }
 
     fun resumeRouteOnAppForeground() {
         // Reanudar cuando la app vuelve al primer plano
         if (_currentRouteStatus.value == RouteStatus.STOPED) {
-            updateRouteStatus(RouteStatus.ON_PROGRESS.id)
+            updateRouteStatus(RouteStatus.ON_PROGRESS.id, currentRouteId.value!!)
         }
     }
 
     fun finalizeRouteOnAppDestroy() {
         // Finalizar la ruta si la app se cierra
         if (_currentRouteStatus.value == RouteStatus.ON_PROGRESS) {
-            updateRouteStatus(RouteStatus.FINISHED.id)
+            updateRouteStatus(RouteStatus.FINISHED.id, currentRouteId.value!!)
         }
     }
 
@@ -1510,44 +1656,151 @@ class RouteScreenViewModel(
             try {
                 _isLoading.value = true
 
-                // Obtener la ruta desde el repositorio
-                savedRoutesRepository.getRoute(routeId).collect { routeData ->
-                    routeData?.let { route ->
-                        // Limpiar estado actual
-                        clearRoute()
+                val user = userPreferencesRepository.getUserData()
+                val driverId = user?.id
 
-                        // Configurar la nueva ruta
-                        _currentRouteId.value = route.id
-                        _currentRoutesData.value = route
-                        _currentRouteType.value = route.type_id
-                        _currentRouteStatus.value = route.status_id
-
-                        // Convertir StopRoutes a RoutePoints
-                        route.stopRoute.forEach { stopRoute ->
-                            val stopLocation = LatLng(
-                                stopRoute.stopPassenger.stop.latitude,
-                                stopRoute.stopPassenger.stop.longitude
-                            )
-                            val pointName = "${stopRoute.stopPassenger.child.fullName} - ${stopRoute.stopPassenger.stop.name}"
-
-                            addRoutePoint(stopLocation, pointName, stopRoute.stopPassenger.stopType)
-
-                            // Restaurar estado de completación
-                            val currentStates = _stopCompletionStates.value.toMutableMap()
-                            currentStates[stopRoute.stopPassenger.id] = stopRoute.state
-                            _stopCompletionStates.value = currentStates
-                        }
-
-                        // Calcular la ruta con los puntos cargados
-                        if (_routePoints.isNotEmpty()) {
-                            calculateRoute()
-                        }
-
-                        println("DEBUG_LOAD: Ruta cargada exitosamente: ${route.name}")
-                    }
+                if (driverId == null) {
+                    showError("ID de conductor no disponible")
+                    println("DEBUG_LOAD: No se pudo obtener el driver ID del usuario")
+                    return@launch
                 }
+
+                println("DEBUG_LOAD: Driver ID obtenido: $driverId")
+
+                // Verificar que tenemos ubicación actual antes de cargar
+                val currentLoc = _currentLocation.value
+                if (currentLoc == null) {
+                    showError("No se puede cargar la ruta sin conocer tu ubicación actual")
+                    println("DEBUG_LOAD: No hay ubicación actual disponible")
+                    return@launch
+                }
+
+                // Cerrar todas las otras rutas activas antes de cargar una guardada
+                println("DEBUG_LOAD: Cerrando otras rutas activas antes de cargar ruta ID: $routeId para driver: $driverId")
+                val closedRoutes = savedRoutesRepository.closeAllRoutesExcept(routeId, driverId)
+                if (closedRoutes != null) {
+                    println("DEBUG_LOAD: ${closedRoutes.size} rutas cerradas antes de cargar la nueva")
+                } else {
+                    println("DEBUG_LOAD: No se pudieron cerrar otras rutas, continuando...")
+                }
+
+                // Obtener la ruta desde el repositorio
+                val routeData = savedRoutesRepository.getRouteById(routeId)
+
+                if (routeData != null) {
+                    // Limpiar estado actual
+                    clearRoute()
+
+                    // Configurar la nueva ruta
+                    _currentRouteId.value = routeData.id
+                    _currentRoutesData.value = routeData
+                    _currentRouteType.value = routeData.type_id
+                    _currentRouteStatus.value = routeData.status_id
+
+                    // Asegurar que el driverId local esté actualizado
+                    if (_driverId.value != driverId) {
+                        _driverId.value = driverId
+                    }
+
+                    // Primero, recopilar todos los puntos de la ruta guardada
+                    val savedRoutePoints = mutableListOf<RoutePoint>()
+
+                    routeData.stopRoute.forEach { stopRoute ->
+                        val stopLocation = LatLng(
+                            stopRoute.stopPassenger.stop.latitude,
+                            stopRoute.stopPassenger.stop.longitude
+                        )
+                        val pointName = "${stopRoute.stopPassenger.child.calculatedFullName} - ${stopRoute.stopPassenger.stop.name}"
+
+                        savedRoutePoints.add(RoutePoint(stopLocation, pointName, stopRoute.stopPassenger.stopType))
+
+                        // Restaurar estado de completación
+                        val currentStates = _stopCompletionStates.value.toMutableMap()
+                        currentStates[stopRoute.stopPassenger.id] = stopRoute.state
+                        _stopCompletionStates.value = currentStates
+                    }
+
+                    println("DEBUG_LOAD: Puntos de ruta guardada recopilados: ${savedRoutePoints.size}")
+
+                    if (savedRoutePoints.isNotEmpty()) {
+                        // IMPORTANTE: Seguir el mismo patrón que calculateRoute()
+
+                        // 1. Limpiar los puntos actuales
+                        _routePoints.clear()
+
+                        // 2. Añadir la ubicación actual como primer punto
+                        _routePoints.add(RoutePoint(currentLoc, "Mi ubicación", null))
+
+                        // 3. Optimizar el orden de los puntos guardados
+                        val optimizedPoints = if (savedRoutePoints.size > 1) {
+                            optimizeRouteOrder(currentLoc, savedRoutePoints)
+                        } else {
+                            savedRoutePoints
+                        }
+
+                        // 4. Añadir los puntos optimizados
+                        _routePoints.addAll(optimizedPoints)
+
+                        // Log para debug
+                        val pointNames = _routePoints.map { it.name }.joinToString(", ")
+                        println("DEBUG_LOAD: Puntos ordenados: $pointNames")
+
+                        // 5. Calcular la ruta usando la API de direcciones
+                        val origin = _routePoints.first().toApiString()
+                        val destination = _routePoints.last().toApiString()
+
+                        // Waypoints intermedios (excluyendo origen y destino)
+                        val waypoints = if (_routePoints.size > 2) {
+                            _routePoints.subList(1, _routePoints.size - 1)
+                                .joinToString("|") { it.toApiString() }
+                        } else null
+
+                        println("DEBUG_LOAD: Calculando ruta cargada:")
+                        println("DEBUG_LOAD: Origen: $origin")
+                        println("DEBUG_LOAD: Destino: $destination")
+                        println("DEBUG_LOAD: Waypoints: $waypoints")
+                        println("DEBUG_LOAD: Total puntos: ${_routePoints.size}")
+
+                        val response = routesApiRepository.getDirections(
+                            origin = origin,
+                            destination = destination,
+                            waypoints = waypoints
+                        )
+
+                        println("DEBUG_LOAD: Rutas recibidas: ${response.size}")
+
+                        if (response.isNotEmpty()) {
+                            // Crear segmentos de ruta
+                            val originalRoute = response.first()
+                            val routeWithSegments = createRouteSegments(originalRoute)
+
+                            _selectedRoute.value = routeWithSegments
+                            _currentSegmentIndex.value = 0
+                            updateNextPointInfo()
+
+                            // Crear copia de seguridad de la ruta y puntos originales
+                            if (_originalCompleteRoute.value == null) {
+                                createRouteBackup(routeWithSegments, _routePoints.toList())
+                            }
+
+                            println("DEBUG_LOAD: Ruta cargada y calculada exitosamente: ${routeData.name}")
+                        } else {
+                            println("DEBUG_LOAD: La API devolvió una respuesta vacía para la ruta cargada")
+                            showError("No se pudo calcular la ruta cargada")
+                        }
+                    } else {
+                        println("DEBUG_LOAD: No hay puntos de ruta para cargar")
+                        showError("La ruta guardada no tiene puntos válidos")
+                    }
+
+                } else {
+                    showError("No se pudo encontrar la ruta solicitada")
+                    println("DEBUG_LOAD: No se encontró la ruta con ID: $routeId")
+                }
+
             } catch (e: Exception) {
                 println("DEBUG_LOAD: Error al cargar ruta: ${e.message}")
+                e.printStackTrace()
                 showError("Error al cargar la ruta: ${e.message}")
             } finally {
                 _isLoading.value = false
@@ -1615,8 +1868,7 @@ class RouteScreenViewModel(
      * Configura el umbral de proximidad para las paradas
      */
     fun setStopProximityThreshold(threshold: Double) {
-        _stopProximityThreshold.value = threshold
-    }
+        _stopProximityThreshold.value = threshold    }
 
     /**
      * Actualiza el tipo de ruta (INBOUND/OUTBOUND)

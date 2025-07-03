@@ -78,7 +78,7 @@ fun ChildSelectionCard(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = child.fullName,
+                    text = "${child.forenames} ${child.surnames}",
                     style = MaterialTheme.typography.bodyLarge,
                     color = if (isEnabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     maxLines = 1,

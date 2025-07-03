@@ -46,21 +46,4 @@ interface StopPassengerRepository {
         isCompleted: Boolean,
     ): Boolean
 
-    /**
-     * NUEVA: Obtiene el StopRoute asociado a un StopPassenger en una ruta específica
-     * @param stopPassengerId ID del StopPassenger
-     * @param routeId ID de la ruta
-     */
-    suspend fun getStopRouteByStopPassenger(
-        stopPassengerId: Int,
-        routeId: Int
-    ): com.VaSeguro.data.model.Stop.StopRoute?
-
-    /**
-     * NUEVA: Notifica cambios de estado de StopPassenger al backend
-     * @param stopPassengerUpdate Mapa con los datos del cambio de estado
-     */
-    suspend fun notifyStopPassengerStateChange(
-        stopPassengerUpdate: Map<String, Any>
-    ): Boolean
 }

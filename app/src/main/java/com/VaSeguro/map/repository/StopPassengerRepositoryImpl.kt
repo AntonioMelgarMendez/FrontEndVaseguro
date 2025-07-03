@@ -111,16 +111,5 @@ class StopPassengerRepositoryImpl(
         }
     }
 
-    override suspend fun getStopRouteByStopPassenger(
-        stopPassengerId: Int,
-        routeId: Int
-    ): StopRoute? {
-        // TODO: Implementar llamada al servicio
-        return null
-    }
 
-    override suspend fun notifyStopPassengerStateChange(stopPassengerUpdate: Map<String, Any>): Boolean {
-        // TODO: Implementar notificación al servicio
-        return true
-    }
 }

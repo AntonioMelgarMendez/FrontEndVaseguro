@@ -13,9 +13,17 @@ data class StopRouteResponse(
 
 data class StopPassengerResponse(
     val id: Int,
+    val stops: StopInfoResponse,
     val stop_id: Int,
     val type_id: Int,
     val child_id: Int
+)
+
+data class StopInfoResponse(
+    val id: Int,
+    val name: String,
+    val latitude: Double,
+    val longitude: Double
 )
 
 data class RouteResponse(

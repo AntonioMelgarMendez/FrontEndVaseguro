@@ -1,11 +1,13 @@
 package com.VaSeguro.map.services
 
 import com.VaSeguro.data.model.Routes.RoutesData
+import com.VaSeguro.data.model.Routes.RoutesDataResponse
 import com.VaSeguro.data.model.Routes.RoutesDataToSave
 import com.VaSeguro.data.model.Routes.CreateFullRouteRequest
 import com.VaSeguro.data.model.Routes.CreateFullRouteResponse
 import com.VaSeguro.data.model.Routes.UpdateRouteRequest
 import com.VaSeguro.data.model.Routes.RoutesApiResponse
+import com.VaSeguro.data.model.Routes.RouteByIdResponse
 import com.VaSeguro.data.model.Stop.StopRoute
 import com.VaSeguro.data.model.Stop.StopRouteToSave
 import retrofit2.Response
@@ -32,7 +34,7 @@ interface SavedRoutesService {
     @GET("routes/{id}")
     suspend fun getRouteById(
         @Path("id") routeId: Int
-    ): Response<RoutesData>
+    ): Response<RouteByIdResponse>
 
     @POST("routes/full")
     suspend fun createFullRoute(
@@ -45,7 +47,18 @@ interface SavedRoutesService {
         @Path("routeId") routeId: Int,
         @Body request: UpdateRouteRequest,
         @Header("Authorization") authHeader: String
-    ): Response<RoutesData>
+    ): Response<RoutesDataResponse>
 
+        @PUT("routes/close-all-except/{id}")
+        suspend fun closeAllRoutesExcept(
+            @Path("id") routeId: Int,
+            @Query("driverId") driverId: Int,
+            @Header("Authorization") authHeader: String
+        ): Response<List<RoutesDataResponse>>
 
+        @PUT("routes/close-all")
+        suspend fun closeAllRoutes(
+            @Query("driverId") driverId: Int,
+            @Header("Authorization") authHeader: String
+        ): Response<List<RoutesDataResponse>>
 }

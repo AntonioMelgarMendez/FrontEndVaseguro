@@ -1,5 +1,6 @@
 package com.VaSeguro.ui.screens.Parents.Map
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
@@ -7,29 +8,26 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.VaSeguro.MyApplication
-import com.VaSeguro.data.model.Route.RouteStatus
 import com.VaSeguro.data.model.Stop.StopRoute
 import com.VaSeguro.data.model.StopPassenger.StopPassenger
-import com.VaSeguro.map.data.RoutePoint
-import com.VaSeguro.map.data.Route
+import com.VaSeguro.data.repository.DriverPrefs.DriverPrefs
 import com.VaSeguro.map.decodePolyline
 import com.VaSeguro.map.repository.LocationRepository
 import com.VaSeguro.map.repository.LocationDriverAddress
-import com.VaSeguro.map.repository.SavedRoutesRepository
-import com.VaSeguro.map.repository.StopPassengerRepository
 import com.VaSeguro.map.repository.StopRouteRepository
-import com.VaSeguro.ui.screens.Driver.Route.RouteScreenViewModel
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class MapViewModel(
     private val locationRepository: LocationRepository,
-    private val stopRouteRepository: StopRouteRepository
+    private val stopRouteRepository: StopRouteRepository,
+    private val context: Context
+
 ) : ViewModel() {
 
     // Estado para la posición actual del conductor
@@ -61,7 +59,7 @@ class MapViewModel(
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
     // Estado para el ID del conductor que se está siguiendo (por defecto 1)
-    private val _driverId = MutableStateFlow(77)
+    private val _driverId = MutableStateFlow(0)
     val driverId: StateFlow<Int> = _driverId.asStateFlow()
 
     // NUEVO: Estado para el ID del padre actual
@@ -93,6 +91,9 @@ class MapViewModel(
 
     // NUEVO: Umbral de proximidad en metros
     private val proximityThreshold = 300.0
+
+    // NUEVO: Job para manejar la limpieza de notificaciones de forma secuencial
+    private var notificationCleanupJob: kotlinx.coroutines.Job? = null
 
     // Variable para rastrear si las actualizaciones están pausadas
     private var locationUpdatesPaused = false
@@ -136,14 +137,25 @@ class MapViewModel(
 
             try {
                 // Obtener ubicación inicial completa (con información de ruta)
-                val initialLocation = locationRepository.getDriverLocationWithRoute(_driverId.value)
+                val savedDriverId = DriverPrefs.getDriverId(context)
+
+                // Si hay un ID guardado, usarlo; si no, usar el ID por defecto
+                val driverIdToUse = savedDriverId ?: _driverId.value
+
+                println("ID del conductor obtenido: $driverIdToUse (guardado: $savedDriverId, por defecto: ${_driverId.value})")
+
+                if (driverIdToUse != _driverId.value) {
+                    _driverId.value = driverIdToUse
+                }
+
+                val initialLocation = locationRepository.getDriverLocationWithRoute(driverIdToUse)
                 _driverLocationWithRoute.value = initialLocation
                 _driverLocation.value = LatLng(initialLocation.latitude, initialLocation.longitude)
 
                 // Actualizar estados de ruta
                 _isRouteActive.value = initialLocation.route_active
                 _routeProgress.value = initialLocation.route_progress
-                _routeStatus.value = initialLocation.route_status.toString()
+                _routeStatus.value = initialLocation.route_status // Ya es String, no necesita .toString()
 
                 // Decodificar y actualizar polyline si existe
                 initialLocation.encoded_polyline?.let { polyline ->
@@ -155,8 +167,12 @@ class MapViewModel(
                 if (!locationUpdatesPaused) {
                     subscribeToLocationAndRouteUpdates()
                 }
+
+                println("Ubicación del conductor cargada exitosamente: lat=${initialLocation.latitude}, lng=${initialLocation.longitude}")
+                println("Ruta activa: ${initialLocation.route_active}, Estado: ${initialLocation.route_status}")
+
             } catch (e: Exception) {
-                println(e.message)
+                println("Error al cargar ubicación del conductor: ${e.message}")
                 _errorMessage.value = "Error al cargar ubicación: ${e.message}"
             } finally {
                 _isLoading.value = false
@@ -170,22 +186,30 @@ class MapViewModel(
     private fun loadParentChildrenStops() {
         viewModelScope.launch {
             try {
-
-                stopRouteRepository.getStopRoutesByChild(_childId.value).collectLatest { stopRoutes ->
-                    _parentChildrenStopRoutes.value = stopRoutes
-
-                    // Extraer StopPassengers de los StopRoutes para compatibilidad
-                    val stopPassengers = stopRoutes.map { it.stopPassenger }
-                    _parentChildrenStops.value = stopPassengers
-
-                    println("StopRoutes cargados para child ${_childId.value}: ${stopRoutes.size} paradas")
-                    stopRoutes.forEach { stopRoute ->
-                        println("StopRoute ID: ${stopRoute.id}, Order: ${stopRoute.order}, State: ${stopRoute.state}, Child: ${stopRoute.stopPassenger.child.fullName}")
+                stopRouteRepository.getStopRoutesByChild(_childId.value)
+                    .catch { e ->
+                        // Manejar errores del Flow usando catch operator
+                        println("Error en el Flow de StopRoutes del child: ${e.message}")
+                        _errorMessage.value = "Error al cargar paradas: ${e.message}"
+                        // Emitir lista vacía como fallback
+                        emit(emptyList())
                     }
-                }
+                    .collectLatest { stopRoutes ->
+                        _parentChildrenStopRoutes.value = stopRoutes
+
+                        // Extraer StopPassengers de los StopRoutes para compatibilidad
+                        val stopPassengers = stopRoutes.map { it.stopPassenger }
+                        _parentChildrenStops.value = stopPassengers
+
+                        println("StopRoutes cargados para child ${_childId.value}: ${stopRoutes.size} paradas")
+                        stopRoutes.forEach { stopRoute ->
+                            println("StopRoute ID: ${stopRoute.id}, Order: ${stopRoute.order}, State: ${stopRoute.state}, Child: ${stopRoute.stopPassenger.child.fullName}")
+                        }
+                    }
             } catch (e: Exception) {
-                _errorMessage.value = "Error al cargar paradas: ${e.message}"
-                println("Error al cargar StopRoutes del child: ${e.message}")
+                // Este catch solo maneja errores fuera del Flow
+                println("Error general al configurar StopRoutes del child: ${e.message}")
+                _errorMessage.value = "Error al configurar paradas: ${e.message}"
             }
         }
     }
@@ -203,7 +227,7 @@ class MapViewModel(
                     // Actualizar estados de ruta
                     _isRouteActive.value = locationData.route_active
                     _routeProgress.value = locationData.route_progress
-                    _routeStatus.value = locationData.route_status.toString()
+                    _routeStatus.value = locationData.route_status // Ya es String, no necesita .toString()
 
                     // NUEVO: Verificar proximidad a paradas de mis hijos
                     checkProximityToMyChildrenStops(LatLng(locationData.latitude, locationData.longitude))
@@ -268,8 +292,7 @@ class MapViewModel(
     }
 
     /**
-     * CORREGIDO: Verifica cambios de estado en las paradas cuando el conductor avanza de segmento
-     * Usa StopRoute como fuente de verdad para los estados
+     * CORREGIDO: Verifica cambios en el estado de las paradas (StopRoute) y actualiza los estados
      */
     private fun checkStopStateChanges() {
         viewModelScope.launch {
@@ -278,8 +301,25 @@ class MapViewModel(
                 val originalStopRoutes = _parentChildrenStopRoutes.value
                 if (originalStopRoutes.isEmpty()) return@launch
 
-                // CORREGIDO: Obtener StopRoutes actualizados desde el repositorio usando el método correcto
-                val updatedStopRoutes = stopRouteRepository.getStopRoutesByChild(_childId.value).first()
+                // Hacer una consulta fresca desde la API
+                val updatedStopRoutes = try {
+                    stopRouteRepository.getStopRoutesByChildDirect(_childId.value)
+                } catch (e: Exception) {
+                    println("Error al obtener StopRoutes actualizados: ${e.message}")
+                    return@launch
+                }
+
+                // CORREGIDO: Actualizar INMEDIATAMENTE los estados del ViewModel
+                _parentChildrenStopRoutes.value = updatedStopRoutes
+
+                // Actualizar también los StopPassengers para compatibilidad con el mapa
+                val updatedStopPassengers = updatedStopRoutes.map { it.stopPassenger }
+                _parentChildrenStops.value = updatedStopPassengers
+
+                println("✅ Estados actualizados en ViewModel: ${updatedStopRoutes.size} StopRoutes")
+
+                var hasNewNotification = false
+                var latestNotification: String? = null
 
                 // Comparar estado por estado para detectar cambios
                 originalStopRoutes.forEach { originalStopRoute ->
@@ -294,35 +334,38 @@ class MapViewModel(
                         // Si detectamos un cambio de estado de false a true (completado)
                         if (originalState != newState && newState == true) {
                             val actionText = if (updated.stopPassenger.stopType.name == "HOME") {
-                                "fue dejado en casa"
+                                "fue recogido/dejado en casa"
                             } else {
-                                "fue recogido en la escuela"
+                                "fue dejado/recogido en la escuela"
                             }
 
-                            val notification = "✅ ${updated.stopPassenger.child.fullName} $actionText - ${updated.stopPassenger.stop.name}"
-                            _stopStateChangeNotification.value = notification
+                            latestNotification = "✅ ${updated.stopPassenger.child.fullName} $actionText - ${updated.stopPassenger.stop.name}"
+                            hasNewNotification = true
 
                             println("STOP_ROUTE_CHANGE: Detectado cambio de estado para ${updated.stopPassenger.child.fullName}")
                             println("STOP_ROUTE_CHANGE: Estado original: $originalState, nuevo estado: $newState")
                             println("STOP_ROUTE_CHANGE: StopRoute ID: ${updated.id}, Order: ${updated.order}")
-
-                            // Limpiar la notificación después de 8 segundos
-                            viewModelScope.launch {
-                                kotlinx.coroutines.delay(8000)
-                                if (_stopStateChangeNotification.value == notification) {
-                                    _stopStateChangeNotification.value = null
-                                }
-                            }
                         }
                     }
                 }
 
-                // Actualizar los estados locales con los nuevos datos
-                _parentChildrenStopRoutes.value = updatedStopRoutes
+                // Solo manejar una notificación a la vez para evitar concurrencia
+                if (hasNewNotification && latestNotification != null) {
+                    _stopStateChangeNotification.value = latestNotification
 
-                // Actualizar también los StopPassengers para compatibilidad
-                val updatedStopPassengers = updatedStopRoutes.map { it.stopPassenger }
-                _parentChildrenStops.value = updatedStopPassengers
+                    // Cancelar el job anterior si existe
+                    notificationCleanupJob?.cancel()
+
+                    // Crear nuevo job para limpiar la notificación
+                    notificationCleanupJob = viewModelScope.launch {
+                        kotlinx.coroutines.delay(8000)
+                        // Solo limpiar si la notificación sigue siendo la misma
+                        if (_stopStateChangeNotification.value == latestNotification) {
+                            _stopStateChangeNotification.value = null
+                        }
+                        notificationCleanupJob = null
+                    }
+                }
 
             } catch (e: Exception) {
                 println("Error al verificar cambios de estado de StopRoute: ${e.message}")
@@ -441,7 +484,8 @@ class MapViewModel(
                 val application = this[APPLICATION_KEY] as MyApplication
                 MapViewModel(
                     locationRepository = application.appProvider.provideLocationRepository(),
-                    stopRouteRepository = application.appProvider.provideStopRouteRepository()
+                    stopRouteRepository = application.appProvider.provideStopRouteRepository(),
+                    context = application.applicationContext
                 )
             }
         }
