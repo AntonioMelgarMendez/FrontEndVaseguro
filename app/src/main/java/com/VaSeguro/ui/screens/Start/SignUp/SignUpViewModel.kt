@@ -27,13 +27,18 @@ class RegisterViewModel(
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
-    private val _error = MutableStateFlow<String?>(null)
+    internal val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
 
     fun onNameChange(newName: String) { _name.value = newName }
     fun onEmailChange(newEmail: String) { _email.value = newEmail }
     fun onPhoneChange(newPhone: String) { _phone.value = newPhone }
     fun onPasswordChange(newPassword: String) { _password.value = newPassword }
+    fun isPasswordValid(password: String): Boolean {
+        // At least 8 chars, at least one letter and one number
+        val regex = Regex("^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,}$")
+        return regex.matches(password)
+    }
 
     fun register(onSuccess: () -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
