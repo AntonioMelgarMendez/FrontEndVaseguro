@@ -62,3 +62,5 @@ data class CallScreenNavigation(
     val callerOneSignalId: String,
     val calleeOneSignalId: String?
 )
+@Serializable
+object HistoryDriverScreenNavigation

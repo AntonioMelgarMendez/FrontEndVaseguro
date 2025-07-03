@@ -3,7 +3,7 @@ package com.VaSeguro.ui.screens.Driver.SavedRoutes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -26,13 +26,12 @@ fun SavedRoutesScreen(
     viewModel: SavedRoutesViewModel = viewModel(factory = SavedRoutesViewModel.Factory),
     onRunRoute: (Int) -> Unit
 ) {
-    // Estados de la UI
     val savedRoutes by viewModel.savedRoutes.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    var routeToDelete by remember { mutableStateOf<RoutesData?>(null) }
 
-    // Mostrar mensaje de error si existe
     LaunchedEffect(errorMessage) {
         errorMessage?.let { error ->
             snackbarHostState.showSnackbar(
@@ -43,11 +42,8 @@ fun SavedRoutesScreen(
         }
     }
 
-    // Confirmar eliminación
-    var routeToDelete by remember { mutableStateOf<RoutesData?>(null) }
-
-    // Scaffold para la pantalla
     Scaffold(
+        containerColor = Color.White,
         topBar = {
             TopAppBar(
                 title = { Text("Rutas Guardadas") },
@@ -55,7 +51,10 @@ fun SavedRoutesScreen(
                     IconButton(onClick = { navController.navigateUp() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Regresar")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.White
+                )
             )
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
@@ -63,65 +62,69 @@ fun SavedRoutesScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .background(Color.White)
                 .padding(innerPadding)
         ) {
-            if (isLoading) {
-                // Indicador de carga
-                CircularProgressIndicator(
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .size(56.dp),
-                    strokeWidth = 4.dp
-                )
-            } else if (savedRoutes.isEmpty()) {
-                // Mensaje cuando no hay rutas guardadas
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Route,
-                        contentDescription = null,
-                        modifier = Modifier.size(80.dp),
-                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "No hay rutas guardadas",
-                        style = MaterialTheme.typography.titleLarge
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Crea una nueva ruta desde la pantalla de rutas",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+            when {
+                isLoading -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .size(56.dp),
+                        strokeWidth = 4.dp
                     )
                 }
-            } else {
-                // Lista de rutas
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                ) {
-                    items(savedRoutes) { route ->
-                        SavedRouteCard(
-                            route = route,
-                            duration = viewModel.calculateRouteDuration(route),
-                            onRunClick = { onRunRoute(route.id.toInt()) },
-                            onDeleteClick = { routeToDelete = route }
+                savedRoutes.isEmpty() -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Route,
+                            contentDescription = null,
+                            modifier = Modifier.size(80.dp),
+                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "No hay rutas guardadas",
+                            style = MaterialTheme.typography.titleLarge
                         )
                         Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Crea una nueva ruta desde la pantalla de rutas",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                        )
+                    }
+                }
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.White)
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    ) {
+                        itemsIndexed(savedRoutes) { index, route ->
+                            SavedRouteCard(
+                                route = route,
+                                duration = viewModel.calculateRouteDuration(route),
+                                onRunClick = { onRunRoute(route.id.toInt()) },
+                                onDeleteClick = { routeToDelete = route }
+                            )
+                            if (index < savedRoutes.lastIndex) {
+                                Spacer(modifier = Modifier.height(20.dp))
+                            }
+                        }
                     }
                 }
             }
         }
     }
 
-    // Diálogo de confirmación de eliminación
     if (routeToDelete != null) {
         AlertDialog(
             onDismissRequest = { routeToDelete = null },
@@ -157,14 +160,15 @@ fun SavedRouteCard(
     Card(
         modifier = Modifier
             .fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF7F7F7)),
+        shape = MaterialTheme.shapes.medium
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(20.dp)
         ) {
-            // Encabezado con nombre y estado
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -178,13 +182,11 @@ fun SavedRouteCard(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
                 )
-
                 StatusChip(status = route.status_id.status)
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // Información de la ruta
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -203,9 +205,8 @@ fun SavedRouteCard(
                 )
             }
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
-            // Fecha de inicio
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -224,9 +225,8 @@ fun SavedRouteCard(
                 )
             }
 
-            // Fecha de fin (si existe)
-            if (route.end_date!=null && route.end_date.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(4.dp))
+            if (route.end_date != null && route.end_date.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(6.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
@@ -246,9 +246,8 @@ fun SavedRouteCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
-            // Cantidad de paradas
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -267,14 +266,12 @@ fun SavedRouteCard(
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(18.dp))
 
-            // Botones de acción
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Botón para ejecutar la ruta
                 OutlinedButton(
                     onClick = onRunClick,
                     modifier = Modifier.weight(1f),
@@ -293,11 +290,8 @@ fun SavedRouteCard(
                     }
                 }
 
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(12.dp))
 
-
-
-                // Botón para eliminar la ruta
                 IconButton(
                     onClick = onDeleteClick,
                     modifier = Modifier

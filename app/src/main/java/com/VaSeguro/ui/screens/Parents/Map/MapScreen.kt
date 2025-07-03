@@ -2,11 +2,13 @@ package com.VaSeguro.ui.screens.Parents.Map
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -17,17 +19,25 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DirectionsBus
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -49,6 +59,8 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.VaSeguro.R
+import com.VaSeguro.data.model.Child.Child
+import com.VaSeguro.data.model.Children.Children
 import com.VaSeguro.helpers.bitmapDescriptorFromVector
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.LatLng
@@ -72,6 +84,8 @@ fun MapScreen(
     childId: Int? = null,
 ) {
     // Estados del ViewModel
+    var selectedChild by remember { mutableStateOf<Children?>(null) }
+    val children by viewModel.childrenList.collectAsStateWithLifecycle(emptyList())
     val driverLocation by viewModel.driverLocation.collectAsStateWithLifecycle()
     val isRouteActive by viewModel.isRouteActive.collectAsStateWithLifecycle()
     val routePoints by viewModel.routePoints.collectAsStateWithLifecycle()
@@ -112,6 +126,9 @@ fun MapScreen(
 
     // Contador de actualizaciones para debug
     var updateCount by remember { mutableStateOf(0) }
+    LaunchedEffect(Unit) {
+        viewModel.loadChildrenForParent()
+    }
 
     // Gestión del ciclo de vida para optimizar recursos del mapa
     DisposableEffect(lifecycleOwner) {
@@ -525,6 +542,14 @@ fun MapScreen(
                         .align(Alignment.BottomEnd),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    ChildSelectorDialogButton(
+                        children = children,
+                        selectedChild = selectedChild,
+                        onChildSelected = { child ->
+                            selectedChild = child
+                            viewModel.setChildId(child.id)
+                        }
+                    )
                     // Botón para activar/desactivar seguimiento automático
                     IconButton(
                         onClick = {
@@ -555,7 +580,6 @@ fun MapScreen(
                                   else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-
                     // Botón para centrar en la ubicación del conductor
                     IconButton(
                         onClick = {
@@ -581,6 +605,7 @@ fun MapScreen(
                             tint = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
+
                 }
             }
 
@@ -607,5 +632,75 @@ fun MapScreen(
                 }
             }
         }
+    }
+}
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ChildSelectorDialogButton(
+    children: List<Children>,
+    selectedChild: Children?,
+    onChildSelected: (Children) -> Unit
+) {
+    var showDialog by remember { mutableStateOf(false) }
+
+    Surface(
+        modifier = Modifier
+            .height(48.dp)
+            .padding(horizontal = 4.dp)
+            .clickable { showDialog = true },
+        color = MaterialTheme.colorScheme.primaryContainer,
+        shape = MaterialTheme.shapes.small,
+        shadowElevation = 1.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(horizontal = 16.dp)
+                .fillMaxHeight(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.Person,
+                contentDescription = "Seleccionar hijo",
+                tint = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+            if (selectedChild != null) {
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = selectedChild.forenames,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
+    }
+
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            title = { Text("Selecciona un hijo") },
+            text = {
+                Column {
+                    children.forEach { child ->
+                        Text(
+                            text = child.forenames,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    onChildSelected(child)
+                                    showDialog = false
+                                }
+                                .padding(vertical = 12.dp),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = if (selectedChild?.id == child.id)
+                                MaterialTheme.colorScheme.primary
+                            else
+                                MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {}
+        )
     }
 }

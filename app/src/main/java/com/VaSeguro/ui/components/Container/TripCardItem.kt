@@ -1,37 +1,32 @@
 package com.VaSeguro.ui.components.Container
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material3.Icon
 import androidx.compose.material.icons.filled.AccessTime
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.VaSeguro.data.model.HistoryInfo.TripInfo
 import com.VaSeguro.ui.theme.PrimaryColor
-
+import com.google.maps.android.compose.*
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.LatLngBounds
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import androidx.core.content.ContextCompat
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.drawable.Drawable
+import com.VaSeguro.R
+import com.google.android.gms.maps.model.BitmapDescriptor
+import androidx.compose.ui.graphics.Color as ComposeColor
 
 @Composable
 fun TripCardItem(trip: TripInfo, onViewMoreClick: () -> Unit) {
@@ -81,8 +76,44 @@ fun TripCardItem(trip: TripInfo, onViewMoreClick: () -> Unit) {
                     modifier = Modifier
                         .size(100.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(Color.LightGray) // color placeholder
-                )
+                        .background(Color.LightGray)
+                ) {
+                    if (trip.routePoints.isNotEmpty()) {
+                        val cameraPositionState = rememberCameraPositionState()
+                        LaunchedEffect(trip.routePoints) {
+                            val builder = LatLngBounds.builder()
+                            trip.routePoints.forEach { builder.include(it) }
+                            val bounds = builder.build()
+                            cameraPositionState.move(
+                                com.google.android.gms.maps.CameraUpdateFactory.newLatLngBounds(bounds, 32)
+                            )
+                        }
+                        GoogleMap(
+                            modifier = Modifier.matchParentSize(),
+                            cameraPositionState = cameraPositionState,
+                            uiSettings = MapUiSettings(
+                                zoomControlsEnabled = false,
+                                zoomGesturesEnabled = false,
+                                scrollGesturesEnabled = false,
+                                tiltGesturesEnabled = false,
+                                myLocationButtonEnabled = false,
+                                mapToolbarEnabled = false
+                            ),
+                            properties = MapProperties(
+                                isMyLocationEnabled = false
+                            )
+                        ) {
+                            Polyline(
+                                points = trip.routePoints,
+                                color = ComposeColor(0xFF1976D2),
+                                width = 6f
+                            )
+                            trip.routePoints.forEach { point ->
+                                DotMarker(position = point)
+                            }
+                        }
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -95,5 +126,28 @@ fun TripCardItem(trip: TripInfo, onViewMoreClick: () -> Unit) {
                 Text("View more")
             }
         }
+    }
+}
+
+@Composable
+fun DotMarker(position: LatLng) {
+    val context = LocalContext.current
+    var icon by remember { mutableStateOf<BitmapDescriptor?>(null) }
+
+    LaunchedEffect(Unit) {
+        val drawable: Drawable? = ContextCompat.getDrawable(context, R.drawable.user)
+        val size = 32
+        val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        drawable?.setBounds(0, 0, canvas.width, canvas.height)
+        drawable?.draw(canvas)
+        icon = BitmapDescriptorFactory.fromBitmap(bitmap)
+    }
+
+    if (icon != null) {
+        Marker(
+            state = rememberMarkerState(position = position),
+            icon = icon
+        )
     }
 }
