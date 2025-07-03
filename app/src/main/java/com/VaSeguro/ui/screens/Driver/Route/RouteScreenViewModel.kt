@@ -796,6 +796,73 @@ class RouteScreenViewModel(
     }
 
     /**
+     * Inicia una ruta guardada (diferente de crear una nueva)
+     * Activa una ruta que ya existe en la base de datos
+     */
+    fun startSavedRoute(): Boolean {
+        // Verificar que tenemos una ruta cargada
+        if (_currentRouteId.value == null || !_isCurrentRouteSaved.value) {
+            showError("No hay una ruta guardada para iniciar")
+            return false
+        }
+
+        if (_routePoints.isEmpty()) {
+            showError("No hay puntos de ruta para iniciar")
+            return false
+        }
+
+        val vehicleId = _vehicleId.value
+        val driverId = _driverId.value
+        val routeId = _currentRouteId.value!!
+
+        if (vehicleId == null || driverId == null) {
+            showError("Información de conductor o vehículo no disponible")
+            return false
+        }
+
+        viewModelScope.launch {
+            try {
+                _isLoading.value = true
+
+                println("DEBUG_START_SAVED: Iniciando ruta guardada con ID: $routeId")
+
+                // NUEVO: Resetear valores de progreso para ruta cargada
+                _routeProgress.value = 0.0f
+                _currentSegmentIndex.value = 0
+
+                // IMPORTANTE: Para rutas guardadas, NO crear nueva ruta, solo actualizar estado
+                // Actualizar inmediatamente la base de datos con los valores iniciales
+                _currentLocation.value?.let { location ->
+                    locationRepository.updateLocationWithRoute(
+                        driverId = driverId,
+                        lat = location.latitude,
+                        lon = location.longitude,
+                        encodedPolyline = _selectedRoute.value?.polyline?.encodedPolyline,
+                        routeActive = true, // Marcar como activa
+                        routeProgress = 0.0f,
+                        currentSegment = 0,
+                        routeStatus = RouteStatus.ON_PROGRESS.id // Directamente a progreso
+                    )
+                }
+                _currentRouteStatus.value = RouteStatus.ON_PROGRESS
+                // Cambiar el estado a "En progreso" en el servidor, no crear nueva ruta
+                updateRouteStatus(RouteStatus.ON_PROGRESS.id, routeId)
+
+                showError("Ruta guardada iniciada exitosamente")
+                println("DEBUG_START_SAVED: Ruta guardada activada con ID: $routeId")
+
+            } catch (e: Exception) {
+                println("DEBUG_START_SAVED: Error al iniciar ruta guardada: ${e.message}")
+                showError("Error al iniciar la ruta guardada: ${e.localizedMessage}")
+            } finally {
+                _isLoading.value = false
+            }
+        }
+
+        return true
+    }
+
+    /**
      * Construye el request para crear una ruta completa
      */
     private fun buildCreateFullRouteRequest(routeName: String, vehicleId: Int): CreateFullRouteRequest {
@@ -1103,7 +1170,8 @@ class RouteScreenViewModel(
                         val stopKey = generateStopKey(stopPassenger.stop)
 
                         // Solo mostrar diálogo si no se ha procesado esta parada
-                        if (!_processedStops.value.contains(stopKey) && !_isStopInfoDialogVisible.value) {
+                        if (!_processedStops.value.contains(stopKey) && !_isStopInfoDialogVisible.value && _currentRouteStatus.equals(
+                                RouteStatus.ON_PROGRESS)) {
                             _currentNearbyStop.value = stopPassenger.stop
 
                             // Buscar todos los StopPassengers asociados a esta parada
@@ -1688,14 +1756,26 @@ class RouteScreenViewModel(
                 val routeData = savedRoutesRepository.getRouteById(routeId)
 
                 if (routeData != null) {
-                    // Limpiar estado actual
+                    // Limpiar estado actual PERO mantener ciertos valores importantes
+                    val originalDriverId = _driverId.value
+                    val originalVehicleId = _vehicleId.value
+
                     clearRoute()
 
-                    // Configurar la nueva ruta
+                    // Restaurar valores que no deben perderse
+                    _driverId.value = originalDriverId
+                    _vehicleId.value = originalVehicleId
+
+                    // CORREGIDO: Configurar la ruta como guardada y ya existente
                     _currentRouteId.value = routeData.id
                     _currentRoutesData.value = routeData
                     _currentRouteType.value = routeData.type_id
                     _currentRouteStatus.value = routeData.status_id
+                    _isCurrentRouteSaved.value = true // IMPORTANTE: Marcar como guardada
+
+                    // NUEVO: Resetear progreso y segmento para ruta cargada
+                    _routeProgress.value = 0.0f
+                    _currentSegmentIndex.value = 0
 
                     // Asegurar que el driverId local esté actualizado
                     if (_driverId.value != driverId) {
@@ -1779,11 +1859,13 @@ class RouteScreenViewModel(
                             updateNextPointInfo()
 
                             // Crear copia de seguridad de la ruta y puntos originales
-                            if (_originalCompleteRoute.value == null) {
+                            // CORREGIDO: Solo crear backup si no existe o si es diferente
+                            if (_originalCompleteRoute.value == null || _originalCompleteRoute.value?.polyline?.encodedPolyline != routeWithSegments.polyline.encodedPolyline) {
                                 createRouteBackup(routeWithSegments, _routePoints.toList())
                             }
 
                             println("DEBUG_LOAD: Ruta cargada y calculada exitosamente: ${routeData.name}")
+                            showError("Ruta '${routeData.name}' cargada exitosamente")
                         } else {
                             println("DEBUG_LOAD: La API devolvió una respuesta vacía para la ruta cargada")
                             showError("No se pudo calcular la ruta cargada")

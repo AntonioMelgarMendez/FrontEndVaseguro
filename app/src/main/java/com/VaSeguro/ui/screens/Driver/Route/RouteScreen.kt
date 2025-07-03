@@ -982,10 +982,21 @@ fun RouteScreen(
 
                 // Si hay una ruta seleccionada pero no iniciada, mostrar botón de inicio
                 if (selectedRoute != null && !isRouteStarted) {
+                    //Detectar si es ruta guardada
+                    val isRouteSaved by viewModel.isCurrentRouteSaved.collectAsStateWithLifecycle()
                     FloatingActionButton(
                         onClick = {
-                            // Llamar al nuevo método para crear la ruta en el backend
-                            val success = viewModel.startNewRoute()
+
+                            val success = if (isRouteSaved) {
+                                // Si es una ruta guardada, usar startSavedRoute()
+                                println("DEBUG_START_BUTTON: Iniciando ruta guardada")
+                                viewModel.startSavedRoute()
+                            } else {
+                                // Si es una ruta nueva, usar startNewRoute()
+                                println("DEBUG_START_BUTTON: Creando e iniciando nueva ruta")
+                                viewModel.startNewRoute()
+                            }
+
                             if (success) {
                                 showStartRouteConfirmation = true
                             }
