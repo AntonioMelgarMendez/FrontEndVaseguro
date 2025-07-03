@@ -23,12 +23,12 @@ interface RequestService {
         @Header("Authorization") token: String,
         @Path("id") userId: Int
     ): Response<Unit>
-
+    
     @GET("register-codes/{id}")
     suspend fun getRequestById(
         @Header("Authorization") token: String,
         @Path("id") userId: Int
-    ): String
+    ): okhttp3.ResponseBody
 
     @POST("register-codes/validate")
     suspend fun validateCode(
