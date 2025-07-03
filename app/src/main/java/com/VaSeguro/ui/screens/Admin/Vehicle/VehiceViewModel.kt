@@ -1,119 +1,34 @@
 package com.VaSeguro.ui.screens.Admin.Vehicle
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.VaSeguro.data.Dao.Vehicle.VehicleDao
+import com.VaSeguro.data.Entitys.Vehicle.VehicleEntity
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
-import com.VaSeguro.data.model.Vehicle
+import com.VaSeguro.data.model.Vehicle.Vehicle
 import com.VaSeguro.data.model.User.UserData
 import com.VaSeguro.data.model.User.UserRole
+import com.VaSeguro.data.remote.Vehicle.toDomain
+import com.VaSeguro.data.remote.Vehicle.toEntity
+import com.VaSeguro.data.repository.UserPreferenceRepository.UserPreferencesRepository
+import com.VaSeguro.data.repository.VehicleRepository.VehicleRepository
+import com.VaSeguro.helpers.Resource
+import kotlinx.coroutines.launch
+import okhttp3.MultipartBody
 
-class VehicleViewModel : ViewModel() {
-  private val _vehicles = MutableStateFlow(
-    listOf(
-      Vehicle(
-        id = "12451",
-        plate = "PABC123",
-        model = "Toyota Yaris",
-        driver_id = UserData(
-          id = "u1",
-          forename = "Daniel",
-          surname = "Hawkins",
-          email = "daniel@example.com",
-          phoneNumber = "1234567890",
-          profilePic = null,
-          role_id = UserRole(1, "Driver"),
-          gender = "Male"
-        ),
-        created_at = "17/04/2025 14:01"
-      ),
-      Vehicle(
-        id = "12452",
-        plate = "XDEF456",
-        model = "Honda Civic",
-        driver_id = UserData(
-          id = "u2",
-          forename = "Maria",
-          surname = "Lopez",
-          email = "maria@example.com",
-          phoneNumber = "0987654321",
-          profilePic = null,
-          role_id = UserRole(1, "Driver"),
-          gender = "Female"
-        ),
-        created_at = "17/04/2025 15:00"
-      ),
-      Vehicle(
-        id = "12453",
-        plate = "JKL789",
-        model = "Ford Focus",
-        driver_id = UserData(
-          id = "u3",
-          forename = "Carlos",
-          surname = "Martinez",
-          email = "carlos@example.com",
-          phoneNumber = "1112223333",
-          profilePic = null,
-          role_id = UserRole(1, "Driver"),
-          gender = "Male"
-        ),
-        created_at = "18/04/2025 09:30"
-      ),
-      Vehicle(
-        id = "12454",
-        plate = "XYZ321",
-        model = "Chevrolet Spark",
-        driver_id = UserData(
-          id = "u4",
-          forename = "Ana",
-          surname = "Gonzalez",
-          email = "ana@example.com",
-          phoneNumber = "4445556666",
-          profilePic = null,
-          role_id = UserRole(1, "Driver"),
-          gender = "Female"
-        ),
-        created_at = "18/04/2025 10:15"
-      )
-    )
-  )
+class VehicleViewModel(
+  private val vehicleRepository: VehicleRepository,
+  private val userPreferencesRepository: UserPreferencesRepository,
+  private val vehicleDao: VehicleDao
+) : ViewModel() {
 
-  private val _drivers = MutableStateFlow(
-    listOf(
-      UserData(
-        id = "1",
-        forename = "Ana",
-        surname = "García",
-        email = "ana.garcia@example.com",
-        phoneNumber = "1234567890",
-        profilePic = null,
-        role_id = UserRole(1, "Conductor"),
-        gender = "F"
-      ),
-      UserData(
-        id = "2",
-        forename = "Carlos",
-        surname = "Mendoza",
-        email = "carlos.mendoza@example.com",
-        phoneNumber = "9876543210",
-        profilePic = null,
-        role_id = UserRole(1, "Conductor"),
-        gender = "M"
-      ),
-      UserData(
-        id = "3",
-        forename = "Lucía",
-        surname = "Pérez",
-        email = "lucia.perez@example.com",
-        phoneNumber = "5551234567",
-        profilePic = null,
-        role_id = UserRole(1, "Conductor"),
-        gender = "F"
-      )
-    )
-  )
-
+  private val _drivers = MutableStateFlow<List<UserData>>(emptyList())
   val drivers: StateFlow<List<UserData>> = _drivers
+
+  private val _vehicles = MutableStateFlow<List<Vehicle>>(emptyList())
   val vehicles: StateFlow<List<Vehicle>> = _vehicles
 
   private val _expandedMap = MutableStateFlow<Map<String, Boolean>>(emptyMap())
@@ -121,6 +36,67 @@ class VehicleViewModel : ViewModel() {
 
   private val _checkedMap = MutableStateFlow<Map<String, Boolean>>(emptyMap())
   val checkedMap: StateFlow<Map<String, Boolean>> = _checkedMap
+  private val _isLoading = MutableStateFlow(false)
+  val isLoading: StateFlow<Boolean> = _isLoading
+
+  private val CACHE_EXPIRATION_MS = 1 * 60 * 1000L
+  init {
+    loadVehicles()
+  }
+
+  private fun loadVehicles() {
+    viewModelScope.launch {
+      _isLoading.value = true
+      // 1. Read from Room
+      val cached = vehicleDao.getAllVehicles()
+      if (cached.isNotEmpty()) {
+        _vehicles.value = cached.map { it.toDomain() }
+      }
+      // 2. Check cache expiration
+      val lastFetch = userPreferencesRepository.getLastVehiclesFetchTime()
+      val now = System.currentTimeMillis()
+      if (lastFetch != null && now - lastFetch < CACHE_EXPIRATION_MS) {
+        _isLoading.value = false
+        return@launch
+      }
+      // 3. Fetch from API and update Room
+      try {
+        val token = userPreferencesRepository.getAuthToken().orEmpty()
+        val apiVehicles = vehicleRepository.getAllVehicles(token)
+        apiVehicles.collect { resource ->
+          when (resource) {
+            is com.VaSeguro.helpers.Resource.Success -> {
+              val vehicles = resource.data.map { it.toDomain() }
+              _vehicles.value = vehicles
+              vehicleDao.clearVehicles()
+              vehicleDao.insertVehicles(resource.data.map { it.toEntity() })
+              userPreferencesRepository.setLastVehiclesFetchTime(now)
+            }
+            is com.VaSeguro.helpers.Resource.Error -> {
+              // Optionally handle error
+            }
+            com.VaSeguro.helpers.Resource.Loading -> {
+              _isLoading.value = true
+            }
+          }
+        }
+      } catch (_: Exception) { }
+      _isLoading.value = false
+    }
+  }
+  private fun Vehicle.toEntity() = VehicleEntity(
+    id = id.toInt(),
+    plate = plate,
+    driver_id = driver_id.toInt(),
+    model = model,
+    brand = brand,
+    year = year,
+    color = color,
+    capacity = capacity,
+    updated_at = updated_at,
+    carPic = carPic,
+    created_at = created_at
+  )
 
   fun toggleExpand(vehicleId: String) {
     _expandedMap.update { current ->
@@ -138,26 +114,62 @@ class VehicleViewModel : ViewModel() {
     }
   }
 
+
   fun deleteVehicle(vehicleId: String) {
-    _vehicles.update { list ->
-      list.filterNot { it.id == vehicleId }
+    viewModelScope.launch {
+      vehicleRepository.deleteVehicle(vehicleId.toInt(), userPreferencesRepository.getAuthToken().toString()).collect { resource ->
+        when (resource) {
+          is Resource.Success -> {
+            _vehicles.update { list ->
+              list.filterNot { it.id == vehicleId }
+            }
+            _expandedMap.update { it - vehicleId }
+            _checkedMap.update { it - vehicleId }
+            loadVehicles()
+          }
+          is Resource.Error -> {
+            println("Error al eliminar vehículo: ${resource.message}")
+          }
+          Resource.Loading -> { }
+        }
+      }
     }
-    _expandedMap.update { it - vehicleId }
-    _checkedMap.update { it - vehicleId }
+  }
+  fun updateVehicle(
+    id: Int,
+    plate: String,
+    model: String,
+    brand: String,
+    year: String,
+    color: String,
+    capacity: String,
+    carPic: MultipartBody.Part? = null,
+    onResult: (Boolean, String?) -> Unit = { _, _ -> }
+  ) {
+    viewModelScope.launch {
+      vehicleRepository.updateVehicle(
+        userPreferencesRepository.getAuthToken().toString(),
+        id = id,
+        plate = plate,
+        model = model,
+        brand = brand,
+        year = year,
+        color = color,
+        capacity = capacity,
+        carPic = carPic
+      ).collect { resource ->
+        when (resource) {
+          is Resource.Success -> {
+            loadVehicles()
+            onResult(true, null)
+          }
+          is Resource.Error -> {
+            onResult(false, resource.message)
+          }
+          Resource.Loading -> { }
+        }
+      }
+    }
   }
 
-  fun addVehicle(plate: String, model: String, driver: UserData) {
-    val randomId = (10000..99999).random().toString()
-    val now = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))
-
-    val vehicle = Vehicle(
-      id = randomId,
-      plate = plate,
-      model = model,
-      driver_id = driver,
-      created_at = now
-    )
-
-    _vehicles.update { it + vehicle }
-  }
 }

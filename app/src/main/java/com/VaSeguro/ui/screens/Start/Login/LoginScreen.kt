@@ -1,13 +1,15 @@
 package com.VaSeguro.ui.screens.Start.Login
 
-
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowRight
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.outlined.DesktopMac
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Lock
@@ -23,6 +25,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -43,21 +46,27 @@ fun LoginScreen(navController: NavController) {
                 val appProvider = AppProvider(context.applicationContext)
                 return LoginViewModel(
                     appProvider.provideAuthRepository(),
-                    appProvider.provideUserPreferences()
+                    appProvider.provideUserPreferences(),
+                    appProvider.provideChildrenRepository(),
+                    context
                 ) as T
             }
         }
     )
 
+    LaunchedEffect(Unit) {
+        viewModel.clearFields()
+    }
     val email by viewModel.email.collectAsState()
     val password by viewModel.password.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val rememberMe by viewModel.rememberMe.collectAsState()
-
+    var passwordVisible by remember { mutableStateOf(false) }
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .background(Color.White)
             .padding(16.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -100,8 +109,8 @@ fun LoginScreen(navController: NavController) {
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color(0xFFD3D3D3),
-                        unfocusedContainerColor = Color(0xFFD3D3D3),
+                        focusedContainerColor = Color(0xFFE3E3E3),
+                        unfocusedContainerColor = Color(0xFFE3E3E3),
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
                     )
@@ -113,14 +122,18 @@ fun LoginScreen(navController: NavController) {
                     onValueChange = viewModel::onPasswordChange,
                     label = { Text("Contraseña") },
                     trailingIcon = {
-                        Icon(Icons.Outlined.Lock, contentDescription = "Lock icon", tint = Color.Gray)
+                        val image = if (passwordVisible) Icons.Outlined.Lock else Icons.Outlined.Lock
+                        val description = if (passwordVisible) "Ocultar contraseña" else "Mostrar contraseña"
+                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            Icon(imageVector = image, contentDescription = description, tint = Color.Gray)
+                        }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    visualTransformation = PasswordVisualTransformation(),
+                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     shape = RoundedCornerShape(16.dp),
                     colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color(0xFFD3D3D3),
-                        unfocusedContainerColor = Color(0xFFD3D3D3),
+                        focusedContainerColor = Color(0xFFE3E3E3),
+                        unfocusedContainerColor = Color(0xFFE3E3E3),
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
                     )
@@ -144,17 +157,31 @@ fun LoginScreen(navController: NavController) {
                         )
                         Text("Recuérdame", modifier = Modifier.padding(start = 8.dp))
                     }
-                    TextButton(onClick = { /* TODO: Navegar a recuperación de contraseña */ }) {
+                    TextButton(onClick = { navController.navigate("forgot_password") }) {
                         Text("¿Olvidaste tu contraseña?")
                     }
                 }
 
-                // Mostrar errores
-                error?.let {
+                // Mostrar errores con mensajes comprensibles
+                error?.let { errorCode ->
+                    val errorMessage = when (errorCode) {
+                        "401" -> "Credenciales incorrectas. Por favor verifica tu email y contraseña."
+                        "402" -> "Pago requerido. Por favor completa tu suscripción."
+                        "403" -> "Acceso denegado. Su cuenta aun no ha sido verificada"
+                        "404" -> "Usuario no encontrado. Verifica tus datos o regístrate."
+                        "408" -> "Tiempo de espera agotado. Por favor intenta nuevamente."
+                        "500" -> "Error del servidor. Por favor intenta más tarde."
+                        "network_error" -> "Problema de conexión. Verifica tu conexión a internet."
+                        "invalid_email" -> "Formato de email inválido. Por favor corrígelo."
+                        "weak_password" -> "Contraseña demasiado débil. Debe tener al menos 6 caracteres."
+                        else -> "Ocurrió un error inesperado. Por favor intenta nuevamente."
+                    }
+
                     Text(
-                        text = it,
+                        text = errorMessage,
                         color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(vertical = 8.dp)
+                        modifier = Modifier.padding(vertical = 8.dp),
+                        textAlign = TextAlign.Center
                     )
                 }
 
@@ -162,7 +189,10 @@ fun LoginScreen(navController: NavController) {
                 Button(
                     onClick = {
                         viewModel.login(
-                            onSuccess = { navController.navigate("home") }
+                            onSuccess = { navController.navigate("home") },
+                            onError = { errorCode ->
+                                viewModel.setError(errorCode)
+                            }
                         )
                     },
                     modifier = Modifier
@@ -201,3 +231,4 @@ fun LoginScreen(navController: NavController) {
         }
     }
 }
+

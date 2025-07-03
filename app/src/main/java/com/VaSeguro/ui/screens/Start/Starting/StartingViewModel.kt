@@ -8,6 +8,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlin.collections.plusAssign
+import kotlin.text.compareTo
 
 class StartingViewModel : ViewModel() {
     private val _currentSlideIndex = MutableStateFlow(0)
@@ -18,7 +20,9 @@ class StartingViewModel : ViewModel() {
 
     fun nextSlide() {
         viewModelScope.launch {
-            _currentSlideIndex.value = (_currentSlideIndex.value + 1) % _slides.value.size
+            if (_currentSlideIndex.value < _slides.value.size - 1) {
+                _currentSlideIndex.value += 1
+            }
         }
     }
 

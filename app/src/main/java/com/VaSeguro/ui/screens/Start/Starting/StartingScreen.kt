@@ -79,7 +79,9 @@ fun StartingScreen(navController: NavHostController,viewModel: StartingViewModel
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(Color.White)
             .padding(24.dp),
+
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
 
