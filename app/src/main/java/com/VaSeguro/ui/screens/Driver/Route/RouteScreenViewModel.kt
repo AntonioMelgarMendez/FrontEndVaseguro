@@ -233,6 +233,25 @@ class RouteScreenViewModel(
     // Distancia mínima para considerar que un segmento fue completado (en metros)
     private val segmentCompletionThreshold = 150.0
 
+    // Estados para el timing de segmentos
+    private val _segmentStartTime = MutableStateFlow<Long?>(null)
+    val segmentStartTime: StateFlow<Long?> = _segmentStartTime.asStateFlow()
+
+    // Map para almacenar los tiempos de cada segmento completado
+    private val _segmentTimings = MutableStateFlow<Map<Int, Long>>(emptyMap())
+    val segmentTimings: StateFlow<Map<Int, Long>> = _segmentTimings.asStateFlow()
+
+    // Job para actualizar el tiempo en tiempo real
+    private var segmentTimerJob: Job? = null
+
+    // Tiempo actual del segmento en tiempo real (en segundos)
+    private val _currentSegmentElapsedTime = MutableStateFlow(0L)
+    val currentSegmentElapsedTime: StateFlow<Long> = _currentSegmentElapsedTime.asStateFlow()
+
+    // Tiempo estimado vs tiempo real para el próximo punto
+    private val _realTimeToNextPoint = MutableStateFlow("")
+    val realTimeToNextPoint: StateFlow<String> = _realTimeToNextPoint.asStateFlow()
+
     init {
         // Inicializar el ViewModel con el ID del conductor y del vehiculo
         viewModelScope.launch {
@@ -448,8 +467,13 @@ class RouteScreenViewModel(
         // Convertir StopPassenger a RoutePoint y agregar a la ruta
         childStops.forEach { stop ->
             val latLng = LatLng(stop.stop.latitude, stop.stop.longitude)
-            val name = "${stop.child.calculatedFullName} - ${stop.stop.name} (${stop.stopType.name})"
-            addRoutePoint(latLng, name, stop.stopType)
+            // Verificar si ya existe un punto en la misma ubicación
+            val existingPoint = _routePoints.find { isApproximatelySameLocation(it.location, latLng) }
+
+            if (existingPoint == null) {
+                val name = "${stop.child.calculatedFullName} - ${stop.stop.name} (${stop.stopType.name})"
+                addRoutePoint(latLng, name, stop.stopType)
+            }
         }
 
         // Calcular la ruta con los nuevos puntos solo si se solicita y hay suficientes puntos
@@ -1158,6 +1182,7 @@ class RouteScreenViewModel(
      * Verifica proximidad a puntos de la ruta y maneja alertas
      */
     private fun checkProximityToRoutePoints(currentLocation: LatLng) {
+        val selectedChildrenIds = _selectedChildIds.value.toSet()
         _routePoints.forEach { point ->
             val distance = calculateDistance(currentLocation, point.location)
 
@@ -1170,21 +1195,20 @@ class RouteScreenViewModel(
                         val stopKey = generateStopKey(stopPassenger.stop)
 
                         // Solo mostrar diálogo si no se ha procesado esta parada
-                        if (!_processedStops.value.contains(stopKey) && !_isStopInfoDialogVisible.value && _currentRouteStatus.equals(
-                                RouteStatus.ON_PROGRESS)) {
+                        if (!_processedStops.value.contains(stopKey) && !_isStopInfoDialogVisible.value && _currentRouteStatus.value == RouteStatus.ON_PROGRESS) {
                             _currentNearbyStop.value = stopPassenger.stop
 
                             // Buscar todos los StopPassengers asociados a esta parada
                             val relatedPassengers = _stopPassengers.value.filter {
-                                isApproximatelySameLocation(
-                                    LatLng(it.stop.latitude, it.stop.longitude),
-                                    stopLocation
-                                )
+                                val passengerStopLocation = LatLng(it.stop.latitude, it.stop.longitude)
+                                isApproximatelySameLocation(passengerStopLocation, stopLocation) && selectedChildrenIds.contains(it.child.id)
                             }
 
-                            _currentStopPassengers.value = relatedPassengers
-                            _isStopInfoDialogVisible.value = true
-                            return
+                            if (relatedPassengers.isNotEmpty()) {
+                                _currentStopPassengers.value = relatedPassengers
+                                _isStopInfoDialogVisible.value = true
+                                return // Salir para mostrar el diálogo para la primera parada encontrada
+                            }
                         }
                     }
                 }
@@ -1462,6 +1486,13 @@ class RouteScreenViewModel(
     }
 
     /**
+     * Limpia el mensaje de error después de que se haya mostrado.
+     */
+    fun errorMessageShown() {
+        _errorMessage.value = null
+    }
+
+    /**
      * Actualiza la información del próximo punto en la ruta
      */
     private fun updateNextPointInfo() {
@@ -1490,14 +1521,20 @@ class RouteScreenViewModel(
     fun updateRouteStatus(statusId: Int, routeId: Int = _currentRouteId.value ?: 0) {
         viewModelScope.launch {
             try {
+                println("DEBUG_STATUS: Iniciando actualización de estado - statusId: $statusId, routeId: $routeId")
+
                 // Buscar el RouteStatus correspondiente al ID
                 val newStatus = RouteStatus.entries.find { it.id == statusId }
                     ?: RouteStatus.NO_INIT
 
-                // Actualizar el estado local inmediatamente
-                _currentRouteStatus.value = newStatus
+                println("DEBUG_STATUS: Nuevo estado: ${newStatus.status}")
 
-                // Si tenemos una ruta activa guardada, actualizar en el servidor
+                // Actualizar el estado local inmediatamente ANTES de cualquier operación del servidor
+                _currentRouteStatus.value = newStatus
+                println("DEBUG_STATUS: Estado local actualizado a: ${_currentRouteStatus.value.status}")
+
+                // Actualizar en el servidor solo si tenemos un routeId válido
+                if (routeId > 0) {
                     try {
                         // Determinar si necesitamos fecha de finalización
                         val endDate = if (newStatus == RouteStatus.FINISHED) {
@@ -1507,6 +1544,8 @@ class RouteScreenViewModel(
                             null
                         }
 
+                        println("DEBUG_STATUS: Actualizando en servidor - routeId: $routeId, endDate: $endDate")
+
                         // Actualizar el estado en el servidor usando el repositorio
                         val updatedRoute = savedRoutesRepository.updateRouteStatus(routeId, statusId, endDate)
 
@@ -1514,7 +1553,7 @@ class RouteScreenViewModel(
                             // Actualizar el objeto RoutesData local
                             _currentRoutesData.value = updatedRoute
 
-                            println("DEBUG_STATUS: Estado de ruta actualizado exitosamente: ${newStatus.status}")
+                            println("DEBUG_STATUS: Estado de ruta actualizado exitosamente en servidor: ${newStatus.status}")
                             if (endDate != null) {
                                 println("DEBUG_STATUS: Fecha de finalización establecida: $endDate")
                             }
@@ -1528,19 +1567,28 @@ class RouteScreenViewModel(
                         showError("Error de conexión al actualizar estado: ${e.message}")
                         println("DEBUG_STATUS: Excepción al actualizar estado: ${e.message}")
                     }
+                } else {
+                    println("DEBUG_STATUS: No se actualiza en servidor - routeId inválido: $routeId")
+                }
 
-
-                // Lógica adicional según el estado
+                // Lógica adicional según el estado (DESPUÉS de actualizar el estado local)
                 when (newStatus) {
                     RouteStatus.ON_PROGRESS -> {
+                        println("DEBUG_STATUS: Procesando estado ON_PROGRESS")
                         // Si se pone en progreso, asegurar que el progreso no sea 0
                         if (_routeProgress.value == 0f) {
                             updateRouteProgress(0.001f)
                         }
+                        // NUEVO: Iniciar el timer del segmento cuando la ruta esté en progreso
+                        startSegmentTimer()
                     }
                     RouteStatus.FINISHED -> {
+                        println("DEBUG_STATUS: Procesando estado FINISHED")
                         // Si se finaliza, poner progreso al 100%
                         updateRouteProgress(1.0f)
+
+                        // NUEVO: Detener el timer del segmento
+                        stopSegmentTimer()
 
                         // Mostrar mensaje de finalización
                         showError("¡Ruta finalizada exitosamente!")
@@ -1555,12 +1603,20 @@ class RouteScreenViewModel(
                         }
                     }
                     RouteStatus.STOPED -> {
+                        println("DEBUG_STATUS: Procesando estado STOPED")
                         // Pausar el seguimiento de proximidad si existe
                         proximityAlertJob?.cancel()
+                        // NUEVO: Pausar el timer del segmento (no detenerlo completamente)
+                        segmentTimerJob?.cancel()
+                        segmentTimerJob = null
                     }
                     RouteStatus.PROBLEMS -> {
+                        println("DEBUG_STATUS: Procesando estado PROBLEMS")
                         // Log para problemas reportados
                         println("DEBUG_STATUS: Ruta marcada con problemas")
+                        // NUEVO: Pausar el timer en caso de problemas
+                        segmentTimerJob?.cancel()
+                        segmentTimerJob = null
                     }
                     else -> {
                         // Estados iniciales o no definidos
@@ -1568,9 +1624,12 @@ class RouteScreenViewModel(
                     }
                 }
 
+                println("DEBUG_STATUS: Actualización de estado completada - Estado final: ${_currentRouteStatus.value.status}")
+
             } catch (e: Exception) {
                 showError("Error al actualizar estado de la ruta: ${e.message}")
                 println("DEBUG_STATUS: Error general en updateRouteStatus: ${e.message}")
+                e.printStackTrace()
             }
         }
     }
@@ -1920,7 +1979,6 @@ class RouteScreenViewModel(
                     val routeActive = selectedRoute != null && routeStatus == RouteStatus.ON_PROGRESS
                     val progress = _routeProgress.value
                     val currentSegment = _currentSegmentIndex.value
-                    val statusId = routeStatus.id
 
                     locationRepository.updateLocationWithRoute(
                         driverId = driverId,
@@ -1930,7 +1988,7 @@ class RouteScreenViewModel(
                         routeActive = routeActive,
                         routeProgress = progress,
                         currentSegment = currentSegment,
-                        routeStatus = statusId
+                        routeStatus = routeStatus.id
                     )
                 }
             } catch (e: Exception) {
@@ -1994,6 +2052,139 @@ class RouteScreenViewModel(
                 }
             }
         }
+    }
+
+    /**
+     * Inicia el contador de tiempo para el segmento actual
+     */
+    private fun startSegmentTimer() {
+        // Cancelar timer anterior si existe
+        stopSegmentTimer()
+
+        // Establecer tiempo de inicio del segmento
+        _segmentStartTime.value = System.currentTimeMillis()
+        _currentSegmentElapsedTime.value = 0L
+
+        println("DEBUG_TIMER: Iniciando timer para segmento ${_currentSegmentIndex.value}")
+
+        // Iniciar job que actualiza el tiempo cada segundo
+        segmentTimerJob = viewModelScope.launch {
+            while (true) {
+                delay(1000) // Actualizar cada segundo
+
+                val startTime = _segmentStartTime.value
+                if (startTime != null) {
+                    val elapsedMillis = System.currentTimeMillis() - startTime
+                    val elapsedSeconds = elapsedMillis / 1000
+                    _currentSegmentElapsedTime.value = elapsedSeconds
+
+                    // Actualizar tiempo real al próximo punto
+                    updateRealTimeToNextPoint(elapsedSeconds)
+                }
+            }
+        }
+    }
+
+    /**
+     * Detiene el contador de tiempo del segmento actual
+     */
+    private fun stopSegmentTimer() {
+        segmentTimerJob?.cancel()
+        segmentTimerJob = null
+
+        val startTime = _segmentStartTime.value
+        val currentSegment = _currentSegmentIndex.value
+
+        if (startTime != null) {
+            val elapsedMillis = System.currentTimeMillis() - startTime
+            val elapsedSeconds = elapsedMillis / 1000
+
+            // Guardar el tiempo del segmento completado
+            val currentTimings = _segmentTimings.value.toMutableMap()
+            currentTimings[currentSegment] = elapsedSeconds
+            _segmentTimings.value = currentTimings
+
+            println("DEBUG_TIMER: Segmento $currentSegment completado en $elapsedSeconds segundos")
+        }
+
+        _segmentStartTime.value = null
+        _currentSegmentElapsedTime.value = 0L
+    }
+
+    /**
+     * Actualiza el tiempo real estimado al próximo punto
+     */
+    private fun updateRealTimeToNextPoint(elapsedSeconds: Long) {
+        val route = _selectedRoute.value ?: return
+        val currentSegmentIndex = _currentSegmentIndex.value
+
+        if (currentSegmentIndex < route.segments.size) {
+            val currentSegment = route.segments[currentSegmentIndex]
+            val estimatedDurationSeconds = parseDuration(currentSegment.duration)
+
+            // Calcular tiempo restante basado en tiempo transcurrido
+            val remainingSeconds = maxOf(0L, estimatedDurationSeconds - elapsedSeconds)
+
+            // Formatear tiempo restante
+            val realTimeFormatted = formatDuration(remainingSeconds)
+            _realTimeToNextPoint.value = realTimeFormatted
+
+            // También actualizar el tiempo ajustado para mostrar en UI
+            if (remainingSeconds > 0) {
+                _adjustedTimeToNextPoint.value = "⏱️ $realTimeFormatted"
+            } else {
+                _adjustedTimeToNextPoint.value = "⏱️ Tiempo excedido"
+            }
+        }
+    }
+
+    /**
+     * Obtiene estadísticas de tiempo de todos los segmentos
+     */
+    fun getSegmentTimeStatistics(): Map<String, Any> {
+        val route = _selectedRoute.value ?: return emptyMap()
+        val timings = _segmentTimings.value
+        val currentElapsed = _currentSegmentElapsedTime.value
+
+        val statistics = mutableMapOf<String, Any>()
+
+        // Tiempo total transcurrido
+        val totalElapsed = timings.values.sum() + currentElapsed
+        statistics["totalElapsedSeconds"] = totalElapsed
+        statistics["totalElapsedFormatted"] = formatDuration(totalElapsed)
+
+        // Tiempo estimado total de la ruta
+        val totalEstimated = route.segments.sumOf { parseDuration(it.duration) }
+        statistics["totalEstimatedSeconds"] = totalEstimated
+        statistics["totalEstimatedFormatted"] = formatDuration(totalEstimated)
+
+        // Diferencia entre tiempo real y estimado
+        val timeDifference = totalElapsed - totalEstimated
+        statistics["timeDifferenceSeconds"] = timeDifference
+        statistics["timeDifferenceFormatted"] = if (timeDifference >= 0) {
+            "+${formatDuration(timeDifference)}"
+        } else {
+            "-${formatDuration(-timeDifference)}"
+        }
+
+        // Segmentos completados con sus tiempos
+        val completedSegments = mutableListOf<Map<String, Any>>()
+        timings.forEach { (segmentIndex, timeSeconds) ->
+            if (segmentIndex < route.segments.size) {
+                val segment = route.segments[segmentIndex]
+                completedSegments.add(mapOf(
+                    "segmentIndex" to segmentIndex,
+                    "segmentName" to "${segment.startPointName} → ${segment.endPointName}",
+                    "realTimeSeconds" to timeSeconds,
+                    "realTimeFormatted" to formatDuration(timeSeconds),
+                    "estimatedTimeSeconds" to parseDuration(segment.duration),
+                    "estimatedTimeFormatted" to formatGoogleDuration(segment.duration)
+                ))
+            }
+        }
+        statistics["completedSegments"] = completedSegments
+
+        return statistics
     }
 
     companion object {

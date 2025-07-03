@@ -11,7 +11,6 @@ import com.VaSeguro.MyApplication
 import com.VaSeguro.data.model.Stop.StopRoute
 import com.VaSeguro.data.model.StopPassenger.StopPassenger
 import com.VaSeguro.data.repository.DriverPrefs.DriverPrefs
-import com.VaSeguro.map.decodePolyline
 import com.VaSeguro.map.repository.LocationRepository
 import com.VaSeguro.map.repository.LocationDriverAddress
 import com.VaSeguro.map.repository.StopRouteRepository
@@ -33,10 +32,6 @@ class MapViewModel(
     // Estado para la posición actual del conductor
     private val _driverLocation = MutableStateFlow<LatLng?>(null)
     val driverLocation: StateFlow<LatLng?> = _driverLocation.asStateFlow()
-
-    // Estado para los puntos de la ruta (decodificados del polyline)
-    private val _routePoints = MutableStateFlow<List<LatLng>>(emptyList())
-    val routePoints: StateFlow<List<LatLng>> = _routePoints.asStateFlow()
 
     // NUEVO: Estado para las paradas de los hijos del padre usando StopRoute como fuente de verdad
     private val _parentChildrenStopRoutes = MutableStateFlow<List<StopRoute>>(emptyList())
@@ -98,6 +93,9 @@ class MapViewModel(
     // Variable para rastrear si las actualizaciones están pausadas
     private var locationUpdatesPaused = false
 
+    // NUEVO: Variable para rastrear el estado anterior de la ruta
+    private var previousRouteActive = false
+
     init {
         // Al iniciar, cargamos la última ubicación del conductor
         loadDriverLocationWithRoute()
@@ -157,12 +155,6 @@ class MapViewModel(
                 _routeProgress.value = initialLocation.route_progress
                 _routeStatus.value = initialLocation.route_status // Ya es String, no necesita .toString()
 
-                // Decodificar y actualizar polyline si existe
-                initialLocation.encoded_polyline?.let { polyline ->
-                    val decodedPoints = decodePolyline(polyline)
-                    _routePoints.value = decodedPoints
-                }
-
                 // Suscribirse a actualizaciones en tiempo real si no están pausadas
                 if (!locationUpdatesPaused) {
                     subscribeToLocationAndRouteUpdates()
@@ -215,7 +207,7 @@ class MapViewModel(
     }
 
     /**
-     * NUEVO: Suscribe a las actualizaciones de ubicación y ruta en tiempo real
+     * MODIFICADO: Suscribe a las actualizaciones de ubicación y ruta en tiempo real
      */
     private fun subscribeToLocationAndRouteUpdates() {
         viewModelScope.launch {
@@ -224,10 +216,35 @@ class MapViewModel(
                     _driverLocationWithRoute.value = locationData
                     _driverLocation.value = LatLng(locationData.latitude, locationData.longitude)
 
+                    // NUEVO: Detectar si la ruta se volvió activa (cambio de false a true)
+                    val wasRouteInactive = !previousRouteActive
+                    val isNowRouteActive = locationData.route_active
+
+                    println("🔍 ANÁLISIS CAMBIO RUTA:")
+                    println("  - Estado anterior: $previousRouteActive")
+                    println("  - Estado actual: $isNowRouteActive")
+                    println("  - ¿Era inactiva antes?: $wasRouteInactive")
+                    println("  - ¿Es activa ahora?: $isNowRouteActive")
+
+                    if (wasRouteInactive && isNowRouteActive) {
+                        println("🚨 ¡NUEVA RUTA DETECTADA! La ruta se volvió activa, recargando StopRoutes...")
+
+                        // Limpiar notificaciones anteriores ya que es una nueva ruta
+                        _proximityAlert.value = null
+                        _stopStateChangeNotification.value = null
+
+                        // Resetear el último segmento procesado
+                        _lastProcessedSegment.value = -1
+
+                        // Recargar los StopRoutes porque puede ser una nueva ruta
+                        loadParentChildrenStops()
+                    }
+
                     // Actualizar estados de ruta
+                    previousRouteActive = _isRouteActive.value // Guardar el estado anterior antes de actualizarlo
                     _isRouteActive.value = locationData.route_active
                     _routeProgress.value = locationData.route_progress
-                    _routeStatus.value = locationData.route_status // Ya es String, no necesita .toString()
+                    _routeStatus.value = locationData.route_status
 
                     // NUEVO: Verificar proximidad a paradas de mis hijos
                     checkProximityToMyChildrenStops(LatLng(locationData.latitude, locationData.longitude))
@@ -238,22 +255,11 @@ class MapViewModel(
                         _lastProcessedSegment.value = locationData.current_segment
                     }
 
-                    // Decodificar y actualizar polyline si cambió
-                    locationData.encoded_polyline?.let { polyline ->
-                        if (polyline != _driverLocationWithRoute.value?.encoded_polyline) {
-                            val decodedPoints = decodePolyline(polyline)
-                            _routePoints.value = decodedPoints
-                            println("Polyline actualizada: ${decodedPoints.size} puntos")
-                        }
-                    } ?: run {
-                        // Si no hay polyline, limpiar los puntos de ruta
-                        _routePoints.value = emptyList()
-                    }
-
-                    print("Ubicación actualizada: ${locationData.latitude}, ${locationData.longitude}")
-                    print("Ruta activa: ${locationData.route_active}, Progreso: ${locationData.route_progress}")
+                    println("📍 Ubicación actualizada: ${locationData.latitude}, ${locationData.longitude}")
+                    println("🚌 Ruta activa: ${locationData.route_active}, Progreso: ${locationData.route_progress}")
                 }
             } catch (e: Exception) {
+                println("❌ Error en las actualizaciones: ${e.message}")
                 _errorMessage.value = "Error en las actualizaciones: ${e.message}"
             }
         }
@@ -278,14 +284,7 @@ class MapViewModel(
                 // Solo mostrar la alerta si es diferente a la anterior
                 if (_proximityAlert.value != alertMessage) {
                     _proximityAlert.value = alertMessage
-
-                    // Limpiar la alerta después de 5 segundos
-                    viewModelScope.launch {
-                        kotlinx.coroutines.delay(5000)
-                        if (_proximityAlert.value == alertMessage) {
-                            _proximityAlert.value = null
-                        }
-                    }
+                    // Ya no limpiamos automáticamente - el mensaje se mantiene hasta que se actualice
                 }
             }
         }
@@ -297,104 +296,94 @@ class MapViewModel(
     private fun checkStopStateChanges() {
         viewModelScope.launch {
             try {
+                println("=== INICIANDO checkStopStateChanges ===")
+
                 // Guardar los estados originales de StopRoute que ya tenemos
                 val originalStopRoutes = _parentChildrenStopRoutes.value
-                if (originalStopRoutes.isEmpty()) return@launch
-
-                // Hacer una consulta fresca desde la API
-                val updatedStopRoutes = try {
-                    stopRouteRepository.getStopRoutesByChildDirect(_childId.value)
-                } catch (e: Exception) {
-                    println("Error al obtener StopRoutes actualizados: ${e.message}")
+                if (originalStopRoutes.isEmpty()) {
+                    println("❌ No hay StopRoutes originales para comparar")
                     return@launch
                 }
 
-                // CORREGIDO: Actualizar INMEDIATAMENTE los estados del ViewModel
+                println("📋 Estados originales:")
+                originalStopRoutes.forEach { original ->
+                    println("   StopRoute ID: ${original.id}, State: ${original.state}, Child: ${original.stopPassenger.child.fullName}")
+                }
+
+                // Hacer una consulta fresca desde la API para obtener los datos actualizados
+                val updatedStopRoutes = try {
+                    println("🔄 Consultando API para obtener estados actualizados...")
+                    stopRouteRepository.getStopRoutesByChildDirect(_childId.value)
+                } catch (e: Exception) {
+                    println("❌ Error al obtener StopRoutes actualizados: ${e.message}")
+                    return@launch
+                }
+
+                println("📋 Estados actualizados desde API:")
+                updatedStopRoutes.forEach { updated ->
+                    println("   StopRoute ID: ${updated.id}, State: ${updated.state}, Child: ${updated.stopPassenger.child.fullName}")
+                }
+
+                // Actualizar INMEDIATAMENTE los estados del ViewModel con los datos frescos
                 _parentChildrenStopRoutes.value = updatedStopRoutes
+                _parentChildrenStops.value = updatedStopRoutes.map { it.stopPassenger }
 
-                // Actualizar también los StopPassengers para compatibilidad con el mapa
-                val updatedStopPassengers = updatedStopRoutes.map { it.stopPassenger }
-                _parentChildrenStops.value = updatedStopPassengers
+                println("🔍 Comparando estados...")
 
-                println("✅ Estados actualizados en ViewModel: ${updatedStopRoutes.size} StopRoutes")
+                // Comparar cada parada actualizada con su estado original
+                var changeDetected = false
+                updatedStopRoutes.forEach { updatedStopRoute ->
+                    val originalStopRoute = originalStopRoutes.find { it.id == updatedStopRoute.id }
 
-                var hasNewNotification = false
-                var latestNotification: String? = null
+                    if (originalStopRoute != null) {
+                        println("   Comparando StopRoute ID ${updatedStopRoute.id}:")
+                        println("     Estado original: ${originalStopRoute.state}")
+                        println("     Estado actualizado: ${updatedStopRoute.state}")
+                        println("     ¿Cambió de false a true?: ${!originalStopRoute.state && updatedStopRoute.state}")
 
-                // Comparar estado por estado para detectar cambios
-                originalStopRoutes.forEach { originalStopRoute ->
-                    // Buscar el mismo StopRoute en la lista actualizada
-                    val updatedStopRoute = updatedStopRoutes.find { it.id == originalStopRoute.id }
-
-                    updatedStopRoute?.let { updated ->
-                        // Verificar si el estado cambió en StopRoute
-                        val originalState = originalStopRoute.state
-                        val newState = updated.state
-
-                        // Si detectamos un cambio de estado de false a true (completado)
-                        if (originalState != newState && newState == true) {
-                            val actionText = if (updated.stopPassenger.stopType.name == "HOME") {
+                        // Si encontramos la parada original y su estado ha cambiado de false a true
+                        if (!originalStopRoute.state && updatedStopRoute.state) {
+                            changeDetected = true
+                            val actionText = if (updatedStopRoute.stopPassenger.stopType.name == "HOME") {
                                 "fue recogido/dejado en casa"
                             } else {
                                 "fue dejado/recogido en la escuela"
                             }
 
-                            latestNotification = "✅ ${updated.stopPassenger.child.fullName} $actionText - ${updated.stopPassenger.stop.name}"
-                            hasNewNotification = true
+                            val notificationMessage = "✅ ${updatedStopRoute.stopPassenger.child.fullName} $actionText - ${updatedStopRoute.stopPassenger.stop.name}"
 
-                            println("STOP_ROUTE_CHANGE: Detectado cambio de estado para ${updated.stopPassenger.child.fullName}")
-                            println("STOP_ROUTE_CHANGE: Estado original: $originalState, nuevo estado: $newState")
-                            println("STOP_ROUTE_CHANGE: StopRoute ID: ${updated.id}, Order: ${updated.order}")
+                            println("🎉 ¡CAMBIO DE ESTADO DETECTADO! -> $notificationMessage")
+
+                            // Gestionar la notificación (se mostrará la última detectada si hay varias)
+                            _stopStateChangeNotification.value = notificationMessage
+                            notificationCleanupJob?.cancel()
+                            notificationCleanupJob = viewModelScope.launch {
+                                kotlinx.coroutines.delay(8000)
+                                if (_stopStateChangeNotification.value == notificationMessage) {
+                                    _stopStateChangeNotification.value = null
+                                }
+                                notificationCleanupJob = null
+                            }
                         }
+                    } else {
+                        println("   ⚠️ No se encontró StopRoute original con ID ${updatedStopRoute.id}")
                     }
                 }
 
-                // Solo manejar una notificación a la vez para evitar concurrencia
-                if (hasNewNotification && latestNotification != null) {
-                    _stopStateChangeNotification.value = latestNotification
-
-                    // Cancelar el job anterior si existe
-                    notificationCleanupJob?.cancel()
-
-                    // Crear nuevo job para limpiar la notificación
-                    notificationCleanupJob = viewModelScope.launch {
-                        kotlinx.coroutines.delay(8000)
-                        // Solo limpiar si la notificación sigue siendo la misma
-                        if (_stopStateChangeNotification.value == latestNotification) {
-                            _stopStateChangeNotification.value = null
-                        }
-                        notificationCleanupJob = null
-                    }
+                if (!changeDetected) {
+                    println("ℹ️ No se detectaron cambios de estado")
                 }
+
+                println("=== FIN checkStopStateChanges ===")
 
             } catch (e: Exception) {
-                println("Error al verificar cambios de estado de StopRoute: ${e.message}")
+                println("❌ Error al verificar cambios de estado de StopRoute: ${e.message}")
                 _errorMessage.value = "Error al verificar cambios de estado: ${e.message}"
             }
         }
     }
 
-    /**
-     * NUEVO: Obtiene las paradas que están en la ruta actual del conductor usando StopRoute
-     */
-    fun getStopRoutesOnCurrentRoute(): List<StopRoute> {
-        val routePoints = _routePoints.value
-        val childrenStopRoutes = _parentChildrenStopRoutes.value
 
-        if (routePoints.isEmpty() || childrenStopRoutes.isEmpty()) {
-            return emptyList()
-        }
-
-        // Filtrar StopRoutes que están cerca de los puntos de la ruta
-        return childrenStopRoutes.filter { stopRoute ->
-            val stopLocation = LatLng(stopRoute.stopPassenger.stop.latitude, stopRoute.stopPassenger.stop.longitude)
-
-            // Verificar si algún punto de la ruta está cerca de esta parada (dentro de 200 metros)
-            routePoints.any { routePoint ->
-                calculateDistance(stopLocation, routePoint) <= 200.0
-            }
-        }
-    }
 
     /**
      * NUEVO: Limpia las alertas y notificaciones
@@ -427,28 +416,7 @@ class MapViewModel(
         }
     }
 
-    /**
-     * NUEVO: Obtiene las paradas que están en la ruta actual del conductor
-     * Filtra las paradas de los hijos del padre que coinciden con la ruta activa
-     */
-    fun getStopsOnCurrentRoute(): List<StopPassenger> {
-        val routePoints = _routePoints.value
-        val childrenStops = _parentChildrenStops.value
 
-        if (routePoints.isEmpty() || childrenStops.isEmpty()) {
-            return emptyList()
-        }
-
-        // Filtrar paradas que están cerca de los puntos de la ruta
-        return childrenStops.filter { stop ->
-            val stopLocation = LatLng(stop.stop.latitude, stop.stop.longitude)
-
-            // Verificar si algún punto de la ruta está cerca de esta parada (dentro de 200 metros)
-            routePoints.any { routePoint ->
-                calculateDistance(stopLocation, routePoint) <= 200.0
-            }
-        }
-    }
 
     /**
      * NUEVO: Función auxiliar para calcular distancia entre dos puntos

@@ -58,16 +58,6 @@ fun StopInfoDialog(
                             .padding(bottom = 8.dp)
                     )
 
-                    // Información de coordenadas - Manejar posibles nulos
-                    Text(
-                        text = "Coordenadas: ${stopData.latitude?.toString() ?: "?"}, ${stopData.longitude?.toString() ?: "?"}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 16.dp)
-                    )
-
                     // Separador
                     Divider(modifier = Modifier.padding(vertical = 8.dp))
 

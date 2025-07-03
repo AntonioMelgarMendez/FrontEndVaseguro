@@ -177,6 +177,7 @@ fun GeneralScaffold(navControllerx: NavController) {
                             MainNavigation(
                                 navController = navController,
                                 userRole = user?.role_id ?: 0,
+                                snackbarHostState = snackbarHostState
                             )
                         }
                     }
@@ -197,7 +198,11 @@ fun GeneralScaffold(navControllerx: NavController) {
                         .fillMaxSize()
                         .padding(innerPadding)
                 ) {
-                    MainNavigation(navController = navController, userRole = user?.role_id ?: 0)
+                    MainNavigation(
+                        navController = navController,
+                        userRole = user?.role_id ?: 0,
+                        snackbarHostState = snackbarHostState
+                    )
                 }
             }
         )
