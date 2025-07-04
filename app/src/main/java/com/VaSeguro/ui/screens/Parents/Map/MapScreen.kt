@@ -51,6 +51,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.VaSeguro.R
 import com.VaSeguro.data.model.Stop.StopType
 import com.VaSeguro.helpers.bitmapDescriptorFromVector
+import com.VaSeguro.ui.theme.PrimaryColor
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.LatLng
@@ -529,15 +530,15 @@ fun MapScreen(
                     }
 
                     // Mostrar coordenadas del conductor
-                    driverLocation?.let { location ->
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        Text(
-                            text = "Actualizaciones: $updateCount",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
+//                    driverLocation?.let { location ->
+//                        Spacer(modifier = Modifier.height(8.dp))
+//
+//                        Text(
+//                            text = "Actualizaciones: $updateCount",
+//                            style = MaterialTheme.typography.bodySmall,
+//                            color = MaterialTheme.colorScheme.primary
+//                        )
+//                    }
                 }
             }
         }
@@ -567,7 +568,7 @@ fun MapScreen(
                         .size(48.dp)
                         .background(
                             color = if (followDriver)
-                                   MaterialTheme.colorScheme.primaryContainer
+                                   PrimaryColor
                                    else MaterialTheme.colorScheme.surfaceVariant,
                             shape = MaterialTheme.shapes.small
                         )
@@ -576,7 +577,7 @@ fun MapScreen(
                         imageVector = Icons.Default.DirectionsBus,
                         contentDescription = "Seguir al conductor",
                         tint = if (followDriver)
-                              MaterialTheme.colorScheme.onPrimaryContainer
+                              Color.White
                               else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -596,14 +597,14 @@ fun MapScreen(
                     modifier = Modifier
                         .size(48.dp)
                         .background(
-                            color = MaterialTheme.colorScheme.primaryContainer,
+                            color = PrimaryColor,
                             shape = MaterialTheme.shapes.small
                         )
                 ) {
                     Icon(
                         imageVector = Icons.Default.MyLocation,
                         contentDescription = "Centrar en el conductor",
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        tint = Color.White
                     )
                 }
             }

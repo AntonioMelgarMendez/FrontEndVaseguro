@@ -43,6 +43,7 @@ import com.VaSeguro.map.decodePolyline
 import com.VaSeguro.ui.components.Dialogs.ConfirmationDialog
 import com.VaSeguro.ui.components.Dialogs.StopInfoDialog
 import com.VaSeguro.ui.components.Map.FloatingMenu
+import com.VaSeguro.ui.theme.PrimaryColor
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.accompanist.permissions.shouldShowRationale
@@ -368,74 +369,7 @@ fun RouteScreen(
         onDismiss = { viewModel.cancelStopCloseConfirmation() }
     )
 
-    // Dialog de configuración del umbral de proximidad
-    var showProximitySettingsDialog by remember { mutableStateOf(false) }
-    var proximityThreshold by remember { mutableFloatStateOf(viewModel.stopProximityThreshold.value.toFloat()) }
 
-    if (showProximitySettingsDialog) {
-        AlertDialog(
-            onDismissRequest = { showProximitySettingsDialog = false },
-            title = { Text("Configurar distancia de detección") },
-            text = {
-                Column {
-                    Text(
-                        "Ajusta la distancia (en metros) a la que se mostrará la notificación cuando te acerques a una parada.",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = "20m",
-                            style = MaterialTheme.typography.bodySmall
-                        )
-
-                        Slider(
-                            value = proximityThreshold,
-                            onValueChange = { proximityThreshold = it },
-                            valueRange = 20f..200f,
-                            steps = 18,
-                            modifier = Modifier.weight(1f)
-                        )
-
-                        Text(
-                            text = "200m",
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-
-                    Text(
-                        text = "${proximityThreshold.toInt()} metros",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        viewModel.setStopProximityThreshold(proximityThreshold.toDouble())
-                        showProximitySettingsDialog = false
-                    }
-                ) {
-                    Text("Confirmar")
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = { showProximitySettingsDialog = false }
-                ) {
-                    Text("Cancelar")
-                }
-            }
-        )
-    }
 
     // Diálogo de confirmación para iniciar la ruta
     ConfirmationDialog(
@@ -1019,8 +953,8 @@ fun RouteScreen(
                                 showStartRouteConfirmation = true
                             }
                         },
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        containerColor = PrimaryColor,
+                        contentColor = Color.White,
                         elevation = FloatingActionButtonDefaults.elevation()
                     ) {
                         Icon(Icons.Default.PlayArrow, contentDescription = "Iniciar ruta")

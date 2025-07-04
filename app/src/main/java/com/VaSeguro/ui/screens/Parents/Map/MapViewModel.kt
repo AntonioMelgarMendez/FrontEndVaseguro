@@ -271,22 +271,36 @@ class MapViewModel(
     private fun checkProximityToMyChildrenStops(driverLocation: LatLng) {
         val childrenStops = _parentChildrenStops.value
 
-        if (childrenStops.isEmpty() || !_isRouteActive.value) return
+        if (childrenStops.isEmpty() || !_isRouteActive.value) {
+            // Si no hay paradas o la ruta no está activa, limpiar alerta
+            if (_proximityAlert.value != null) {
+                println("🧹 Limpiando alerta de proximidad - Sin paradas o ruta inactiva")
+                _proximityAlert.value = null
+            }
+            return
+        }
+
+        var isNearAnyStop = false
+        var newAlertMessage: String? = null
 
         childrenStops.forEach { stopPassenger ->
             val stopLocation = LatLng(stopPassenger.stop.latitude, stopPassenger.stop.longitude)
             val distance = calculateDistance(driverLocation, stopLocation)
 
             if (distance <= proximityThreshold) {
+                isNearAnyStop = true
                 val stopTypeName = if (stopPassenger.stopType.name == "HOME") "casa" else "escuela"
-                val alertMessage = "🚌 El conductor está cerca de la parada de ${stopPassenger.child.fullName} (${stopTypeName}) - ${stopPassenger.stop.name}"
-
-                // Solo mostrar la alerta si es diferente a la anterior
-                if (_proximityAlert.value != alertMessage) {
-                    _proximityAlert.value = alertMessage
-                    // Ya no limpiamos automáticamente - el mensaje se mantiene hasta que se actualice
-                }
+                newAlertMessage = "El conductor está cerca de la parada de ${stopPassenger.stop.name}"
             }
+        }
+
+        // Solo actualizar si hay cambios
+        if (isNearAnyStop && _proximityAlert.value != newAlertMessage) {
+            println("🔔 Nueva alerta de proximidad: $newAlertMessage")
+            _proximityAlert.value = newAlertMessage
+        } else if (!isNearAnyStop && _proximityAlert.value != null) {
+            println("🧹 Limpiando alerta de proximidad - Conductor no está cerca de ninguna parada")
+            _proximityAlert.value = null
         }
     }
 
@@ -345,12 +359,12 @@ class MapViewModel(
                         if (!originalStopRoute.state && updatedStopRoute.state) {
                             changeDetected = true
                             val actionText = if (updatedStopRoute.stopPassenger.stopType.name == "HOME") {
-                                "fue recogido/dejado en casa"
+                                "Fue recogido/dejado en casa"
                             } else {
-                                "fue dejado/recogido en la escuela"
+                                "Fue dejado/recogido en la escuela"
                             }
 
-                            val notificationMessage = "✅ ${updatedStopRoute.stopPassenger.child.fullName} $actionText - ${updatedStopRoute.stopPassenger.stop.name}"
+                            val notificationMessage = "${updatedStopRoute.stopPassenger.child.fullName} $actionText - ${updatedStopRoute.stopPassenger.stop.name}"
 
                             println("🎉 ¡CAMBIO DE ESTADO DETECTADO! -> $notificationMessage")
 
