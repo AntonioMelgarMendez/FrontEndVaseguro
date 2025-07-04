@@ -77,7 +77,7 @@ fun GeneralScaffold(navControllerx: NavController) {
         )
         4 -> listOf(
             RouteScreenNavigation(routeId = 0),
-            HistoryScreenNavigation,
+            HistoryDriverScreenNavigation,
             BusDriverScreenNavigation,
             ChildrenDriverScreenNavigation
         )

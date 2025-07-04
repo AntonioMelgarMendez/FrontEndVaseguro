@@ -8,9 +8,13 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.VaSeguro.MyApplication
+import com.VaSeguro.data.model.Children.Children
 import com.VaSeguro.data.model.Stop.StopRoute
 import com.VaSeguro.data.model.StopPassenger.StopPassenger
+import com.VaSeguro.data.repository.Children.ChildrenRepository
 import com.VaSeguro.data.repository.DriverPrefs.DriverPrefs
+import com.VaSeguro.data.repository.UserPreferenceRepository.UserPreferencesRepository
+import com.VaSeguro.map.decodePolyline
 import com.VaSeguro.map.repository.LocationRepository
 import com.VaSeguro.map.repository.LocationDriverAddress
 import com.VaSeguro.map.repository.StopRouteRepository
@@ -25,6 +29,8 @@ import kotlinx.coroutines.launch
 class MapViewModel(
     private val locationRepository: LocationRepository,
     private val stopRouteRepository: StopRouteRepository,
+    private val childrenRepository: ChildrenRepository,
+    private val userPreferencesRepository: UserPreferencesRepository,
     private val context: Context
 
 ) : ViewModel() {
@@ -93,13 +99,14 @@ class MapViewModel(
     // Variable para rastrear si las actualizaciones están pausadas
     private var locationUpdatesPaused = false
 
-    // NUEVO: Variable para rastrear el estado anterior de la ruta
-    private var previousRouteActive = false
+
+    private val _childrenList = MutableStateFlow<List<Children>>(emptyList())
+    val childrenList: StateFlow<List<Children>> = _childrenList
 
     init {
         // Al iniciar, cargamos la última ubicación del conductor
         loadDriverLocationWithRoute()
-
+        loadChildrenForParent()
         // También cargamos las paradas de los hijos del padre
         loadParentChildrenStops()
     }
@@ -112,6 +119,30 @@ class MapViewModel(
             _childId.value = id
             // Al cambiar de padre, recargamos las paradas de sus hijos
             loadParentChildrenStops()
+        }
+    }
+    fun loadChildrenForParent() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            val user = userPreferencesRepository.getUserData()
+            val token = userPreferencesRepository.getAuthToken() ?: ""
+            val userId = user?.id?.toString()
+            val userRole = user?.role_id
+
+            val allChildren = try {
+                childrenRepository.getChildren(token)
+            } catch (e: Exception) {
+                emptyList()
+            }
+
+            val filteredChildren = when (userRole) {
+                3 -> allChildren.filter { it.parent_id.toString() == userId }
+                4 -> allChildren.filter { it.driver_id.toString() == userId }
+                else -> emptyList()
+            }
+
+            _childrenList.value = filteredChildren
+            _isLoading.value = false
         }
     }
 
@@ -467,7 +498,9 @@ class MapViewModel(
                 MapViewModel(
                     locationRepository = application.appProvider.provideLocationRepository(),
                     stopRouteRepository = application.appProvider.provideStopRouteRepository(),
-                    context = application.applicationContext
+                    context = application.applicationContext,
+                    childrenRepository = application.appProvider.provideChildrenRepository(),
+                    userPreferencesRepository = application.appProvider.provideUserPreferences()
                 )
             }
         }

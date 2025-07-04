@@ -1,5 +1,6 @@
 package com.VaSeguro.data.repository.RequestRepository
 
+import android.util.Log
 import com.VaSeguro.data.model.User.UserData
 import com.VaSeguro.data.remote.Request.RequestService
 import com.VaSeguro.data.remote.Request.RequestState
@@ -29,9 +30,14 @@ class RequestRepositoryImpl(
 
     override suspend fun getCode(token: String, userId: Int): Result<String> {
         return try {
-            val code = requestService.getRequestById("Bearer $token", userId)
+            Log.d("RequestRepository", "Calling getRequestById with userId=$userId")
+            val responseBody = requestService.getRequestById("Bearer $token", userId)
+            val jsonString = responseBody.string()
+            val code = JSONObject(jsonString).getString("code")
+            Log.d("RequestRepository", "Received code: $code")
             Result.success(code)
         } catch (e: Exception) {
+            Log.e("RequestRepository", "Error fetching code: ${e.message}", e)
             Result.failure(e)
         }
     }
@@ -46,7 +52,7 @@ class RequestRepositoryImpl(
                     val driverJson = json.optJSONObject("driver")
                     if (driverJson != null) {
                         val driverMap = Gson().fromJson(driverJson.toString(), Map::class.java) as Map<String, Any>
-                        Result.success(mapOf("driver" to driverMap)) // <- aquí se arregla
+                        Result.success(mapOf("driver" to driverMap))
                     } else {
                         Result.failure(Exception("No driver data found"))
                     }

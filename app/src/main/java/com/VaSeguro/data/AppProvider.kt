@@ -110,4 +110,5 @@ class AppProvider(context: Context) {
         val messageDao = provideMessageDao()
         return ChatRepositoryImpl(RetrofitInstance.chatService, messageDao, "https://sonoradinamita.live/")
     }
+    fun provideDriverCodeDao()=appDatabase.driverCodeDao()
 }

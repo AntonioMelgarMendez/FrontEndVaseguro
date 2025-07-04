@@ -63,7 +63,8 @@ fun TopBar(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 val appProvider = AppProvider(context.applicationContext)
-                return TopBarViewModel(appProvider.provideUserPreferences(), appProvider.provideAuthRepository(), appProvider.provideRequestRepository()) as T
+                return TopBarViewModel(appProvider.provideUserPreferences(), appProvider.provideAuthRepository(), appProvider.provideRequestRepository(),
+                    appProvider.provideDriverCodeDao()) as T
             }
         }
     )
@@ -374,13 +375,16 @@ fun TopBar(
                                     lineHeight = 22.sp
                                 )
                                 InfoDialogType.QR -> {
-                                    LaunchedEffect(Unit) {
-                                        viewModel.fetchDriverCode()
-                                    }
-                                    val code = viewModel.driverCode ?: "Cargando..."
+                                    val isLoading = viewModel.isDriverCodeLoading
+                                    val code = viewModel.driverCode ?: ""
                                     val qrBitmap = remember(code) {
-                                        if (code != "Cargando...") generateQRCode(code) else null
+                                        if (code.isNotBlank()) generateQRCode(code) else null
                                     }
+
+                                    LaunchedEffect(Unit) {
+                                        viewModel.loadDriverCodeIfNeeded()
+                                    }
+
                                     Column(
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -396,17 +400,30 @@ fun TopBar(
                                                 .fillMaxWidth()
                                                 .padding(vertical = 4.dp)
                                         )
-                                        if (qrBitmap != null) {
-                                            Image(
-                                                bitmap = qrBitmap.asImageBitmap(),
-                                                contentDescription = "Código QR",
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .height(300.dp)
-                                                    .padding(4.dp)
-                                            )
-                                        } else {
-                                            Text("Generando QR...", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+                                        when {
+                                            isLoading -> {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .height(300.dp),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    CircularProgressIndicator()
+                                                }
+                                            }
+                                            qrBitmap != null -> {
+                                                Image(
+                                                    bitmap = qrBitmap.asImageBitmap(),
+                                                    contentDescription = "Código QR",
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .height(300.dp)
+                                                        .padding(4.dp)
+                                                )
+                                            }
+                                            else -> {
+                                                Text("Error al generar QR", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+                                            }
                                         }
                                         Text(
                                             "Código: $code",

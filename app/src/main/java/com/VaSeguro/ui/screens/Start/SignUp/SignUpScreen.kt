@@ -228,13 +228,17 @@ fun SignUpScreen(navController: NavController) {
                             .padding(start = 4.dp)
                     )
                 }
-
                 Button(
                     onClick = {
-                        viewModel.register(
-                            onSuccess = { navController.navigate("code") },
-                            onError = {  }
-                        )
+                        if (!viewModel.isPasswordValid(password)) {
+                            viewModel.onPasswordChange(password) // Optional, to trigger recomposition
+                            viewModel._error.value = "La contraseña debe tener al menos 8 caracteres, incluir letras y números."
+                        } else {
+                            viewModel.register(
+                                onSuccess = { navController.navigate("code") },
+                                onError = { }
+                            )
+                        }
                     },
                     modifier = Modifier
                         .fillMaxWidth()

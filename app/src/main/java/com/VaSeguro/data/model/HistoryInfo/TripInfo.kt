@@ -1,5 +1,7 @@
 package com.VaSeguro.data.model.HistoryInfo
 
+import com.google.android.gms.maps.model.LatLng
+
 data class TripInfo(
     val date: String,
     val duration: String,
@@ -8,5 +10,7 @@ data class TripInfo(
     val driver: String,
     val bus: String,
     val distance: String,
-    val mapImageRes: Int? = null // ej: R.drawable.route_map
+    val mapImageRes: Int? = null,
+    val routePoints: List<LatLng> = emptyList()
+// ej: R.drawable.route_map
 )

@@ -90,7 +90,13 @@ fun MainNavigation(
         }
         composable<BusDriverScreenNavigation>{ BusScreen() }
         composable<ChildrenDriverScreenNavigation>{ ChildrenScreen(navController) }
-        composable<HistoryScreenNavigation>{ HistoryScreen() }
+        composable<HistoryDriverScreenNavigation> {
+            SavedRoutesScreen(
+                navController = navController,
+                viewModel = savedRoutesViewModel,
+                onRunRoute = onRunRoute
+            )
+        }
 
         composable<SavedRoutesScreenNavigation> {
             println("DEBUG: Mostrando pantalla de rutas guardadas")

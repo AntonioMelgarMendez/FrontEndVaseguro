@@ -2,11 +2,13 @@ package com.VaSeguro.ui.screens.Parents.Map
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -17,17 +19,25 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DirectionsBus
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -78,6 +88,8 @@ fun MapScreen(
 
 ) {
     // Estados del ViewModel
+    var selectedChild by remember { mutableStateOf<Children?>(null) }
+    val children by viewModel.childrenList.collectAsStateWithLifecycle(emptyList())
     val driverLocation by viewModel.driverLocation.collectAsStateWithLifecycle()
     val isRouteActive by viewModel.isRouteActive.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
@@ -117,6 +129,9 @@ fun MapScreen(
 
     // Contador de actualizaciones para debug
     var updateCount by remember { mutableStateOf(0) }
+    LaunchedEffect(Unit) {
+        viewModel.loadChildrenForParent()
+    }
 
     // Gestión del ciclo de vida para optimizar recursos del mapa
     DisposableEffect(lifecycleOwner) {
@@ -543,6 +558,7 @@ fun MapScreen(
             }
         }
 
+
         // MODIFICADO: Solo mostrar botones de control si hay datos del conductor
         if (driverLocation != null) {
             Row(
@@ -561,6 +577,7 @@ fun MapScreen(
                                     update = CameraUpdateFactory.newLatLngZoom(driverLocation!!, cameraPositionState.position.zoom),
                                     durationMs = 1000
                                 )
+
                             }
                         }
                     },
@@ -572,6 +589,7 @@ fun MapScreen(
                                    else MaterialTheme.colorScheme.surfaceVariant,
                             shape = MaterialTheme.shapes.small
                         )
+
                 ) {
                     Icon(
                         imageVector = Icons.Default.DirectionsBus,
@@ -591,6 +609,7 @@ fun MapScreen(
                                     update = CameraUpdateFactory.newLatLngZoom(location, cameraPositionState.position.zoom),
                                     durationMs = 1000
                                 )
+
                             }
                         }
                     },
@@ -600,12 +619,14 @@ fun MapScreen(
                             color = PrimaryColor,
                             shape = MaterialTheme.shapes.small
                         )
+
                 ) {
                     Icon(
                         imageVector = Icons.Default.MyLocation,
                         contentDescription = "Centrar en el conductor",
                         tint = Color.White
                     )
+
                 }
             }
 
@@ -632,5 +653,75 @@ fun MapScreen(
                 }
             }
         }
+    }
+}
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ChildSelectorDialogButton(
+    children: List<Children>,
+    selectedChild: Children?,
+    onChildSelected: (Children) -> Unit
+) {
+    var showDialog by remember { mutableStateOf(false) }
+
+    Surface(
+        modifier = Modifier
+            .height(48.dp)
+            .padding(horizontal = 4.dp)
+            .clickable { showDialog = true },
+        color = MaterialTheme.colorScheme.primaryContainer,
+        shape = MaterialTheme.shapes.small,
+        shadowElevation = 1.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(horizontal = 16.dp)
+                .fillMaxHeight(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.Person,
+                contentDescription = "Seleccionar hijo",
+                tint = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+            if (selectedChild != null) {
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = selectedChild.forenames,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
+    }
+
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            title = { Text("Selecciona un hijo") },
+            text = {
+                Column {
+                    children.forEach { child ->
+                        Text(
+                            text = child.forenames,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    onChildSelected(child)
+                                    showDialog = false
+                                }
+                                .padding(vertical = 12.dp),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = if (selectedChild?.id == child.id)
+                                MaterialTheme.colorScheme.primary
+                            else
+                                MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {}
+        )
     }
 }
