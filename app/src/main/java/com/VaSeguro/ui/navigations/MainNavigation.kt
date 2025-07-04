@@ -2,6 +2,7 @@
 package com.VaSeguro.ui.navigations
 
 
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -32,7 +33,11 @@ import com.VaSeguro.ui.screens.Parents.History.HistoryScreen
 import com.VaSeguro.ui.screens.Parents.Map.MapScreen
 
 @Composable
-fun MainNavigation(navController: NavHostController, userRole: Int?) {
+fun MainNavigation(
+    navController: NavHostController,
+    userRole: Int?,
+    snackbarHostState: SnackbarHostState
+) {
     val startDestination = when (userRole) {
         2 -> HomeAdminScreenNavigation
         3 -> MapScreenNavigation
@@ -58,7 +63,7 @@ fun MainNavigation(navController: NavHostController, userRole: Int?) {
     }
 
     NavHost(navController = navController, startDestination = startDestination) {
-        composable<MapScreenNavigation> { MapScreen() }
+        composable<MapScreenNavigation> { MapScreen(snackbarHostState = snackbarHostState) }
         composable<HistoryScreenNavigation> { HistoryScreen() }
         composable<BusScreenNavigation> { BusScreen() }
         composable<ChildrenScreenNavigation> { ChildrenScreen(navController) }
@@ -79,7 +84,8 @@ fun MainNavigation(navController: NavHostController, userRole: Int?) {
 
             RouteScreen(
                 routeId = routeId,
-                onNavigateToSavedRoutes = onNavigateToSavedRoutes
+                onNavigateToSavedRoutes = onNavigateToSavedRoutes,
+                snackbarHostState = snackbarHostState
             )
         }
         composable<BusDriverScreenNavigation>{ BusScreen() }

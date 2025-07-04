@@ -43,6 +43,7 @@ import com.VaSeguro.map.decodePolyline
 import com.VaSeguro.ui.components.Dialogs.ConfirmationDialog
 import com.VaSeguro.ui.components.Dialogs.StopInfoDialog
 import com.VaSeguro.ui.components.Map.FloatingMenu
+import com.VaSeguro.ui.theme.PrimaryColor
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.accompanist.permissions.shouldShowRationale
@@ -68,7 +69,8 @@ import kotlinx.coroutines.launch
 fun RouteScreen(
     viewModel: RouteScreenViewModel = viewModel(factory = RouteScreenViewModel.Factory),
     routeId: Int? = null,  // Parámetro para recibir el ID de la ruta
-    onNavigateToSavedRoutes: () -> Unit = {} // Navegación a pantalla de rutas guardadas
+    onNavigateToSavedRoutes: () -> Unit = {}, // Navegación a pantalla de rutas guardadas
+    snackbarHostState: SnackbarHostState // Nuevo parámetro para el SnackbarHostState
 ) {
     // Estados principales
     val routePoints by remember { derivedStateOf { viewModel.routePoints } }
@@ -89,6 +91,11 @@ fun RouteScreen(
 
     // Estado del estado de la ruta
     val routeStatus by viewModel.currentRouteStatus.collectAsStateWithLifecycle()
+
+    // NUEVO: Estados para el timing de segmentos
+    val currentSegmentElapsedTime by viewModel.currentSegmentElapsedTime.collectAsStateWithLifecycle()
+    val realTimeToNextPoint by viewModel.realTimeToNextPoint.collectAsStateWithLifecycle()
+    val segmentTimings by viewModel.segmentTimings.collectAsStateWithLifecycle()
 
     // Estado para el tipo de ruta (INBOUND/OUTBOUND)
     val currentRouteType by viewModel.currentRouteType.collectAsStateWithLifecycle()
@@ -133,7 +140,6 @@ fun RouteScreen(
     val modalBottomSheetState = rememberModalBottomSheetState()
     var showBottomSheet by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
-    val snackbarHostState = remember { SnackbarHostState() }
 
     // Contexto y servicios de ubicación
     val context = LocalContext.current
@@ -255,6 +261,7 @@ fun RouteScreen(
                 message = error,
                 duration = SnackbarDuration.Short
             )
+            viewModel.errorMessageShown()
         }
     }
 
@@ -362,74 +369,7 @@ fun RouteScreen(
         onDismiss = { viewModel.cancelStopCloseConfirmation() }
     )
 
-    // Dialog de configuración del umbral de proximidad
-    var showProximitySettingsDialog by remember { mutableStateOf(false) }
-    var proximityThreshold by remember { mutableFloatStateOf(viewModel.stopProximityThreshold.value.toFloat()) }
 
-    if (showProximitySettingsDialog) {
-        AlertDialog(
-            onDismissRequest = { showProximitySettingsDialog = false },
-            title = { Text("Configurar distancia de detección") },
-            text = {
-                Column {
-                    Text(
-                        "Ajusta la distancia (en metros) a la que se mostrará la notificación cuando te acerques a una parada.",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = "20m",
-                            style = MaterialTheme.typography.bodySmall
-                        )
-
-                        Slider(
-                            value = proximityThreshold,
-                            onValueChange = { proximityThreshold = it },
-                            valueRange = 20f..200f,
-                            steps = 18,
-                            modifier = Modifier.weight(1f)
-                        )
-
-                        Text(
-                            text = "200m",
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-
-                    Text(
-                        text = "${proximityThreshold.toInt()} metros",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        viewModel.setStopProximityThreshold(proximityThreshold.toDouble())
-                        showProximitySettingsDialog = false
-                    }
-                ) {
-                    Text("Confirmar")
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = { showProximitySettingsDialog = false }
-                ) {
-                    Text("Cancelar")
-                }
-            }
-        )
-    }
 
     // Diálogo de confirmación para iniciar la ruta
     ConfirmationDialog(
@@ -456,14 +396,12 @@ fun RouteScreen(
         onDismiss = { showStartRouteConfirmation = false }
     )
 
-    // Scaffold para organizar la UI with Snackbar
-    Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
-    ) { paddingValues ->
+    // Box principal que contiene todo el contenido de RouteScreen
+    Box(modifier = Modifier.fillMaxSize()) { // Box exterior para anclar elementos flotantes
+        // Box interior para el contenido principal (mapa, etc.) que necesita padding
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
         ) {
             // Mapa principal
             if (locationPermissions.allPermissionsGranted) {
@@ -487,7 +425,7 @@ fun RouteScreen(
                             coroutineScope.launch {
                                 cameraPositionState.animate(
                                     CameraUpdateFactory.newLatLngZoom(location, 15f)
-                                )
+                            )
                             }
                         }
                     }
@@ -510,17 +448,17 @@ fun RouteScreen(
                                 title = point.name.ifEmpty { "Punto de ruta" },
                                 icon = if (point.stopType == StopType.HOME) {
                                     context.bitmapDescriptorFromVector(R.drawable.user, heightDp = 40)
-                                } else {
-                                    context.bitmapDescriptorFromVector(R.drawable.school,heightDp= 40)
-                                },
-                                onClick = {
-                                    // Al hacer clic en un marcador, verificar si estamos lo suficientemente cerca
-                                    // para mostrar el diálogo de información de parada
-                                    viewModel.checkMarkerProximityAndShowDialog(point.location)
-                                    // Devolver true para que el mapa no muestre la ventana de información por defecto
-                                    true
-                                }
-                            )
+                            } else {
+                                context.bitmapDescriptorFromVector(R.drawable.school,heightDp= 40)
+                            },
+                            onClick = {
+                                // Al hacer clic en un marcador, verificar si estamos lo suficientemente cerca
+                                // para mostrar el diálogo de información de parada
+                                viewModel.checkMarkerProximityAndShowDialog(point.location)
+                                // Devolver true para que el mapa no muestre la ventana de información por defecto
+                                true
+                            }
+                        )
                         }
                     }
 
@@ -616,7 +554,6 @@ fun RouteScreen(
                         }
                     }
 
-                    // NUEVO: Información de segmentos completados
                     if (completedSegments.isNotEmpty() && isRouteStarted) {
                         Card(
                             modifier = Modifier
@@ -704,7 +641,7 @@ fun RouteScreen(
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(4.dp))
                     }
 
                     // Información del próximo punto
@@ -733,22 +670,37 @@ fun RouteScreen(
                                     horizontalAlignment = Alignment.End,
                                     modifier = Modifier.padding(start = 8.dp)
                                 ) {
-                                    Text(
-                                        text = "Tiempo estimado:",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                                        textAlign = TextAlign.End
-                                    )
+                                    // Mostrar tiempo real restante si está disponible
+                                    if (realTimeToNextPoint.isNotEmpty()) {
+                                        Text(
+                                            text = "Tiempo restante:",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                            textAlign = TextAlign.End
+                                        )
+                                        Text(
+                                            text = realTimeToNextPoint,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    } else {
+                                        Text(
+                                            text = "Tiempo estimado:",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                            textAlign = TextAlign.End
+                                        )
+                                        // Mostrar tiempo estimado ajustado si está disponible, de lo contrario el tiempo original
+                                        val timeToShow = if (adjustedTimeToNextPoint.isNotEmpty())
+                                            adjustedTimeToNextPoint else timeToNextPoint
 
-                                    // Mostrar tiempo estimado ajustado si está disponible, de lo contrario el tiempo original
-                                    val timeToShow = if (adjustedTimeToNextPoint.isNotEmpty())
-                                        adjustedTimeToNextPoint else timeToNextPoint
-
-                                    Text(
-                                        text = timeToShow,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
+                                        Text(
+                                            text = timeToShow,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -820,146 +772,146 @@ fun RouteScreen(
                         }
                     }
                 }
-            }
 
-            // Menú de estados del viaje (solo visible cuando la ruta está iniciada)
-            if (isRouteStarted && selectedRoute != null) {
-                // Estado para el diálogo de confirmación para borrar la ruta
-                var showDeleteConfirmation by remember { mutableStateOf(false) }
-                // Estado para el diálogo de confirmación para pausar la ruta
-                var showPauseConfirmation by remember { mutableStateOf(false) }
+                // Menú de estados del viaje (solo visible cuando la ruta está iniciada)
+                if (isRouteStarted && selectedRoute != null) {
+                    // Estado para el diálogo de confirmación para borrar la ruta
+                    var showDeleteConfirmation by remember { mutableStateOf(false) }
+                    // Estado para el diálogo de confirmación para pausar la ruta
+                    var showPauseConfirmation by remember { mutableStateOf(false) }
 
-                Card(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 20.dp) // Añadir espacio para no solapar con el menú flotante
-                        .fillMaxWidth(0.9f),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f)
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
-                ) {
-                    Column(
+                    Card(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp)
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 20.dp) // Añadir espacio para no solapar con el menú flotante
+                            .fillMaxWidth(0.9f),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f)
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
                     ) {
-                        Text(
-                            text = "Estado del viaje: ${routeStatus?.status}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium,
-                            modifier = Modifier
-                                .align(Alignment.CenterHorizontally)
-                                .padding(bottom = 8.dp)
-                        )
-
-                        Row(
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 8.dp),
-                            horizontalArrangement = Arrangement.SpaceEvenly
+                                .padding(vertical = 8.dp)
                         ) {
-                            // Botón "En proceso"
-                            val isProcessActive = routeStatus == RouteStatus.ON_PROGRESS
-                            RouteStatusButton(
-                                text = "En proceso",
-                                icon = Icons.Default.DirectionsCar,
-                                isActive = isProcessActive,
-                                activeColor = Color(0xFF4CAF50), // Verde
-                                onClick = {
-                                    if (!isRouteStarted) isRouteStarted = true
-                                    viewModel.updateRouteStatus(RouteStatus.ON_PROGRESS.id)
-                                }
+                            Text(
+                                text = "Estado del viaje: ${routeStatus?.status}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium,
+                                modifier = Modifier
+                                    .align(Alignment.CenterHorizontally)
+                                    .padding(bottom = 8.dp)
                             )
 
-                            // Botón "Pausado"
-                            val isPausedActive = routeStatus == RouteStatus.STOPED
-                            RouteStatusButton(
-                                text = "Pausado",
-                                icon = Icons.Default.Pause,
-                                isActive = isPausedActive,
-                                activeColor = Color(0xFFFFA000), // Ámbar
-                                onClick = {
-                                    // Mostrar diálogo de confirmación para pausar
-                                    showPauseConfirmation = true
-                                }
-                            )
-                        }
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceEvenly
+                            ) {
+                                // Botón "En proceso"
+                                val isProcessActive = routeStatus == RouteStatus.ON_PROGRESS
+                                RouteStatusButton(
+                                    text = "En proceso",
+                                    icon = Icons.Default.DirectionsCar,
+                                    isActive = isProcessActive,
+                                    activeColor = Color(0xFF4CAF50), // Verde
+                                    onClick = {
+                                        if (!isRouteStarted) isRouteStarted = true
+                                        viewModel.updateRouteStatus(RouteStatus.ON_PROGRESS.id)
+                                    }
+                                )
 
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 8.dp),
-                            horizontalArrangement = Arrangement.SpaceEvenly
-                        ) {
-                            // Botón "Finalizado"
-                            val isFinishedActive = routeStatus == RouteStatus.PROBLEMS
-                            RouteStatusButton(
-                                text = "Con Problemas",
-                                icon = Icons.Default.Warning,
-                                isActive = isFinishedActive,
-                                activeColor = Color(0xFFF44336), // Rojo para problemas
-                                onClick = {
-                                    viewModel.updateRouteStatus(RouteStatus.PROBLEMS.id)
-                                }
-                            )
+                                // Botón "Pausado"
+                                val isPausedActive = routeStatus == RouteStatus.STOPED
+                                RouteStatusButton(
+                                    text = "Pausado",
+                                    icon = Icons.Default.Pause,
+                                    isActive = isPausedActive,
+                                    activeColor = Color(0xFFFFA000), // Ámbar
+                                    onClick = {
+                                        // Mostrar diálogo de confirmación para pausar
+                                        showPauseConfirmation = true
+                                    }
+                                )
+                            }
 
-                            // Botón "Borrar ruta"
-                            RouteStatusButton(
-                                text = "Borrar ruta",
-                                icon = Icons.Default.Delete,
-                                isActive = false,
-                                activeColor = Color(0xFF9C27B0), // Morado
-                                onClick = {
-                                    showDeleteConfirmation = true
-                                }
-                            )
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceEvenly
+                            ) {
+                                // Botón "Finalizado"
+                                val isFinishedActive = routeStatus == RouteStatus.PROBLEMS
+                                RouteStatusButton(
+                                    text = "Con Problemas",
+                                    icon = Icons.Default.Warning,
+                                    isActive = isFinishedActive,
+                                    activeColor = Color(0xFFF44336), // Rojo para problemas
+                                    onClick = {
+                                        viewModel.updateRouteStatus(RouteStatus.PROBLEMS.id)
+                                    }
+                                )
+
+                                // Botón "Borrar ruta"
+                                RouteStatusButton(
+                                    text = "Borrar ruta",
+                                    icon = Icons.Default.Delete,
+                                    isActive = false,
+                                    activeColor = Color(0xFF9C27B0), // Morado
+                                    onClick = {
+                                        showDeleteConfirmation = true
+                                    }
+                                )
+                            }
                         }
                     }
+
+                    // Diálogo de confirmación para borrar la ruta
+                    ConfirmationDialog(
+                        isVisible = showDeleteConfirmation,
+                        title = "Borrar ruta",
+                        message = "¿Estás seguro de borrar esta ruta? Esta acción no se puede deshacer.",
+                        confirmButtonText = "Borrar",
+                        onConfirm = {
+                            viewModel.clearRoute()
+                            viewModel.clearSelections() // Limpiar selección de niños
+                            isRouteStarted = false
+                            hasBeenClearedOnThisRoute = true
+                            showDeleteConfirmation = false
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Ruta borrada correctamente")
+                            }
+                        },
+                        onDismiss = { showDeleteConfirmation = false }
+                    )
+
+                    // Diálogo de confirmación para pausar la ruta
+                    ConfirmationDialog(
+                        isVisible = showPauseConfirmation,
+                        title = "Pausar ruta",
+                        message = "¿Estás seguro de pausar esta ruta? Se detendrá temporalmente el seguimiento.",
+                        confirmButtonText = "Pausar",
+                        onConfirm = {
+                            isRouteStarted = false // pausar la ruta
+                            viewModel.updateRouteStatus(RouteStatus.STOPED.id) // CORREGIDO: usar .id en lugar de .toString()
+                            showPauseConfirmation = false
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Ruta pausada correctamente")
+                            }
+                        },
+                        onDismiss = { showPauseConfirmation = false }
+                    )
                 }
-
-                // Diálogo de confirmación para borrar la ruta
-                ConfirmationDialog(
-                    isVisible = showDeleteConfirmation,
-                    title = "Borrar ruta",
-                    message = "¿Estás seguro de borrar esta ruta? Esta acción no se puede deshacer.",
-                    confirmButtonText = "Borrar",
-                    onConfirm = {
-                        viewModel.clearRoute()
-                        viewModel.clearSelections() // Limpiar selección de niños
-                        isRouteStarted = false
-                        hasBeenClearedOnThisRoute = true
-                        showDeleteConfirmation = false
-                        coroutineScope.launch {
-                            snackbarHostState.showSnackbar("Ruta borrada correctamente")
-                        }
-                    },
-                    onDismiss = { showDeleteConfirmation = false }
-                )
-
-                // Diálogo de confirmación para pausar la ruta
-                ConfirmationDialog(
-                    isVisible = showPauseConfirmation,
-                    title = "Pausar ruta",
-                    message = "¿Estás seguro de pausar esta ruta? Se detendrá temporalmente el seguimiento.",
-                    confirmButtonText = "Pausar",
-                    onConfirm = {
-                        isRouteStarted = false // pausar la ruta
-                        viewModel.updateRouteStatus(RouteStatus.STOPED.id) // CORREGIDO: usar .id en lugar de .toString()
-                        showPauseConfirmation = false
-                        coroutineScope.launch {
-                            snackbarHostState.showSnackbar("Ruta pausada correctamente")
-                        }
-                    },
-                    onDismiss = { showPauseConfirmation = false }
-                )
             }
 
-            // Menú flotante extendido con opción para rutas guardadas
+            // Menú flotante extendido con opción para rutas guardadas (AHORA FUERA DEL BOX CON PADDING)
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(16.dp),
+                    .padding(16.dp, 16.dp, 16.dp, 16.dp),
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -982,21 +934,34 @@ fun RouteScreen(
 
                 // Si hay una ruta seleccionada pero no iniciada, mostrar botón de inicio
                 if (selectedRoute != null && !isRouteStarted) {
+                    //Detectar si es ruta guardada
+                    val isRouteSaved by viewModel.isCurrentRouteSaved.collectAsStateWithLifecycle()
                     FloatingActionButton(
                         onClick = {
-                            // Llamar al nuevo método para crear la ruta en el backend
-                            val success = viewModel.startNewRoute()
+
+                            val success = if (isRouteSaved) {
+                                // Si es una ruta guardada, usar startSavedRoute()
+                                println("DEBUG_START_BUTTON: Iniciando ruta guardada")
+                                viewModel.startSavedRoute()
+                            } else {
+                                // Si es una ruta nueva, usar startNewRoute()
+                                println("DEBUG_START_BUTTON: Creando e iniciando nueva ruta")
+                                viewModel.startNewRoute()
+                            }
+
                             if (success) {
                                 showStartRouteConfirmation = true
                             }
                         },
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        containerColor = PrimaryColor,
+                        contentColor = Color.White,
                         elevation = FloatingActionButtonDefaults.elevation()
                     ) {
                         Icon(Icons.Default.PlayArrow, contentDescription = "Iniciar ruta")
                     }
                 }
+
+                // FloatingMenu posicionado independientemente (AHORA FUERA DEL BOX CON PADDING)
                 if (!isRouteStarted) {
                     FloatingMenu(
                         onOptionSelected = { option ->

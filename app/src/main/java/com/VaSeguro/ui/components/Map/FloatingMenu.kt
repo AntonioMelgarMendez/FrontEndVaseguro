@@ -31,6 +31,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.VaSeguro.ui.theme.PrimaryColor
+import com.VaSeguro.ui.theme.PurpleGrey80
+import com.VaSeguro.ui.theme.White
 
 @Composable
 fun FloatingMenu(
@@ -70,8 +73,8 @@ fun FloatingMenu(
 
                     FloatingActionButton(
                         onClick = { handleOptionSelected(1) },
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        containerColor = PrimaryColor,
+                        contentColor = White,
                         shape = CircleShape,
                         elevation = FloatingActionButtonDefaults.elevation(4.dp)
                     ) {
@@ -97,8 +100,8 @@ fun FloatingMenu(
 
                     FloatingActionButton(
                         onClick = { handleOptionSelected(2) },
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        containerColor = PrimaryColor,
+                        contentColor = White,
                         shape = CircleShape,
                         elevation = FloatingActionButtonDefaults.elevation(4.dp)
                     ) {
@@ -124,8 +127,8 @@ fun FloatingMenu(
 
                     FloatingActionButton(
                         onClick = { handleOptionSelected(3) },
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        containerColor = PrimaryColor,
+                        contentColor = White,
                         shape = CircleShape,
                         elevation = FloatingActionButtonDefaults.elevation(4.dp)
                     ) {
@@ -151,8 +154,8 @@ fun FloatingMenu(
 
                     FloatingActionButton(
                         onClick = { handleOptionSelected(4) },
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        containerColor = PrimaryColor,
+                        contentColor = White,
                         shape = CircleShape,
                         elevation = FloatingActionButtonDefaults.elevation(4.dp)
                     ) {

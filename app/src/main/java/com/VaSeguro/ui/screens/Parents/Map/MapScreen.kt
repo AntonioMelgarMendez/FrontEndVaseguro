@@ -40,8 +40,8 @@ import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -59,10 +59,11 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.VaSeguro.R
-import com.VaSeguro.data.model.Child.Child
-import com.VaSeguro.data.model.Children.Children
+import com.VaSeguro.data.model.Stop.StopType
 import com.VaSeguro.helpers.bitmapDescriptorFromVector
+import com.VaSeguro.ui.theme.PrimaryColor
 import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapEffect
@@ -72,9 +73,10 @@ import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.MapsComposeExperimentalApi
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
-import com.google.maps.android.compose.Polyline
 import com.google.maps.android.compose.rememberCameraPositionState
 import kotlinx.coroutines.launch
+
+
 
 @OptIn(MapsComposeExperimentalApi::class)
 @SuppressLint("MissingPermission")
@@ -82,18 +84,20 @@ import kotlinx.coroutines.launch
 fun MapScreen(
     viewModel: MapViewModel = viewModel(factory = MapViewModel.Factory),
     childId: Int? = null,
+    snackbarHostState: SnackbarHostState // Nuevo parámetro para el SnackbarHostState
+
 ) {
     // Estados del ViewModel
     var selectedChild by remember { mutableStateOf<Children?>(null) }
     val children by viewModel.childrenList.collectAsStateWithLifecycle(emptyList())
     val driverLocation by viewModel.driverLocation.collectAsStateWithLifecycle()
     val isRouteActive by viewModel.isRouteActive.collectAsStateWithLifecycle()
-    val routePoints by viewModel.routePoints.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
 
     // NUEVOS: Estados para paradas filtradas y información de ruta
     val parentChildrenStops by viewModel.parentChildrenStops.collectAsStateWithLifecycle()
+    val parentChildrenStopRoutes by viewModel.parentChildrenStopRoutes.collectAsStateWithLifecycle()
     val routeProgress by viewModel.routeProgress.collectAsStateWithLifecycle()
     val routeStatus by viewModel.routeStatus.collectAsStateWithLifecycle()
 
@@ -106,7 +110,6 @@ fun MapScreen(
     var hasInitializedCamera by remember { mutableStateOf(false) }
 
     // SnackbarHostState para mostrar mensajes
-    val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
     // Contexto para convertir recursos vectoriales a BitmapDescriptor
@@ -173,23 +176,30 @@ fun MapScreen(
     }
 
     // Efecto para mover la cámara cuando se actualiza la ubicación del conductor
-    LaunchedEffect(driverLocation) {
-        driverLocation?.let { location ->
+    LaunchedEffect(driverLocation, isRouteActive, isMapVisible) {
+        // Solo actualizar la cámara si hay ubicación, ruta activa y mapa visible
+        if (driverLocation != null && isRouteActive && isMapVisible) {
+            val location = driverLocation!!
             updateCount++
             println("Actualización #$updateCount recibida en MapScreen: $location")
 
             if (!hasInitializedCamera || followDriver) {
-                val currentZoom = if (hasInitializedCamera) {
-                    cameraPositionState.position.zoom
-                } else {
-                    15f
-                }
+                try {
+                    val currentZoom = if (hasInitializedCamera) {
+                        cameraPositionState.position.zoom
+                    } else {
+                        15f
+                    }
 
-                cameraPositionState.animate(
-                    update = CameraUpdateFactory.newLatLngZoom(location, currentZoom),
-                    durationMs = 500
-                )
-                hasInitializedCamera = true
+                    cameraPositionState.animate(
+                        update = CameraUpdateFactory.newLatLngZoom(location, currentZoom),
+                        durationMs = 500
+                    )
+                    hasInitializedCamera = true
+                } catch (e: Exception) {
+                    println("Error al actualizar cámara: ${e.message}")
+                    // No hacer nada si falla, intentará de nuevo en la próxima actualización
+                }
             }
         }
     }
@@ -209,7 +219,7 @@ fun MapScreen(
             coroutineScope.launch {
                 snackbarHostState.showSnackbar(
                     message = alert,
-                    duration = SnackbarDuration.Long
+                    duration = SnackbarDuration.Short
                 )
             }
         }
@@ -221,78 +231,92 @@ fun MapScreen(
             coroutineScope.launch {
                 snackbarHostState.showSnackbar(
                     message = notification,
-                    duration = SnackbarDuration.Long
+                    duration = SnackbarDuration.Short
                 )
             }
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            // Solo mostrar el mapa si está visible Y hay ubicación del conductor
-            if (isMapVisible && driverLocation != null) {
-                GoogleMap(
-                    modifier = Modifier.fillMaxSize(),
-                    cameraPositionState = cameraPositionState,
-                    properties = MapProperties(
-                        isMyLocationEnabled = false,
-                        mapType = MapType.NORMAL,
-                        minZoomPreference = 5f,
-                        maxZoomPreference = 20f,
-                        isTrafficEnabled = false,
-                    ),
-                    uiSettings = MapUiSettings(
-                        zoomControlsEnabled = true,
-                        compassEnabled = true,
-                        mapToolbarEnabled = false,
-                    ),
-                    onMapLoaded = {
-                        println("Mapa cargado completamente")
-                    }
-                ) {
-                    MapEffect { map ->
-                        mapRef = map
-                        map.setMaxZoomPreference(20f)
-                        map.setMinZoomPreference(5f)
-                        map.isBuildingsEnabled = false
-                        map.isIndoorEnabled = false
+    // NUEVO: Efecto para debuggear los datos de parentChildrenStopRoutes
+    LaunchedEffect(parentChildrenStopRoutes, isRouteActive) {
+        println("=== DEBUG PARADAS (REACTIVO) ===")
+        println("Ruta activa: $isRouteActive")
+        println("Número de paradas: ${parentChildrenStopRoutes.size}")
+        parentChildrenStopRoutes.forEachIndexed { index, stopRoute ->
+            println("Parada $index:")
+            println("  - ID: ${stopRoute.id}")
+            println("  - Child: ${stopRoute.stopPassenger.child.fullName}")
+            println("  - Stop: ${stopRoute.stopPassenger.stop.name}")
+            println("  - Lat: ${stopRoute.stopPassenger.stop.latitude}")
+            println("  - Lng: ${stopRoute.stopPassenger.stop.longitude}")
+            println("  - Type: ${stopRoute.stopPassenger.stopType}")
+            println("  - State: ${stopRoute.state}")
+        }
+        println("=== FIN DEBUG PARADAS ===")
+    }
 
-                        try {
-                            val mapClassType = map.javaClass
-                            mapClassType.getDeclaredMethod("setPersistentCacheEnabled", Boolean::class.java)?.let {
-                                it.isAccessible = true
-                                it.invoke(map, false)
-                            }
-                            mapClassType.getDeclaredMethod("setTrimMemoryPolicy", Int::class.java)?.let {
-                                it.isAccessible = true
-                                it.invoke(map, 5)
-                            }
-                            mapClassType.getDeclaredMethod("releaseDatabaseLocks")?.let {
-                                it.isAccessible = true
-                                it.invoke(map)
-                            }
-                        } catch (e: Exception) {
-                            println("No se pudo configurar política de memoria: ${e.message}")
+    // NUEVO: Efecto para configurar el childId cuando se pasa como parámetro
+    LaunchedEffect(childId) {
+        childId?.let { id ->
+            println("Configurando childId desde parámetro: $id")
+            viewModel.setChildId(id)
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+    ) {
+        // Solo mostrar el mapa si está visible Y hay ubicación del conductor Y ruta activa
+        if (isMapVisible && driverLocation != null && isRouteActive) {
+            GoogleMap(
+                modifier = Modifier.fillMaxSize(),
+                cameraPositionState = cameraPositionState,
+                properties = MapProperties(
+                    isMyLocationEnabled = false,
+                    mapType = MapType.NORMAL,
+                    minZoomPreference = 5f,
+                    maxZoomPreference = 20f,
+                    isTrafficEnabled = false,
+                ),
+                uiSettings = MapUiSettings(
+                    zoomControlsEnabled = true,
+                    compassEnabled = true,
+                    mapToolbarEnabled = false,
+                ),
+                onMapLoaded = {
+                    println("Mapa cargado completamente")
+                }
+            ) {
+                MapEffect { map ->
+                    mapRef = map
+                    map.setMaxZoomPreference(20f)
+                    map.setMinZoomPreference(5f)
+                    map.isBuildingsEnabled = false
+                    map.isIndoorEnabled = false
+
+                    try {
+                        val mapClassType = map.javaClass
+                        mapClassType.getDeclaredMethod("setPersistentCacheEnabled", Boolean::class.java)?.let {
+                            it.isAccessible = true
+                            it.invoke(map, false)
                         }
-
+                        mapClassType.getDeclaredMethod("setTrimMemoryPolicy", Int::class.java)?.let {
+                            it.isAccessible = true
+                            it.invoke(map, 5)
+                        }
+                        mapClassType.getDeclaredMethod("releaseDatabaseLocks")?.let {
+                            it.isAccessible = true
+                            it.invoke(map)
+                        }
+                    } catch (e: Exception) {
+                        println("No se pudo configurar política de memoria: ${e.message}")
                     }
 
-                    // NUEVO: Mostrar el polyline de la ruta si hay una ruta activa
-                    if (isRouteActive && routePoints.isNotEmpty()) {
-                        Polyline(
-                            points = routePoints,
-                            color = Color.Blue,
-                            width = 8f
-                        )
-                    }
+                }
 
-                    // Mostrar el marcador del conductor si está disponible
+                // Mostrar el marcador del conductor si está disponible y la ruta está activa
+                if (isRouteActive) {
                     driverLocation?.let { location ->
                         Marker(
                             state = MarkerState(position = location),
@@ -301,310 +325,307 @@ fun MapScreen(
                             flat = true,
                         )
                     }
-
-                    // NUEVO: Mostrar marcadores de las paradas de los hijos del padre
-                    parentChildrenStops.forEach { stopPassenger ->
-                        val stopLocation = LatLng(
-                            stopPassenger.stop.latitude,
-                            stopPassenger.stop.longitude
-                        )
-
-                        Marker(
-                            state = MarkerState(position = stopLocation),
-                            title = "${stopPassenger.child.fullName} - ${stopPassenger.stop.name}",
-                            snippet = "Tipo: ${stopPassenger.stopType.name}",
-                            icon = if (stopPassenger.stopType.name == "HOME") {
-                                context.bitmapDescriptorFromVector(R.drawable.user, heightDp = 35)
-                            } else {
-                                context.bitmapDescriptorFromVector(R.drawable.school, heightDp = 35)
-                            }
-                        )
-                    }
                 }
-            } else if (driverLocation == null && !isLoading) {
-                // Mostrar mensaje cuando no hay datos del conductor
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color(0xFFE0E0E0)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Info,
-                            contentDescription = "Sin datos del conductor",
-                            modifier = Modifier.size(48.dp)
-                        )
-                        Text(
-                            text = "El conductor no está en ruta",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Button(
-                            onClick = {
-                                viewModel.setDriverId(66) // Reintenta con el ID por defecto
+
+                // NUEVO: Mostrar marcadores de las paradas de los hijos del padre con colores según su estado
+                parentChildrenStopRoutes.forEach { stopRoute ->
+                    val stopLocation = LatLng(
+                        stopRoute.stopPassenger.stop.latitude,
+                        stopRoute.stopPassenger.stop.longitude
+                    )
+
+                    // Determinar el estado del marcador y el texto del snippet
+                    val statusText = if (stopRoute.state) "✅ Completado" else "⏳ Pendiente"
+                    val snippet = "Tipo: ${stopRoute.stopPassenger.stop.name} | $statusText"
+
+                    Marker(
+                        state = MarkerState(position = stopLocation),
+                        title = "${stopRoute.stopPassenger.child.fullName} - ${stopRoute.stopPassenger.stop.name}",
+                        snippet = snippet,
+                        icon = if (stopRoute.state) {
+                            // Si la parada está completada, mostrar stop_check
+                            context.bitmapDescriptorFromVector(R.drawable.stop_check, heightDp = 40)
+                        } else {
+                            // Si la parada no está completada, diferenciamos entre casa y escuela
+                            when (stopRoute.stopPassenger.stopType) {
+                                StopType.HOME -> context.bitmapDescriptorFromVector(R.drawable.user, heightDp = 40)
+                                StopType.INSTITUTION -> context.bitmapDescriptorFromVector(R.drawable.school, heightDp = 40)
+                                else -> context.bitmapDescriptorFromVector(R.drawable.stop_check, heightDp = 40)
                             }
-                        ) {
-                            Text("Recargar")
-                        }
-                    }
-                }
-            } else if (isMapVisible && driverLocation == null) {
-                // Mostrar mensaje cuando el mapa está pausado por optimización
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color(0xFFE0E0E0)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        "Mapa en pausa para optimizar recursos",
-                        style = MaterialTheme.typography.bodyLarge
+                        },
                     )
                 }
             }
-
-            // MODIFICADO: Solo mostrar la tarjeta informativa si hay datos del conductor
-            if (driverLocation != null) {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                        .align(Alignment.TopCenter),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        } else if ((driverLocation == null || !isRouteActive) && !isLoading) {
+            // Mostrar mensaje cuando no hay datos del conductor o ruta no activa
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFFE0E0E0)),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .padding(16.dp)
-                            .fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = "Sin datos del conductor",
+                        modifier = Modifier.size(48.dp)
+                    )
+                    Text(
+                        text = if (driverLocation == null) "El conductor no está disponible" else "El conductor no está en ruta",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Button(
+                        onClick = {
+                            viewModel.setDriverId(66) // Reintenta con el ID por defecto
+                        }
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "Seguimiento en tiempo real",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                            )
+                        Text("Recargar")
+                    }
+                }
+            }
+        } else if (isMapVisible && driverLocation == null) {
+            // Mostrar mensaje cuando el mapa está pausado por optimización
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFFE0E0E0)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    "Mapa en pausa para optimizar recursos",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+        }
 
-                            if (isLoading) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(24.dp),
-                                    strokeWidth = 2.dp
+        // MODIFICADO: Solo mostrar la tarjeta informativa si hay datos del conductor
+        if (driverLocation != null) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .align(Alignment.TopCenter),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Seguimiento en tiempo real",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                        )
+
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                strokeWidth = 2.dp
                             )
-                            }
                         }
+                    }
 
-                        // NUEVO: Mostrar alerta de proximidad si existe
-                        proximityAlert?.let { alert ->
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = Color(0xFF4CAF50).copy(alpha = 0.2f)
-                            )
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(12.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.DirectionsBus,
-                                        contentDescription = "Proximidad",
-                                        tint = Color(0xFF4CAF50),
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = alert,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = Color(0xFF4CAF50),
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                }
-                            }
-                        }
-
-                        // NUEVO: Mostrar notificación de cambio de estado si existe
-                        stopStateChangeNotification?.let { notification ->
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = Color(0xFF2196F3).copy(alpha = 0.2f)
-                            )
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(12.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = "✅",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = notification,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = Color(0xFF2196F3),
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                }
-                            }
-                        }
-
+                    // NUEVO: Mostrar alerta de proximidad si existe
+                    proximityAlert?.let { alert ->
                         Spacer(modifier = Modifier.height(8.dp))
-
-                        // NUEVO: Mostrar información detallada de la ruta
-                        Row(
+                        Card(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            colors = CardDefaults.cardColors(
+                                containerColor = Color(0xFF4CAF50).copy(alpha = 0.2f)
+                            )
                         ) {
-                            Column {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.DirectionsBus,
+                                    contentDescription = "Proximidad",
+                                    tint = Color(0xFF4CAF50),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = if (isRouteActive) "Ruta activa" else "Sin ruta activa",
-                                    color = if (isRouteActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-                                    style = MaterialTheme.typography.bodyMedium,
+                                    text = alert,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color(0xFF4CAF50),
                                     fontWeight = FontWeight.Medium
                                 )
-
-                                // NUEVO: Mostrar estado de la ruta si está disponible
-                                routeStatus?.let { status ->
-                                    Text(
-                                        text = "Estado: $status",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                                    )
-                                }
                             }
                         }
+                    }
 
-                        // NUEVO: Mostrar información de paradas de los hijos
-                        if (parentChildrenStops.isNotEmpty()) {
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            val stopsOnRoute = viewModel.getStopsOnCurrentRoute()
-
+                    // NUEVO: Mostrar notificación de cambio de estado si existe
+                    stopStateChangeNotification?.let { notification ->
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = Color(0xFF2196F3).copy(alpha = 0.2f)
+                            )
+                        ) {
                             Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "Paradas de mis hijos: ${parentChildrenStops.size}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                                    text = "✅",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    modifier = Modifier.size(20.dp)
                                 )
-
-                                if (isRouteActive && stopsOnRoute.isNotEmpty()) {
-                                    Text(
-                                        text = "En ruta actual: ${stopsOnRoute.size}",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = notification,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color(0xFF2196F3),
+                                    fontWeight = FontWeight.Medium
+                                )
                             }
                         }
+                    }
 
-                        // Mostrar coordenadas del conductor
-                        driverLocation?.let { location ->
-                            Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
+                    // NUEVO: Mostrar información detallada de la ruta
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column {
                             Text(
-                                text = "Actualizaciones: $updateCount",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.primary
+                                text = if (isRouteActive) "Ruta activa" else "Sin ruta activa",
+                                color = if (isRouteActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium
                             )
+
+                            // NUEVO: Mostrar estado de la ruta si está disponible
+                            routeStatus?.let { status ->
+                                Text(
+                                    text = "Estado: $status",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                )
+                            }
                         }
                     }
+
+                    // NUEVO: Mostrar información de paradas de los hijos
+                    if (parentChildrenStops.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+
+//                        Row(
+//                            modifier = Modifier.fillMaxWidth(),
+//                            horizontalArrangement = Arrangement.SpaceBetween
+//                        ) {
+//                            Text(
+//                                text = "Paradas de mis hijos: ${parentChildrenStops.size}",
+//                                style = MaterialTheme.typography.bodySmall,
+//                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+//                            )
+//                        }
+                    }
+
+                    // Mostrar coordenadas del conductor
+//                    driverLocation?.let { location ->
+//                        Spacer(modifier = Modifier.height(8.dp))
+//
+//                        Text(
+//                            text = "Actualizaciones: $updateCount",
+//                            style = MaterialTheme.typography.bodySmall,
+//                            color = MaterialTheme.colorScheme.primary
+//                        )
+//                    }
                 }
             }
+        }
 
-            // MODIFICADO: Solo mostrar botones de control si hay datos del conductor
-            if (driverLocation != null) {
-                Row(
+
+        // MODIFICADO: Solo mostrar botones de control si hay datos del conductor
+        if (driverLocation != null) {
+            Row(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .align(Alignment.BottomEnd),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Botón para activar/desactivar seguimiento automático
+                IconButton(
+                    onClick = {
+                        followDriver = !followDriver
+                        if (followDriver && driverLocation != null) {
+                            coroutineScope.launch {
+                                cameraPositionState.animate(
+                                    update = CameraUpdateFactory.newLatLngZoom(driverLocation!!, cameraPositionState.position.zoom),
+                                    durationMs = 1000
+                                )
+
+                            }
+                        }
+                    },
                     modifier = Modifier
-                        .padding(16.dp)
-                        .align(Alignment.BottomEnd),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        .size(48.dp)
+                        .background(
+                            color = if (followDriver)
+                                   PrimaryColor
+                                   else MaterialTheme.colorScheme.surfaceVariant,
+                            shape = MaterialTheme.shapes.small
+                        )
+
                 ) {
-                    ChildSelectorDialogButton(
-                        children = children,
-                        selectedChild = selectedChild,
-                        onChildSelected = { child ->
-                            selectedChild = child
-                            viewModel.setChildId(child.id)
-                        }
+                    Icon(
+                        imageVector = Icons.Default.DirectionsBus,
+                        contentDescription = "Seguir al conductor",
+                        tint = if (followDriver)
+                              Color.White
+                              else MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    // Botón para activar/desactivar seguimiento automático
-                    IconButton(
-                        onClick = {
-                            followDriver = !followDriver
-                            if (followDriver && driverLocation != null) {
-                                coroutineScope.launch {
-                                    cameraPositionState.animate(
-                                        update = CameraUpdateFactory.newLatLngZoom(driverLocation!!, cameraPositionState.position.zoom),
-                                        durationMs = 1000
-                                    )
-                                }
-                            }
-                        },
-                        modifier = Modifier
-                            .size(48.dp)
-                            .background(
-                                color = if (followDriver)
-                                       MaterialTheme.colorScheme.primaryContainer
-                                       else MaterialTheme.colorScheme.surfaceVariant,
-                                shape = MaterialTheme.shapes.small
-                            )
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.DirectionsBus,
-                            contentDescription = "Seguir al conductor",
-                            tint = if (followDriver)
-                                  MaterialTheme.colorScheme.onPrimaryContainer
-                                  else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    // Botón para centrar en la ubicación del conductor
-                    IconButton(
-                        onClick = {
-                            driverLocation?.let { location ->
-                                coroutineScope.launch {
-                                    cameraPositionState.animate(
-                                        update = CameraUpdateFactory.newLatLngZoom(location, cameraPositionState.position.zoom),
-                                        durationMs = 1000
-                                    )
+                }
+
+                // Botón para centrar en la ubicación del conductor
+                IconButton(
+                    onClick = {
+                        driverLocation?.let { location ->
+                            coroutineScope.launch {
+                                cameraPositionState.animate(
+                                    update = CameraUpdateFactory.newLatLngZoom(location, cameraPositionState.position.zoom),
+                                    durationMs = 1000
+                                )
+
                             }
                         }
-                        },
-                        modifier = Modifier
-                            .size(48.dp)
-                            .background(
-                                color = MaterialTheme.colorScheme.primaryContainer,
-                                shape = MaterialTheme.shapes.small
-                            )
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.MyLocation,
-                            contentDescription = "Centrar en el conductor",
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    },
+                    modifier = Modifier
+                        .size(48.dp)
+                        .background(
+                            color = PrimaryColor,
+                            shape = MaterialTheme.shapes.small
                         )
-                    }
+
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.MyLocation,
+                        contentDescription = "Centrar en el conductor",
+                        tint = Color.White
+                    )
 
                 }
             }
