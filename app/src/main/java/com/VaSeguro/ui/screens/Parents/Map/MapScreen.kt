@@ -59,6 +59,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.VaSeguro.R
+import com.VaSeguro.data.model.Children.Children
 import com.VaSeguro.data.model.Stop.StopType
 import com.VaSeguro.helpers.bitmapDescriptorFromVector
 import com.VaSeguro.ui.theme.PrimaryColor

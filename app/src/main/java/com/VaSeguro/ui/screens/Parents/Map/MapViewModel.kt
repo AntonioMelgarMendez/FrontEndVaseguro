@@ -98,6 +98,7 @@ class MapViewModel(
 
     // Variable para rastrear si las actualizaciones están pausadas
     private var locationUpdatesPaused = false
+    private var previousRouteActive = false
 
 
     private val _childrenList = MutableStateFlow<List<Children>>(emptyList())
