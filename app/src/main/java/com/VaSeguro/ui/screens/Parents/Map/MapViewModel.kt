@@ -270,6 +270,11 @@ class MapViewModel(
      */
     private fun checkProximityToMyChildrenStops(driverLocation: LatLng) {
         val childrenStops = _parentChildrenStops.value
+        // Obtener las paradas que ya fueron completadas
+        val completedStopIds = _parentChildrenStopRoutes.value
+            .filter { it.state } // `state` es true si la parada se completó
+            .map { it.stopPassenger.stop.id }
+            .toSet()
 
         if (childrenStops.isEmpty() || !_isRouteActive.value) {
             // Si no hay paradas o la ruta no está activa, limpiar alerta
@@ -284,6 +289,11 @@ class MapViewModel(
         var newAlertMessage: String? = null
 
         childrenStops.forEach { stopPassenger ->
+            // IGNORAR la parada si ya fue completada
+            if (completedStopIds.contains(stopPassenger.stop.id)) {
+                return@forEach // Continuar con la siguiente parada
+            }
+
             val stopLocation = LatLng(stopPassenger.stop.latitude, stopPassenger.stop.longitude)
             val distance = calculateDistance(driverLocation, stopLocation)
 
